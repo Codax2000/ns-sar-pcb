@@ -15,10 +15,11 @@ Due to issues with speed and the number of samples for a continuous-mode ADC, th
 ## Controls
 By using control registers, it will also be possible to set several things about the ADC:
 1) The oversampling rate (OSR)
-2) The total number of samples (nfft)
+2) The total number of analysis samples (nfft)
 3) Whether the ADC is in incremental or continous mode
 4) The clock division ratio (dividing down from a master clock in the FPGA)
 5) Turning DEM on and off
+6) The number of 'warmup' samples
 
 The controls and communication will be done via I2C. This means the setting of the control registers, beginning ADC operation, reading control registers, and reading data.
 
