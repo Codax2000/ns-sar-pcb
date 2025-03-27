@@ -8,6 +8,7 @@ Simulation for a noise-shaping 2nd order SAR ADC with 1st-order DEM
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pdb
 
 
 def main():
@@ -17,7 +18,7 @@ def main():
     # circuit/testing parameters
     quantizer_bits = 3
     sigma = 0.02
-    use_mismatch = True
+    use_mismatch = False
     fs = 10**8 # 100 MHz for now
     prime = 139
     vdd = 1
@@ -26,10 +27,10 @@ def main():
 
     # control registers
     osr = 64
-    nfft = 2**10
+    nfft = 2**8
     incremental_mode = False
     use_dwa = False
-    n_offset = 10000
+    n_offset = 1000
 
     # derived parameters
     T = 1 / fs
@@ -58,9 +59,6 @@ def main():
     Qin_sample = np.zeros(t.shape)
     Qin_integ = np.zeros(t.shape)
 
-    # residue sampling
-    residue = np.zeros(t.shape)
-
     # boolean signals, useful for logic development later
     reset = np.zeros(t.shape, dtype=bool)
     sample_output = np.zeros(t.shape, dtype=bool)
@@ -81,13 +79,23 @@ def main():
 
     # IADC loop
     for i in range(t.shape[0]):
+        print(f'Cycle {i}')
         cycle = i % osr
-        reset[i] = cycle == 0
-        sample_output[i] = cycle == osr - 1
+        reset[i] = ((cycle == 0) and incremental_mode) or i == 0
+        sample_output[i] = (cycle == osr - 1) or not incremental_mode
+
+        # update integrators
+        if reset[i]:
+            W1[i] = 0
+            W2[i] = 0
+        else:
+            W1[i] = W1[i - 1] + E[i - 1]
+            W2[i] = W2[i - 1] + W1[i - 1]
+
         if reset[i]:
             Qin_integ[i] = 0
         else:
-            Qin_integ[i] = W1[i - 1] + W2[i - 1]
+            Qin_integ[i] = 2 * W1[i] + W2[i]
 
         Qin_sample[i] = U[i]
         
@@ -95,10 +103,16 @@ def main():
         vintn[i] = vcm - Qin_integ[i] / 2
         vinp[i] = vcm + Qin_sample[i] / 2
         vinn[i] = vcm - Qin_sample[i] / 2
-        
+        # pdb.set_trace()
+        V[i], E[i] = quantize(vinp[i], vinn[i], vintp[i], vintn[i], cp1, cn1, vdd, vss)
 
-
-
+    pdb.set_trace()
+    plt.subplot(2, 1, 1)
+    plt.plot(V[0:400])
+    plt.plot(U[0:400])
+    plt.subplot(2, 1, 2)
+    plt.loglog(np.fft.fft(V[-nfft_derived:]))
+    plt.show()
 
 
 def get_cap_array(n_bits, sigma, use_mismatch):
@@ -110,3 +124,18 @@ def get_cap_array(n_bits, sigma, use_mismatch):
         return np.random.normal(1, sigma, 2**n_bits)
     else:
         return np.ones(2**n_bits)
+
+
+def quantize(vip, vin, vintp, vintn, cp, cn, vdd, vss):
+    '''
+    SAR Quantizer function
+    '''
+    U = vip - vin
+    W = vintp - vintn
+    V = 1 if (U + W) > 0 else -1
+    E = U - V
+    return V, E
+
+
+if __name__ == '__main__':
+    main()
