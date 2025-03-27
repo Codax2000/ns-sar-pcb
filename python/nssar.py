@@ -104,7 +104,7 @@ def main():
         vinp[i] = vcm + Qin_sample[i] / 2
         vinn[i] = vcm - Qin_sample[i] / 2
         # pdb.set_trace()
-        V[i], E[i] = quantize(vinp[i], vinn[i], vintp[i], vintn[i], cp1, cn1, vdd, vss)
+        V[i], E[i] = quantize(vinp[i], vinn[i], vintp[i], vintn[i])
 
     pdb.set_trace()
     plt.subplot(2, 1, 1)
@@ -126,9 +126,9 @@ def get_cap_array(n_bits, sigma, use_mismatch):
         return np.ones(2**n_bits)
 
 
-def quantize(vip, vin, vintp, vintn, cp, cn, vdd, vss):
+def quantize(vip, vin, vintp, vintn):
     '''
-    SAR Quantizer function
+    single-bit quantizer function
     '''
     U = vip - vin
     W = vintp - vintn
@@ -137,5 +137,38 @@ def quantize(vip, vin, vintp, vintn, cp, cn, vdd, vss):
     return V, E
 
 
+def sar_quantize(vip, vin, vintp, vintn, cp, cn, vrefp=1, vrefn=0, dwa_pointer=0):
+    '''
+    SAR quantizer function using two integrators and cap update functions
+    also uses positive and negative reference voltages for more accurate numbers
+    additionally, user can set the DWA pointer to shift the update voltages
+    for DEM
+    '''
+    n_bits = int(np.log2(len(cp)))
+    n_conversions = len(vip)
+
+    # digital output values
+    dout = np.zeros(vip.shape, dtype=int)
+
+    # residue voltage for all conversions, at all points in conversion
+    vresp = np.zeros((n_bits + 1, n_conversions))
+    vresn = np.zeros((n_bits + 1, n_conversions))
+    bits = np.zeros((n_bits, n_conversions), dtype=int)
+
+    vcm = (vrefp + vrefn) / 2
+
+    cap_voltages = np.zeros(cp.shape) + vcm
+    vresp[0, :] = vrefp - vip
+    vresn[0, :] = vrefp - vin
+    pdb.set_trace()
+    for i in range(n_bits):
+        filt = vintp + vresn[i + 1, :] >= vintn + vresp[i + 1, :]
+        bits[i, filt] = vrefp
+        bits[i, ~filt] = vrefn
+        pdb.set_trace()
+
+
+
 if __name__ == '__main__':
-    main()
+    sar_quantize(np.array([0.6, 0.7]), np.array([0.4, 0.3]), -0.05, 0.05, np.array([1, 1, 1, 1]), np.array([1, 1, 1, 1]))
+    # main()
