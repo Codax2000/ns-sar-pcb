@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 
-def main():
+def adc_loop():
     '''
     Main simulation loop
     '''
@@ -38,8 +38,8 @@ def main():
     fin = fs * prime / nfft_derived
     a_in = vdd * 10 ** (-1 / 20)  # input amplitude: -1 dBFS
 
-    cp1 = get_cap_array(quantizer_bits, sigma, use_mismatch)
-    cn1 = get_cap_array(quantizer_bits, sigma, use_mismatch)
+    cp = get_cap_array(quantizer_bits, sigma, use_mismatch)
+    cn = get_cap_array(quantizer_bits, sigma, use_mismatch)
 
     # time signal
     t = T * np.arange(n_offset * osr + nfft_derived)
@@ -104,9 +104,9 @@ def main():
         vinp[i] = vcm + Qin_sample[i] / 2
         vinn[i] = vcm - Qin_sample[i] / 2
         # pdb.set_trace()
-        V[i], E[i] = quantize(vinp[i], vinn[i], vintp[i], vintn[i])
+        V[i], E[i] = sar_quantize(vinp[i], vinn[i], vintp[i], vintn[i], cp, cn, 0)
 
-    pdb.set_trace()
+    plt.figure()
     plt.subplot(2, 1, 1)
     plt.plot(V[0:400])
     plt.plot(U[0:400])
@@ -137,7 +137,7 @@ def quantize(vip, vin, vintp, vintn):
     return V, E
 
 
-def sar_quantize(vip, vin, vintp, vintn, cp, cn, vrefp=1, vrefn=0, dwa_pointer=0):
+def sar_quantize(vip, vin, vintp, vintn, cp, cn, dwa_pointer=0):
     '''
     SAR quantizer function using two integrators and cap update functions
     also uses positive and negative reference voltages for more accurate numbers
@@ -145,30 +145,79 @@ def sar_quantize(vip, vin, vintp, vintn, cp, cn, vrefp=1, vrefn=0, dwa_pointer=0
     for DEM
     '''
     n_bits = int(np.log2(len(cp)))
-    n_conversions = len(vip)
+    vrefp = 1
+    vrefn = 0
 
-    # digital output values
-    dout = np.zeros(vip.shape, dtype=int)
+    # roll capacitor values if using DWA
+    cp = np.roll(cp, -dwa_pointer)
+    cn = np.roll(cn, -dwa_pointer)
 
     # residue voltage for all conversions, at all points in conversion
-    vresp = np.zeros((n_bits + 1, n_conversions))
-    vresn = np.zeros((n_bits + 1, n_conversions))
-    bits = np.zeros((n_bits, n_conversions), dtype=int)
+    vresp = np.zeros(n_bits + 1)
+    vresn = np.zeros(n_bits + 1)
+    bits = np.zeros(n_bits, dtype=int)
 
     vcm = (vrefp + vrefn) / 2
 
-    cap_voltages = np.zeros(cp.shape) + vcm
-    vresp[0, :] = vrefp - vip
-    vresn[0, :] = vrefp - vin
-    pdb.set_trace()
+    cap_values = np.zeros(2**n_bits) + vcm
+    vresp[0] = vrefp - vip
+    vresn[0] = vrefp - vin
     for i in range(n_bits):
-        filt = vintp + vresn[i + 1, :] >= vintn + vresp[i + 1, :]
-        bits[i, filt] = vrefp
-        bits[i, ~filt] = vrefn
-        pdb.set_trace()
+        filt = vintp + vresn[i] >= vintn + vresp[i]
+        bits[i] = 1 * filt
+        cap_values = update_cap_values(cap_values, i, filt)
+        inverted_cap_values = 1 - cap_values
+        qp = np.sum(cp * (cap_values)) + np.sum(cp) * (vresp[0] - vcm)
+        qn = np.sum(cp * (inverted_cap_values)) + np.sum(cp) * (vresn[0] - vcm)
+        vresp[i + 1] = qp / np.sum(cp)
+        vresn[i + 1] = qn / np.sum(cn)
+    bits_calc = n_bits - 1
+    positive_bits = bits_calc - np.where(bits == 1)[0]
+    return np.sum(np.pow(2, positive_bits)), vresn[n_bits] - vresp[n_bits]
 
+
+def update_cap_values(cap_values, i, bit):
+    '''
+    Update capacitor voltages to either 1 or 0 depending on the SAR conversion
+    '''
+    # calculate slice to update
+    n_bits = int(np.log2(cap_values.shape[0]))
+    n_update_bits = 2**(n_bits - (i + 1))
+    update_slice = np.where(cap_values == 0.5)[0]
+    if bit:
+        cap_values[update_slice[:n_update_bits]] = 1
+    else:
+        cap_values[update_slice[-(n_update_bits + 1):-1]] = 0
+    return cap_values
+
+
+def plot_sar_conversion():
+    vin = np.arange(-1, 1.01, 0.01)
+    vres = np.zeros(vin.shape)
+    dout = np.zeros(vin.shape)
+    vcm = 0.5
+    caps = np.ones(8)
+    for i in range(len(vin)):
+        vp = vin[i] / 2 + vcm
+        vn = -vin[i] / 2 + vcm
+        d, v = sar_quantize(vp, vn, 0, 0, caps, caps, 0)
+        dout[i] = d
+        vres[i] = v
+    plt.figure()
+    plt.subplot(2, 1, 1)
+    plt.plot(vin, dout)
+    plt.subplot(2, 1, 2)
+    plt.plot(vin, vres)
+
+
+
+def main():
+    '''
+    Main loop
+    '''
+    plot_sar_conversion()
+    adc_loop()
 
 
 if __name__ == '__main__':
-    sar_quantize(np.array([0.6, 0.7]), np.array([0.4, 0.3]), -0.05, 0.05, np.array([1, 1, 1, 1]), np.array([1, 1, 1, 1]))
-    # main()
+    main()
