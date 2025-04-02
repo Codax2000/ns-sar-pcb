@@ -20,9 +20,9 @@ def adc_loop():
     # circuit/testing parameters
     quantizer_bits = 3
     sigma = 0.03
-    use_mismatch = False
+    use_mismatch = True
     fs = 10**8 # 100 MHz for now
-    prime = 97
+    prime = 199
     vdd = 1
     vss = 0
     vcm = (vdd - vss) / 2
@@ -30,9 +30,9 @@ def adc_loop():
     # control registers
     osr = 16
     nfft = 2**12
-    incremental_mode = False
+    incremental_mode = True
     use_dwa = True
-    reset_dwa = False
+    reset_dwa = True
     n_offset = 10000 if not incremental_mode else 0
 
     # derived parameters
@@ -42,7 +42,7 @@ def adc_loop():
     a_in = vdd * 10 ** (-6 / 20)  # input amplitude: -1 dBFS
 
     # calculate filter coefficients
-    normalized_fc = 1 / (2 * osr)
+    normalized_fc = 1 / (osr)
     b, a = iirfilter(6, normalized_fc, btype='lowpass', output='ba', ftype='butter')
 
     # calculate mismatched capacitor arrays if using mismatch, all 1 otherwise
@@ -150,11 +150,11 @@ def adc_loop():
     plt.subplot(2, 1, 1)
     fft_window = windows.hann(nfft_derived)
     fft_data = fft_window * vfilt
-    plt.loglog(np.abs(fft(fft_data)[:32768]))
+    plt.semilogy(np.abs(fft(fft_data)[:32768]))
     plt.subplot(2, 1, 2)
     fft_window = windows.blackman(nfft)
     fft_data = fft_window * continuous_out
-    plt.loglog(np.abs(fft(fft_data)[:(nfft//2)]))
+    plt.plot(20 * np.log10(np.abs(fft(fft_data)[:(nfft//2)])))
 
 
 def get_cap_array(n_bits, sigma, use_mismatch):
