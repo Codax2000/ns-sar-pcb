@@ -9,18 +9,19 @@ optional reset
 
 from scipy.signal import iirfilter, windows, lfilter
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 class NSSAR:
 
     def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.02, \
-                 n_integer_bits=0, n_fractional_bits=0, filter_order=6,
-                 vdd=1.2, vss=0, max_nfft=2**20):
+                 n_fixed_point_bits=0, n_fractional_bits=0, filter_order=6,
+                 vdd=1.2, vss=0, max_nfft=2**20, max_osr=256):
         '''
         set class with hardware constraints and initialize register fields
         with default functions
         '''
-        self._registers = {
+        self._reg = {
             'nfft': 2**12,
             'osr': 32,
             'fs': 100e6,
@@ -29,33 +30,39 @@ class NSSAR:
             'reset_dwa': False,
             'offset_samples': 1500
         }
-        normalized_fc = 1 / (2 * self._registers['nfft'])
+        normalized_fc = 1 / (2 * self._reg['nfft'])
         b, a = iirfilter(filter_order, 2 * normalized_fc, \
                          btype='lowpass', output='ba', ftype='butter')
         self._n_fractional_bits = n_fractional_bits
-        self._n_integer_bits = n_integer_bits
+        self._n_fixed_point_bits = n_fixed_point_bits
         b = self._fp_quantize(b)
         a = self._fp_quantize(a)
-        self._registers['filter_numerator'] = b
-        self._registers['filter_denominator'] = a
+        self._reg['filter_numerator'] = b
+        self._reg['filter_denominator'] = a
         self._cp = np.random.normal(1, cap_mismatch_sigma, \
                                     2 ** n_quantizer_bits)
         self._cn = np.random.normal(1, cap_mismatch_sigma, \
                                     2 ** n_quantizer_bits)
         self._generate_loop_arrays()
         self._result_memory = np.zeros(max_nfft, dtype=int)
+        self._max_osr = max_osr
         self._vrefp = vdd
         self._vrefn = vss
-    
+
     def convert(self, signal_specs):
         '''
         Converts a list of dictionaries of the type below and stores them
         in memory
+        {
+            'amplitude': a_in,
+            'frequency': f_in
+            'phase': phi_in
+        }
         '''
         self._generate_control_signals()
         self._generate_input_signals(signal_specs)
-        nfft_derived = self._registers['nfft'] * self._registers['osr']
-        offset = self._registers['osr'] * self._registers['offset_samples']
+        nfft_derived = self._reg['nfft'] * self._reg['osr']
+        offset = self._reg['osr'] * self._reg['offset_samples']
         for i in range(offset + nfft_derived):
             self._calculate_integrator_to_quantizer(i)
             self._calculate_sample_to_quantizer(i)
@@ -65,35 +72,56 @@ class NSSAR:
             self._update_incremental_integrators(i)
             self._step_iir_filter(i)
         self._write_data_to_memory()
-    
+
     def write_register_value(self, key, value):
         '''
         writes a register value if the key is valid and if the value is valid
         if the key is not valid, throws an UnfoundRegisterError
         if the value is not valid, throws an IllegalRegisterValueError
         '''
-        pass
+        self._validate_register_key(key, value)
+        self._reg[key] = value
+        self._generate_loop_arrays()
 
     def read_register_value(self, key):
         '''
         if the register exists, return the value
         if the register does not exist, throw an UnfoundRegisterError
         '''
-        pass
+        self._validate_register_read_value(key)
+        return self._reg[key]
 
     def read_output_data(self):
         '''
-        Return nfft + n_offset values from device memory as a Pandas Series
+        Return nfft values from device memory as a Pandas Series
         with time-series indices
         '''
-        pass
+        return pd.Series(self._result_memory[:self._reg['nfft']], self._t) 
 
     def read_conversion_data(self):
         '''
         Return osr * (nfft + n_offset) values from the conversion as a Pandas
         DataFrame with time-series index
         '''
-        pass
+        output = pd.DataFrame()
+        output['t'] = self._t
+        output['U'] = self._u
+        output['Qin_sample'] = self._qin_sample
+        output['Qin_integ'] = self._qin_integ
+        output['v_inp'] = self._vinp
+        output['v_inn'] = self._vinn
+        output['v_intp'] = self._vintp
+        output['v_intn'] = self._vintn
+        output['E'] = self._error
+        output['I1'] = self._i1
+        output['I2'] = self._i2
+        output['V'] = self._v
+        output['D1_inc'] = self._d1_incremental
+        output['D2_inc'] = self._d2_incremental
+        output['reset'] = self._reset
+        output['sample_output'] = self._sample_output
+        output['DWA_pointer'] = self._dwa_pointer
+        output = output.set_index('t')
 
     def plot_output_fft(self, ax=None):
         '''
@@ -119,76 +147,275 @@ class NSSAR:
         on the given axis and returns a handle to the figure on which it is
         plotted
         '''
-        pass
+        plot_data = self._result_memory[:n_samples]
+        plot_time = self._t[self._sample_output]
+        plot_time = plot_time[-self._reg['nfft']:]
+        plot_time = plot_time[:n_samples]
+        if ax is None:
+            fig, ax = plt.subplots()
+            ax.set_xlabel('Sample Time [s]')
+            ax.set_ylabel('ADC Output')
+        plt.plot(plot_time, plot_data, ax=ax)
+        return fig
 
     def get_sndr(self):
         '''
         Returns the SNDR of the last conversion. If no conversion has been
         done yet, return 0
         '''
-        pass
+        return 0
 
     def get_sfdr(self):
         '''
         Returns the SFDR of the last conversion. If no conversion has been
         done yet, return 0
         '''
-        pass
-
-    class UnfoundRegisterError(Exception):
-        def __init__(self, register_name):
-            super().__init__(f'Register name \'{register_name}\' not found')
-    
-    class IllegalRegisterValueError(Exception):
-        def __init__(self, key, value):
-            super().__init__(f'Value {value} illegal for register {key}')
+        return 0
 
     def _fp_quantize(self, value):
-        pass
+        '''
+        quantizes the input value to the internal (N, R) values
+        '''
+        N = self._n_fixed_point_bits
+        R = self._n_fractional_bits
+        max_value = 2 ** (N - 1) - 1
+        min_value = -(2 ** (N - 1))
+        value = value * (2 ** R)
+        value = np.floor(value).astype(int)
+        is_over_max = value > max_value
+        is_under_min = value < min_value
+        value[is_over_max] = max_value
+        value[is_under_min] = min_value
 
     def _generate_loop_arrays(self):
-        pass
+        '''
+        generates loop arrays for IADC and DSM conversion
+        '''
+        # derived parameters
+        T = 1 / self._reg['fs']
+        n_total_samples = self._get_total_samples()
+        self._t = np.arange(n_total_samples) * T
+        self._error = np.zeros(self._t.shape)
+        self._i1 = np.zeros(self._t.shape)
+        self._i2 = np.zeros(self._t.shape)
+        self._d1_incremental = np.zeros(self._t.shape)
+        self._d2_incremental = np.zeros(self._t.shape)
+        self._qin_sample = np.zeros(self._t.shape)
+        self._qin_integ = np.zeros(self._t.shape)
+        self._dwa_pointer = np.zeros(self._t.shape, dtype=int)
+        self._v = np.zeros(self._t.shape, dtype=int)
+        self._dac_output = np.zeros(self._t.shape)
+        self._vinp = np.zeros(self._t.shape)
+        self._vinn = np.zeros(self._t.shape)
+        self._vintp = np.zeros(self._t.shape)
+        self._vintn = np.zeros(self._t.shape)
 
     def _generate_control_signals(self):
-        pass
+        '''
+        Generate reset and sample_output signals
+        '''
+        n_samples = self._get_total_samples()
+        i = np.arange(n_samples)
+        incremental_reset = (i % self._reg['osr']) & \
+            self._reg['incremental_mode']
+        global_reset = i == 0
+        self._reset = incremental_reset | global_reset
+        self._sample_output = (i % self._reg['osr']) == (self._reg['osr'] - 1)
+
 
     def _generate_input_signals(self, data):
-        pass
+        '''
+        Generates input signal U and stores as a class variable
+        '''
+        self._u = self._t * 0
+        for d in data:
+            u = d['amplitude'] * \
+                np.cos(2 * np.pi * d['frequency'] * self._t + d['phase'])
+            self._u += u
 
     def _calculate_integrator_to_quantizer(self, i):
-        pass
+        '''
+        calculate vintp and vintn to the quantizer
+        '''
+        vcm = (self._vrefp + self._vrefn) / 2
+        if self._reset[i]:
+            self._qin_integ[i] = 0
+        else:
+            self._qin_integ[i] = 2 * self._i1[i - 1] + self._i2[i - 1]
+        self._vintp[i] = vcm + self._qin_integ[i] / 2
+        self._vintn[i] = vcm - self._qin_integ[i] / 2
 
     def _calculate_sample_to_quantizer(self, i):
-        pass
+        '''
+        calculate vinp and vinn to the quantizer
+        '''
+        vcm = (self._vrefp + self._vrefn) / 2
+        self._vinp[i] = vcm + self._qin_sample[i] / 2
+        self._vinn[i] = vcm - self._qin_sample[i] / 2
 
     def _quantize(self, i):
-        pass
+        '''
+        quantizer input with DWA, if applicable
+        '''
+        not_using_dwa = (i == 0) or (not self._reg['do_dwa'])
+        reset_dwa_pointer = self._reset[i] and self._reg['do_dwa'] and \
+            self._reg['reset_dwa']
+        if (not_using_dwa or reset_dwa_pointer):
+            pointer = 0
+        else:
+            pointer = self._dwa_pointer[i - 1]
+        self._v[i], self._dac_output[i] = self._run_sar(i, pointer)
+        self._error[i] = self._dac_output[i]
 
     def _update_dwa(self, i):
-        pass
+        '''
+        Update DWA pointer by adding the last quantizer value
+        '''
+        pointer = self._dwa_pointer[i - 1]
+        pointer += self._v[i]
+        max_pointer_value = self._cp.shape[0]
+        self._dwa_pointer[i] = pointer % max_pointer_value
 
     def _update_analog_integrators(self, i):
-        pass
+        if self._reset[i]:
+            self._i1[i] = self._error[i]
+            self._i2[i] = 0
+        else:
+            self._i1[i] = self._error[i] + self._i1[i - 1]
+            self._i2[i] = self._i1[i - 1] + self._i2[i - 1]
 
     def _update_incremental_integrators(self, i):
-        pass
+        if self._reset[i]:
+            self._d1_incremental[i] = self._v[i]
+            self._d2_incremental[i] = self._d1_incremental[i]
+        else:
+            self._d1_incremental[i] = self._v[i] + self._d1_incremental[i]
+            self._d2_incremental[i] = self._d1_incremental[i] + \
+                self._d2_incremental[i]
 
     def _step_iir_filter(self, i):
         pass
 
     def _write_data_to_memory(self):
-        pass
+        adc_data = self._d2_incremental[self._sample_output]
+        self._result_memory[:self._reg['nfft']] = adc_data[-self._reg['nfft']:]
 
     def _get_fft_frequencies(self, use_quantizer_data=False):
         '''
         Return frequencies of fft as frequency, not normalized to fs. If using
         quantizer, go up to fs / 2, else only go up to fs / (2 * osr)
         '''
-        pass
+        if use_quantizer_data:
+            top_nfft_num = self._reg['osr'] * self._reg['nfft']
+        else:
+            top_nfft_num = self._reg['nfft']
+        freqs = np.arange(top_nfft_num) + 1
+        return self._reg['fs'] * freqs / top_nfft_num
 
     def _get_windowed_fft_data(self, use_quantizer_data=False):
         '''
-        Return windowed fft data as power normalized to the fundamental tone(s)
+        Return windowed fft data, using the Blackman window,
+        as power normalized to the fundamental tone(s)
         if not use_quantizer_data, use the output data
         '''
-        pass
+        if use_quantizer_data:
+            top_nfft_num = self._reg['osr'] * self._reg['nfft']
+            data = self._v[-top_nfft_num:]
+        else:
+            top_nfft_num = self._reg['nfft']
+            data = self._result_memory[:top_nfft_num]
+        fft_window = windows.blackman(top_nfft_num)
+        windowed_data = fft_window * data
+        return np.fft(windowed_data)
+
+    def _get_total_samples(self):
+        '''
+        returns the total number of samples in the conversion
+        '''
+        return self._reg['osr'] * \
+            (self._reg['nfft'] + self._reg['offset_samples'])
+    
+    def _run_sar(self, i, pointer):
+        '''
+        Actually runs SAR adc loop
+        '''
+        cp = self._cp
+        cn = self._cn
+        n_bits = int(np.log2(len(cp)))
+
+        # roll capacitor values if using DWA
+        cp = np.roll(cp, -pointer)
+        cn = np.roll(cn, -pointer)
+
+        # residue voltage for all conversions, at all points in conversion
+        vresp = np.zeros(n_bits + 1)
+        vresn = np.zeros(n_bits + 1)
+        bits = np.zeros(n_bits, dtype=int)
+
+        vcm = (self._vrefp + self._vrefn) / 2
+
+        cap_values = np.zeros(2**n_bits) + vcm
+        vresp[0] = self._vrefp - self._vinp[i]
+        vresn[0] = self._vrefp - self._vinn[i]
+        for i in range(n_bits):
+            filt = self._vintp[i] + vresn[i] >= self._vintn[i] + vresp[i]
+            bits[i] = 1 * filt
+            cap_values = self._update_cap_values(cap_values, i, filt)
+            inverted_cap_values = 1 - cap_values
+            qp = np.sum(cp * (cap_values)) + np.sum(cp) * (vresp[0] - vcm)
+            qn = np.sum(cn * (inverted_cap_values)) + np.sum(cn) * (vresn[0] - vcm)
+            vresp[i + 1] = qp / np.sum(cp)
+            vresn[i + 1] = qn / np.sum(cn)
+        bits_calc = n_bits - 1
+        positive_bits = bits_calc - np.where(bits == 1)[0]
+        return np.sum(np.pow(2, positive_bits)), vresn[n_bits] - vresp[n_bits]
+
+    def _update_cap_values(self, cap_values, i, bit):
+        '''
+        Update capacitor voltages to either 1 or 0 depending on the SAR conversion
+        '''
+        # calculate slice to update
+        n_bits = int(np.log2(cap_values.shape[0]))
+        n_update_bits = 2**(n_bits - (i + 1))
+        update_slice = np.where(cap_values == 0.5)[0]
+        if bit:
+            cap_values[update_slice[:n_update_bits]] = 1
+        else:
+            cap_values[update_slice[-(n_update_bits + 1):-1]] = 0
+        return cap_values
+
+    class UnfoundRegisterError(Exception):
+        def __init__(self, register_name):
+            super().__init__(f'Register name \'{register_name}\' not found')
+
+    class IllegalRegisterValueError(Exception):
+        def __init__(self, key, value):
+            super().__init__(f'Value {value} illegal for register {key}')
+
+    def _validate_register_write_value(self, key, value):
+        '''
+        Check that register write values are legal. If the key is not found,
+        raise a new UnfoundRegisterError. If the value is not legal, raise a
+        new IllegalRegisterValueError
+        '''
+        self._validate_register_key(key)
+        is_legal_nfft_value = (key == 'nfft') and \
+            (type(value) == type(1)) and \
+            (value <= self._result_memory.shape[0])
+        is_legal_osr_value = (key == 'osr') and (value <= self._max_osr)
+        is_legal_fs = (key == 'fs') and (type(value) == type(1))
+        is_legal_offset_samples = (key == 'offset_samples') and \
+            (type(value) == type(1)) and value <= self._get_total_samples()
+        is_legal_boolean_value = type(value) == type(True)
+        is_legal_register_value = is_legal_nfft_value or is_legal_osr_value \
+            or is_legal_fs or is_legal_offset_samples or is_legal_boolean_value
+        if not is_legal_register_value:
+            raise IllegalRegisterValueError(key, value)
+        
+    def _validate_register_key(self, key):
+        '''
+        Check that register read value is legal. If the key is not found,
+        raise a new UnfoundRegisterError.
+        '''
+        if key not in self._reg.keys():
+            raise UnfoundRegisterError(key)

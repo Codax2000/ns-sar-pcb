@@ -20,7 +20,7 @@ def adc_loop():
     # circuit/testing parameters
     quantizer_bits = 3
     sigma = 0.03
-    use_mismatch = True
+    use_mismatch = False
     fs = 10**8 # 100 MHz for now
     prime = 199
     vdd = 1
@@ -30,7 +30,7 @@ def adc_loop():
     # control registers
     osr = 16
     nfft = 2**12
-    incremental_mode = True
+    incremental_mode = False
     use_dwa = True
     reset_dwa = True
     n_offset = 10000 if not incremental_mode else 0
@@ -43,11 +43,12 @@ def adc_loop():
 
     # calculate filter coefficients
     normalized_fc = 1 / (osr)
-    b, a = iirfilter(6, normalized_fc, btype='lowpass', output='ba', ftype='butter')
+    b, a = iirfilter(10, normalized_fc, btype='lowpass', output='ba', ftype='butter')
 
     # calculate mismatched capacitor arrays if using mismatch, all 1 otherwise
     cp = get_cap_array(quantizer_bits, sigma, use_mismatch)
     cn = get_cap_array(quantizer_bits, sigma, use_mismatch)
+    pdb.set_trace()
 
     # time signal
     t = T * np.arange(n_offset + nfft_derived)
@@ -147,14 +148,21 @@ def adc_loop():
     V = V - (2 ** quantizer_bits - 1) / 2
     vfilt = lfilter(b, a, V[-nfft_derived:], axis=0)
     continuous_out = vfilt[sample_output[-nfft_derived:]]
-    plt.subplot(2, 1, 1)
+    plt.subplot(3, 1, 1)
     fft_window = windows.hann(nfft_derived)
     fft_data = fft_window * vfilt
-    plt.semilogy(np.abs(fft(fft_data)[:32768]))
-    plt.subplot(2, 1, 2)
+    plt.loglog(np.abs(fft(V[-nfft_derived:])))
+    plt.subplot(3, 1, 2)
+    fft_window = windows.blackman(nfft_derived)
+    fft_data = fft_window * vfilt[-nfft_derived:]
+    plt.loglog(np.abs(fft(fft_data)))
+    plt.subplot(3, 1, 3)
+    vfilt_out = vfilt[-nfft_derived:]
+    vfilt_out = vfilt_out[sample_output[-nfft_derived:]]
     fft_window = windows.blackman(nfft)
-    fft_data = fft_window * continuous_out
-    plt.plot(20 * np.log10(np.abs(fft(fft_data)[:(nfft//2)])))
+    fft_data = fft_window * vfilt_out
+    fft_to_plot = np.abs(fft(fft_data))
+    plt.loglog(fft_to_plot[:(nfft//2)])
 
 
 def get_cap_array(n_bits, sigma, use_mismatch):
@@ -237,7 +245,7 @@ def plot_sar_conversion():
     vres = np.zeros(vin.shape)
     dout = np.zeros(vin.shape)
     vcm = 0.5
-    caps = np.ones(16)
+    caps = np.ones(8)
     for i in range(len(vin)):
         vp = vin[i] / 2 + vcm
         vn = -vin[i] / 2 + vcm
@@ -261,7 +269,7 @@ def main():
     '''
     Main loop
     '''
-    # plot_sar_conversion()
+    plot_sar_conversion()
     adc_loop()
     plt.show()
 
