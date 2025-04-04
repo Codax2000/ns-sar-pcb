@@ -19,10 +19,10 @@ def adc_loop():
     '''
     # circuit/testing parameters
     quantizer_bits = 3
-    sigma = 0.03
+    sigma = 0.02
     use_mismatch = False
     fs = 10**8 # 100 MHz for now
-    prime = 199
+    prime = 97
     vdd = 1
     vss = 0
     vcm = (vdd - vss) / 2
@@ -30,7 +30,7 @@ def adc_loop():
     # control registers
     osr = 16
     nfft = 2**12
-    incremental_mode = False
+    incremental_mode = True
     use_dwa = True
     reset_dwa = True
     n_offset = 10000 if not incremental_mode else 0
@@ -39,7 +39,7 @@ def adc_loop():
     T = 1 / fs
     nfft_derived = nfft * osr
     fin = fs * prime / nfft_derived
-    a_in = vdd * 10 ** (-6 / 20)  # input amplitude: -1 dBFS
+    a_in = 0.4  # vdd * 10 ** (-6 / 20)
 
     # calculate filter coefficients
     normalized_fc = 1 / (osr)
@@ -163,6 +163,7 @@ def adc_loop():
     fft_data = fft_window * vfilt_out
     fft_to_plot = np.abs(fft(fft_data))
     plt.loglog(fft_to_plot[:(nfft//2)])
+    pdb.set_trace()
 
 
 def get_cap_array(n_bits, sigma, use_mismatch):

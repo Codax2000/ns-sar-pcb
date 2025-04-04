@@ -11,23 +11,24 @@ from scipy.signal import iirfilter, windows, lfilter
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pdb
 
 class NSSAR:
 
     def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.02, \
                  n_fixed_point_bits=0, n_fractional_bits=0, filter_order=6,
-                 vdd=1.2, vss=0, max_nfft=2**20, max_osr=256):
+                 vdd=1.0, vss=0, max_nfft=2**20, max_osr=256):
         '''
         set class with hardware constraints and initialize register fields
         with default functions
         '''
         self._reg = {
             'nfft': 2**12,
-            'osr': 32,
+            'osr': 16,
             'fs': 100e6,
-            'incremental_mode': False,
+            'incremental_mode': True,
             'do_dwa': True,
-            'reset_dwa': False,
+            'reset_dwa': True,
             'offset_samples': 1500
         }
         normalized_fc = 1 / (2 * self._reg['nfft'])
@@ -59,6 +60,7 @@ class NSSAR:
             'phase': phi_in
         }
         '''
+        print('Beginning DSM Loop')
         self._generate_control_signals()
         self._generate_input_signals(signal_specs)
         nfft_derived = self._reg['nfft'] * self._reg['osr']
@@ -122,6 +124,7 @@ class NSSAR:
         output['sample_output'] = self._sample_output
         output['DWA_pointer'] = self._dwa_pointer
         output = output.set_index('t')
+        return output
 
     def plot_output_fft(self, ax=None):
         '''
@@ -130,7 +133,22 @@ class NSSAR:
         and return it. If ax is not none, assume it's already set up and plot
         on that
         '''
-        pass
+        q_data = self._get_windowed_fft_data()
+        freqs = self._get_fft_frequencies()
+        fft_pow = np.real(q_data * np.conj(q_data))
+        i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
+        fft_pow /= fft_pow[i_max_pow]
+        fft_pow_db = 10 * np.log10(fft_pow)
+        if ax is None:
+            fig, ax = plt.subplots()
+            ax.set_xscale('log')
+            ax.set_xlabel('Input Frequency')
+            ax.set_ylabel('Output PSD')
+            ax.set_title('Output FFT')
+        else:
+            fig = ax.get_figure()
+        ax.plot(freqs, fft_pow_db)
+        return fig
 
     def plot_quantizer_fft(self, ax=None):
         '''
@@ -139,7 +157,24 @@ class NSSAR:
         and return it. If ax is not none, assume it's already set up and plot
         on that
         '''
-        pass
+        q_data = self._get_windowed_fft_data(True)
+        freqs = self._get_fft_frequencies(True)
+        fft_pow = np.real(q_data * np.conj(q_data))
+        i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
+        fft_pow /= fft_pow[i_max_pow]
+        fft_pow_db = 10 * np.log10(fft_pow)
+        if ax is None:
+            fig, ax = plt.subplots()
+            ax.set_xscale('log')
+            ax.set_xlabel('Input Frequency')
+            ax.set_ylabel('Quantizer PSD')
+            ax.set_title('Quantizer FFT')
+        else:
+            fig = ax.get_figure()
+        ax.plot(freqs, fft_pow_db)
+        critical_frequency = self._reg['fs'] / (2 * self._reg['osr'])
+        ax.axvline(x=critical_frequency, color='red', linestyle='--')
+        return fig
 
     def plot_output_data(self, n_samples, ax=None):
         '''
@@ -155,7 +190,9 @@ class NSSAR:
             fig, ax = plt.subplots()
             ax.set_xlabel('Sample Time [s]')
             ax.set_ylabel('ADC Output')
-        plt.plot(plot_time, plot_data, ax=ax)
+        else:
+            fig = ax.get_figure()
+        ax.plot(plot_time, plot_data)
         return fig
 
     def get_sndr(self):
@@ -215,12 +252,12 @@ class NSSAR:
         Generate reset and sample_output signals
         '''
         n_samples = self._get_total_samples()
+        osr = self._reg['osr']
         i = np.arange(n_samples)
-        incremental_reset = (i % self._reg['osr']) & \
-            self._reg['incremental_mode']
+        incremental_reset = (i % osr == 0) & self._reg['incremental_mode']
         global_reset = i == 0
         self._reset = incremental_reset | global_reset
-        self._sample_output = (i % self._reg['osr']) == (self._reg['osr'] - 1)
+        self._sample_output = (i % osr) == (osr - 1)
 
 
     def _generate_input_signals(self, data):
@@ -249,6 +286,7 @@ class NSSAR:
         '''
         calculate vinp and vinn to the quantizer
         '''
+        self._qin_sample[i] = self._u[i]
         vcm = (self._vrefp + self._vrefn) / 2
         self._vinp[i] = vcm + self._qin_sample[i] / 2
         self._vinn[i] = vcm - self._qin_sample[i] / 2
@@ -289,9 +327,9 @@ class NSSAR:
             self._d1_incremental[i] = self._v[i]
             self._d2_incremental[i] = self._d1_incremental[i]
         else:
-            self._d1_incremental[i] = self._v[i] + self._d1_incremental[i]
+            self._d1_incremental[i] = self._v[i] + self._d1_incremental[i - 1]
             self._d2_incremental[i] = self._d1_incremental[i] + \
-                self._d2_incremental[i]
+                self._d2_incremental[i - 1]
 
     def _step_iir_filter(self, i):
         pass
@@ -309,8 +347,9 @@ class NSSAR:
             top_nfft_num = self._reg['osr'] * self._reg['nfft']
         else:
             top_nfft_num = self._reg['nfft']
+        top_nfft_num = top_nfft_num // 2
         freqs = np.arange(top_nfft_num) + 1
-        return self._reg['fs'] * freqs / top_nfft_num
+        return self._reg['fs'] * freqs / (2 * top_nfft_num)
 
     def _get_windowed_fft_data(self, use_quantizer_data=False):
         '''
@@ -326,7 +365,7 @@ class NSSAR:
             data = self._result_memory[:top_nfft_num]
         fft_window = windows.blackman(top_nfft_num)
         windowed_data = fft_window * data
-        return np.fft(windowed_data)
+        return np.fft.fft(windowed_data)[1:(1 + top_nfft_num // 2)]
 
     def _get_total_samples(self):
         '''
@@ -335,7 +374,7 @@ class NSSAR:
         return self._reg['osr'] * \
             (self._reg['nfft'] + self._reg['offset_samples'])
     
-    def _run_sar(self, i, pointer):
+    def _run_sar(self, j, pointer):
         '''
         Actually runs SAR adc loop
         '''
@@ -355,10 +394,10 @@ class NSSAR:
         vcm = (self._vrefp + self._vrefn) / 2
 
         cap_values = np.zeros(2**n_bits) + vcm
-        vresp[0] = self._vrefp - self._vinp[i]
-        vresn[0] = self._vrefp - self._vinn[i]
+        vresp[0] = self._vrefp - self._vinp[j]
+        vresn[0] = self._vrefp - self._vinn[j]
         for i in range(n_bits):
-            filt = self._vintp[i] + vresn[i] >= self._vintn[i] + vresp[i]
+            filt = self._vintp[j] + vresn[i] >= self._vintn[j] + vresp[i]
             bits[i] = 1 * filt
             cap_values = self._update_cap_values(cap_values, i, filt)
             inverted_cap_values = 1 - cap_values
