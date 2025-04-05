@@ -451,7 +451,7 @@ class NSSAR:
             vresn[i + 1] = qn / np.sum(cn)
         bits_calc = n_bits - 1
         positive_bits = bits_calc - np.where(bits == 1)[0]
-        return np.sum(np.pow(2, positive_bits)), vresn[n_bits] - vresp[n_bits]
+        return np.sum(np.power(2, positive_bits)), vresn[n_bits] - vresp[n_bits]
 
     def _update_cap_values(self, cap_values, i, bit):
         '''
