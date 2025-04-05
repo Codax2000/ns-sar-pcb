@@ -43,7 +43,7 @@ def adc_loop():
 
     # calculate filter coefficients
     normalized_fc = 1 / (osr)
-    b, a = iirfilter(10, normalized_fc, btype='lowpass', output='ba', ftype='butter')
+    b, a = iirfilter(4, normalized_fc, btype='lowpass', output='ba', ftype='butter')
 
     # calculate mismatched capacitor arrays if using mismatch, all 1 otherwise
     cp = get_cap_array(quantizer_bits, sigma, use_mismatch)

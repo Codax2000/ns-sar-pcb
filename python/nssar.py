@@ -16,7 +16,7 @@ import pdb
 class NSSAR:
 
     def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.02, \
-                 n_fixed_point_bits=0, n_fractional_bits=0, filter_order=6,
+                 n_fixed_point_bits=24, n_fractional_bits=16, filter_order=4,
                  vdd=1.0, vss=0, max_nfft=2**20, max_osr=256):
         '''
         set class with hardware constraints and initialize register fields
@@ -31,11 +31,12 @@ class NSSAR:
             'reset_dwa': True,
             'offset_samples': 1500
         }
-        normalized_fc = 1 / (2 * self._reg['nfft'])
-        b, a = iirfilter(filter_order, 2 * normalized_fc, \
+        normalized_fc = 1 / self._reg['osr']
+        b, a = iirfilter(filter_order, normalized_fc, \
                          btype='lowpass', output='ba', ftype='butter')
         self._n_fractional_bits = n_fractional_bits
         self._n_fixed_point_bits = n_fixed_point_bits
+        pdb.set_trace()
         b = self._fp_quantize(b)
         a = self._fp_quantize(a)
         self._reg['filter_numerator'] = b
@@ -134,7 +135,9 @@ class NSSAR:
         on that
         '''
         q_data = self._get_windowed_fft_data()
-        freqs = self._get_fft_frequencies()
+        T = self._reg['osr'] / self._reg['fs']
+        freqs = np.fft.fftfreq(self._reg['nfft'], T)[1:1+(self._reg['nfft'] // 2)]
+        freqs[-1] *= -1
         fft_pow = np.real(q_data * np.conj(q_data))
         i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
         fft_pow /= fft_pow[i_max_pow]
@@ -147,7 +150,7 @@ class NSSAR:
             ax.set_title('Output FFT')
         else:
             fig = ax.get_figure()
-        ax.plot(freqs, fft_pow_db)
+        ax.plot(freqs[2:], fft_pow_db[2:])
         return fig
 
     def plot_quantizer_fft(self, ax=None):
@@ -158,7 +161,10 @@ class NSSAR:
         on that
         '''
         q_data = self._get_windowed_fft_data(True)
-        freqs = self._get_fft_frequencies(True)
+        T = 1 / self._reg['fs']
+        nfft_derived = self._reg['nfft'] * self._reg['osr']
+        freqs = np.fft.fftfreq(nfft_derived, T)[1:1+(nfft_derived // 2)]
+        freqs[-1] *= -1
         fft_pow = np.real(q_data * np.conj(q_data))
         i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
         fft_pow /= fft_pow[i_max_pow]
@@ -171,7 +177,7 @@ class NSSAR:
             ax.set_title('Quantizer FFT')
         else:
             fig = ax.get_figure()
-        ax.plot(freqs, fft_pow_db)
+        ax.plot(freqs[2:], fft_pow_db[2:])
         critical_frequency = self._reg['fs'] / (2 * self._reg['osr'])
         ax.axvline(x=critical_frequency, color='red', linestyle='--')
         return fig
@@ -200,14 +206,43 @@ class NSSAR:
         Returns the SNDR of the last conversion. If no conversion has been
         done yet, return 0
         '''
-        return 0
+        fft_data = self._get_windowed_fft_data()[2:]  # filter out DC data
+        fft_pow = np.real(fft_data * np.conj(fft_data))
+        i_max_power = np.argmax(fft_pow)
+        signal_slice = np.arange(i_max_power-2, i_max_power+3)
+        filt = np.zeros(fft_pow.shape[0], dtype=bool)
+        filt[signal_slice] = True
+        is_signal_indices = filt
+        signal_power = np.sum(fft_pow[is_signal_indices])
+        noise_power = np.sum(fft_pow[~is_signal_indices])
+        sndr = signal_power / noise_power
+        sndr_db = 10 * np.log10(sndr)
+        return sndr_db
 
     def get_sfdr(self):
         '''
         Returns the SFDR of the last conversion. If no conversion has been
         done yet, return 0
         '''
-        return 0
+        fft_data = self._get_windowed_fft_data()[2:]  # filter out DC data
+        fft_pow = np.real(fft_data * np.conj(fft_data))
+        i_max_power = np.argmax(fft_pow)
+        noise_slice_to_signal = np.arange(i_max_power-2)
+        noise_signal_to_fs = np.arange(i_max_power+3, fft_pow.shape[0])
+        indices = np.zeros(fft_pow.shape[0], dtype=bool)
+        is_noise_slice_low = indices
+        is_noise_slice_low[noise_slice_to_signal] = True
+        is_noise_slice_high = indices
+        is_noise_slice_low[noise_signal_to_fs] = True
+        signal_power = fft_pow[i_max_power]
+        noise_power_low = fft_pow[is_noise_slice_low]
+        noise_power_high = fft_pow[is_noise_slice_high]
+        max_pow_low = np.max(noise_power_low)
+        max_pow_high = np.max(noise_power_high)
+        noise_power = np.max((max_pow_high, max_pow_low))
+        sfdr = signal_power / noise_power
+        sfdr_db = 10 * np.log10(sfdr)
+        return sfdr_db
 
     def _fp_quantize(self, value):
         '''
@@ -223,6 +258,13 @@ class NSSAR:
         is_under_min = value < min_value
         value[is_over_max] = max_value
         value[is_under_min] = min_value
+        return value
+    
+    def _fp_add(self, a, b):
+        pass
+
+    def _fp_mult(self, a, b):
+        pass
 
     def _generate_loop_arrays(self):
         '''
@@ -332,7 +374,9 @@ class NSSAR:
                 self._d2_incremental[i - 1]
 
     def _step_iir_filter(self, i):
-        pass
+        num = self._reg['filter_numerator']
+        den = self._reg['filter_denominator']
+        pdb.set_trace()
 
     def _write_data_to_memory(self):
         adc_data = self._d2_incremental[self._sample_output]
