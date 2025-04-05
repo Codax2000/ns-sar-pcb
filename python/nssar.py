@@ -15,7 +15,7 @@ import pdb
 
 class NSSAR:
 
-    def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.02, \
+    def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.05, \
                  n_fixed_point_bits=24, n_fractional_bits=16, filter_order=4,
                  vdd=1.0, vss=0, max_nfft=2**20, max_osr=256):
         '''
@@ -36,9 +36,6 @@ class NSSAR:
                          btype='lowpass', output='ba', ftype='butter')
         self._n_fractional_bits = n_fractional_bits
         self._n_fixed_point_bits = n_fixed_point_bits
-        pdb.set_trace()
-        b = self._fp_quantize(b)
-        a = self._fp_quantize(a)
         self._reg['filter_numerator'] = b
         self._reg['filter_denominator'] = a
         self._cp = np.random.normal(1, cap_mismatch_sigma, \
@@ -82,7 +79,7 @@ class NSSAR:
         if the key is not valid, throws an UnfoundRegisterError
         if the value is not valid, throws an IllegalRegisterValueError
         '''
-        self._validate_register_key(key, value)
+        self._validate_register_write_value(key, value)
         self._reg[key] = value
         self._generate_loop_arrays()
 
@@ -376,7 +373,6 @@ class NSSAR:
     def _step_iir_filter(self, i):
         num = self._reg['filter_numerator']
         den = self._reg['filter_denominator']
-        pdb.set_trace()
 
     def _write_data_to_memory(self):
         adc_data = self._d2_incremental[self._sample_output]

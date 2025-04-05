@@ -4,7 +4,8 @@ import numpy as np
 
 
 def test_fft_plots():
-    sar = NSSAR()
+    sar = NSSAR(cap_mismatch_sigma=0.1)
+    sar.write_register_value('do_dwa', False)
     fs = 100e6
     prime = 97
     nfft = 2**12
@@ -28,8 +29,38 @@ def test_fft_plots():
     print(f'SAR SFDR: {np.round(sfdr, 2)} dB')
 
 
+def test_dwa():
+    sar = NSSAR(cap_mismatch_sigma=0.1)
+    fs = 100e6
+    prime = 97
+    nfft = 2**12
+    signal_specs = [
+        {
+            'amplitude': 0.4,
+            'frequency': fs * prime / (16 * nfft),
+            'phase': 0
+        }
+    ]
+    sar.convert(signal_specs)
+    sndr = list()
+    sfdr = list()
+    sndr.append(sar.get_sndr())
+    sfdr.append(sar.get_sfdr())
+    sar.write_register_value('reset_dwa', False)
+    sar.convert(signal_specs)
+    sndr.append(sar.get_sndr())
+    sfdr.append(sar.get_sfdr())
+    sar.write_register_value('do_dwa', False)
+    sar.convert(signal_specs)
+    sndr.append(sar.get_sndr())
+    sfdr.append(sar.get_sfdr())
+    print(sndr)
+    print(sfdr)
+
+
 def main():
     test_fft_plots()
+    test_dwa()
 
 
 if __name__ == '__main__':
