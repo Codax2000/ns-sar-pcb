@@ -7,7 +7,7 @@ using the Silva-Steensgard architecture, with an
 optional reset
 '''
 
-from scipy.signal import iirfilter, windows, lfilter
+from scipy.signal import windows
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +16,6 @@ import pdb
 class NSSAR:
 
     def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.05, \
-                 n_fixed_point_bits=24, n_fractional_bits=16, filter_order=4,
                  vdd=1.0, vss=0, max_nfft=2**20, max_osr=256):
         '''
         set class with hardware constraints and initialize register fields
@@ -24,20 +23,11 @@ class NSSAR:
         '''
         self._reg = {
             'nfft': 2**12,
-            'osr': 16,
+            'osr': 32,
             'fs': 100e6,
-            'incremental_mode': True,
             'do_dwa': True,
-            'reset_dwa': True,
-            'offset_samples': 1500
+            'reset_dwa': True
         }
-        normalized_fc = 1 / self._reg['osr']
-        b, a = iirfilter(filter_order, normalized_fc, \
-                         btype='lowpass', output='ba', ftype='butter')
-        self._n_fractional_bits = n_fractional_bits
-        self._n_fixed_point_bits = n_fixed_point_bits
-        self._reg['filter_numerator'] = b
-        self._reg['filter_denominator'] = a
         self._cp = np.random.normal(1, cap_mismatch_sigma, \
                                     2 ** n_quantizer_bits)
         self._cn = np.random.normal(1, cap_mismatch_sigma, \
@@ -62,15 +52,13 @@ class NSSAR:
         self._generate_control_signals()
         self._generate_input_signals(signal_specs)
         nfft_derived = self._reg['nfft'] * self._reg['osr']
-        offset = self._reg['osr'] * self._reg['offset_samples']
-        for i in range(offset + nfft_derived):
+        for i in range(nfft_derived):
             self._calculate_integrator_to_quantizer(i)
             self._calculate_sample_to_quantizer(i)
             self._quantize(i)
             self._update_dwa(i)
             self._update_analog_integrators(i)
             self._update_incremental_integrators(i)
-            self._step_iir_filter(i)
         self._write_data_to_memory()
 
     def write_register_value(self, key, value):
@@ -124,13 +112,14 @@ class NSSAR:
         output = output.set_index('t')
         return output
 
-    def plot_output_fft(self, ax=None):
+    def plot_output_fft(self, ax=None, color=None, label=None):
         '''
         Plot the FFT of the output and return a handle of the figure object
         on which it's plotted. If ax is none, create and set up a new figure
         and return it. If ax is not none, assume it's already set up and plot
         on that
         '''
+        color = 'k' if color is None else color
         q_data = self._get_windowed_fft_data()
         T = self._reg['osr'] / self._reg['fs']
         freqs = np.fft.fftfreq(self._reg['nfft'], T)[1:1+(self._reg['nfft'] // 2)]
@@ -141,13 +130,18 @@ class NSSAR:
         fft_pow_db = 10 * np.log10(fft_pow)
         if ax is None:
             fig, ax = plt.subplots()
-            ax.set_xscale('log')
+            # ax.set_xscale('log')
             ax.set_xlabel('Input Frequency')
             ax.set_ylabel('Output PSD')
             ax.set_title('Output FFT')
         else:
             fig = ax.get_figure()
-        ax.plot(freqs[2:], fft_pow_db[2:])
+        if label is None:
+            ax.plot(freqs[2:], fft_pow_db[2:], color, linewidth=0.5, \
+                    alpha=0.5)
+        else:
+            ax.plot(freqs[2:], fft_pow_db[2:], color, linewidth=0.5, \
+                    label=label, alpha=0.5)
         return fig
 
     def plot_quantizer_fft(self, ax=None):
@@ -269,7 +263,7 @@ class NSSAR:
         '''
         # derived parameters
         T = 1 / self._reg['fs']
-        n_total_samples = self._get_total_samples()
+        n_total_samples = self._reg['nfft'] * self._reg['osr']
         self._t = np.arange(n_total_samples) * T
         self._error = np.zeros(self._t.shape)
         self._i1 = np.zeros(self._t.shape)
@@ -290,12 +284,10 @@ class NSSAR:
         '''
         Generate reset and sample_output signals
         '''
-        n_samples = self._get_total_samples()
         osr = self._reg['osr']
+        n_samples = self._reg['nfft'] * osr
         i = np.arange(n_samples)
-        incremental_reset = (i % osr == 0) & self._reg['incremental_mode']
-        global_reset = i == 0
-        self._reset = incremental_reset | global_reset
+        self._reset = (i % osr == 0)
         self._sample_output = (i % osr) == (osr - 1)
 
 
@@ -370,10 +362,6 @@ class NSSAR:
             self._d2_incremental[i] = self._d1_incremental[i] + \
                 self._d2_incremental[i - 1]
 
-    def _step_iir_filter(self, i):
-        num = self._reg['filter_numerator']
-        den = self._reg['filter_denominator']
-
     def _write_data_to_memory(self):
         adc_data = self._d2_incremental[self._sample_output]
         self._result_memory[:self._reg['nfft']] = adc_data[-self._reg['nfft']:]
@@ -406,13 +394,6 @@ class NSSAR:
         fft_window = windows.blackman(top_nfft_num)
         windowed_data = fft_window * data
         return np.fft.fft(windowed_data)[1:(1 + top_nfft_num // 2)]
-
-    def _get_total_samples(self):
-        '''
-        returns the total number of samples in the conversion
-        '''
-        return self._reg['osr'] * \
-            (self._reg['nfft'] + self._reg['offset_samples'])
     
     def _run_sar(self, j, pointer):
         '''
@@ -483,11 +464,9 @@ class NSSAR:
             (value <= self._result_memory.shape[0])
         is_legal_osr_value = (key == 'osr') and (value <= self._max_osr)
         is_legal_fs = (key == 'fs') and (type(value) == type(1))
-        is_legal_offset_samples = (key == 'offset_samples') and \
-            (type(value) == type(1)) and value <= self._get_total_samples()
         is_legal_boolean_value = type(value) == type(True)
         is_legal_register_value = is_legal_nfft_value or is_legal_osr_value \
-            or is_legal_fs or is_legal_offset_samples or is_legal_boolean_value
+            or is_legal_fs or is_legal_boolean_value
         if not is_legal_register_value:
             raise IllegalRegisterValueError(key, value)
         

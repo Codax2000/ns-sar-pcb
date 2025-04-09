@@ -32,8 +32,8 @@ def test_fft_plots():
 def test_dwa():
     sar = NSSAR(cap_mismatch_sigma=0.1)
     fs = 100e6
-    prime = 97
-    nfft = 2**12
+    prime = 997
+    nfft = 2**15
     signal_specs = [
         {
             'amplitude': 0.4,
@@ -41,21 +41,27 @@ def test_dwa():
             'phase': 0
         }
     ]
-    sar.convert(signal_specs)
     sndr = list()
     sfdr = list()
+    sar.convert(signal_specs)
     sndr.append(sar.get_sndr())
     sfdr.append(sar.get_sfdr())
+    fig = sar.plot_output_fft(label='DWA w/Reset')
+    ax = fig.get_axes()[0]
     sar.write_register_value('reset_dwa', False)
     sar.convert(signal_specs)
     sndr.append(sar.get_sndr())
     sfdr.append(sar.get_sfdr())
+    sar.plot_output_fft(ax, color='b', label='DWA w/o Reset')
     sar.write_register_value('do_dwa', False)
     sar.convert(signal_specs)
+    sar.plot_output_fft(ax, color='r', label='No DWA')
+    ax.legend()
     sndr.append(sar.get_sndr())
     sfdr.append(sar.get_sfdr())
     print(sndr)
     print(sfdr)
+    fig.savefig('./img/dwa_compare.png')
 
 
 def main():
