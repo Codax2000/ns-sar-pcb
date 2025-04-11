@@ -1,4 +1,4 @@
-python/__pycache__/
+__pycache__/
 
 hdl_design/hdl_design.cache/
 hdl_design/hdl_design.hw/

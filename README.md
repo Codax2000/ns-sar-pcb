@@ -45,3 +45,10 @@ The analog circuitry is on the left, and the digital on the right. The digital l
 ![Block Diagram](./img/block_diagram.png)
 
 ## Python Simulation
+The Python simulation shows an SNR of over 40 dB. This is discounting mismatch
+noise, but DWA is shown to significantly reduce harmonics introduced by
+capacitor mismatch, which is significant on discrete components.
+
+![IADC Simulation](./img/dwa_compare.png)
+
+This is with a single stage IADC.
