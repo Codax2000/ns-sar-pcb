@@ -1,0 +1,3 @@
+class RefModel;
+
+endclass
