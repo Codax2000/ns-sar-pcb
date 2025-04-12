@@ -1,1 +1,3 @@
-class SinPacket
+class SinPacket extends uvm_object;
+    
+endclass

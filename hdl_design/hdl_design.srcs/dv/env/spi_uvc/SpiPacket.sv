@@ -1,1 +1,3 @@
-class SpiPacket
+class SpiPacket extends uvm_object
+
+endclass
