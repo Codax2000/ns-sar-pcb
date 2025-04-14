@@ -10,22 +10,10 @@ module analog_frontend #(
     parameter N_QUANTIZER_BITS=3
 ) (
     // sampling inputs
-    input real i_vip,
-    input real i_vin,
+    if_input signal_in,
 
     // control signals
-    input logic i_sample,
-    input logic i_en_sar,
-    input logic i_integrate_1,
-    input logic i_integrate_2,
-    input logic i_reset_integrators,
-    
-    // capacitor controls
-    input logic [2**N_QUANTIZER_BITS-1:0] i_cap_set,
-    input logic [2**N_QUANTIZER_BITS-1:0] i_cap_p_voltages,
-
-    // comparator output to FPGA
-    output logic o_compare
+    if_analog_to_fpga #(.N_QUANTIZER_BITS(N_QUANTIZER_BITS)) if_digital
 );
 
     localparam real VCM = VDD / 2;
@@ -38,14 +26,14 @@ module analog_frontend #(
     real vintp, vintn;
     real [2**N_QUANTIZER_BITS-1:0] cap_voltages_p, cap_voltages_n;
 
-    always_ff @(posedge i_sample) begin
-        vip_sample <= VDD - i_vip;
-        vin_sample <= VDD - i_vin;
+    always_ff @(posedge if_digital.sample) begin
+        vip_sample <= VDD - signal_in.vip;
+        vin_sample <= VDD - signal_in.vin;
     end
 
     assign i1p = i1p_r + vresp;
     assign i1n = i1n_r + vresn;
-    always_ff @(posedge i_integrate_1 or posedge i_reset_integrators) begin
+    always_ff @(posedge if_digital.integrate_1 or posedge i_reset_integrators) begin
         if (i_reset_integrators) begin
             i1p_r <= VCM;
             i1n_r <= VCM;
@@ -57,7 +45,7 @@ module analog_frontend #(
 
     assign i2p = i1p_r + i2p_r;
     assign i2n = i1n_r + i2n_r;
-    always_ff @(posedge i_integrate_2 or posedge i_reset_integrators) begin
+    always_ff @(posedge if_digital.integrate_2 or posedge i_reset_integrators) begin
         if (i_reset_integrators) begin
             i2p_r <= VCM;
             i2n_r <= VCM;
@@ -71,7 +59,7 @@ module analog_frontend #(
     assign vresn = sum_real_array(cap_voltages_n) / (2**N_QUANTIZER_BITS) + vin_sample;
     assign vintp = 2 * i1p_r + i2p_r;
     assign vintn = 2 * i1n_r + i2n_r;
-    assign o_compare = vintp + vresn >= vintn + vresp;
+    assign if_digital.compare = vintp + vresn >= vintn + vresp;
 
     genvar i;
     for (i = 0; i < 2**N_QUANTIZER_BITS; i++) begin : gen_capacitor_switch_mux

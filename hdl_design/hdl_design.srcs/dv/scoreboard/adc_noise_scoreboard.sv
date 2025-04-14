@@ -1,0 +1,3 @@
+class adc_noise_scoreboard extends uvm_scoreboard;
+
+endclass
