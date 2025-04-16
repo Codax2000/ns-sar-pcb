@@ -26,9 +26,10 @@ class input_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_transaction(sin_packet item);
-        // Populate item fields based on signal activity
-        item.amplitude = vif.amplitude;
-        item.frequency = vif.frequency;
+        always @(vif.amplitude, vif.frequency) begin
+            item.amplitude = vif.amplitude;
+            item.frequency = vif.frequency;
+        end
     endtask
 
 endclass

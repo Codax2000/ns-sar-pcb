@@ -5,7 +5,7 @@ Depends on N_fft from config to ensure that sampling is coherent
 
 `timescale 1ns / 1ns
 
-class sin_packet extends uvm_sequency_item;
+class sin_packet extends uvm_sequence_item;
 
     `uvm_object_utils(sin_packet)
     
@@ -27,10 +27,6 @@ class sin_packet extends uvm_sequency_item;
     function void post_randomize();
         amplitude = amplitude_numerator / amplitude_denominator;
         frequency = primes[prime_index] / nfft;  // equivalent to fin / fs
-    endfunction
-
-    function real get_amplitude(real phase);
-        return amplitude * $cos(phase * 2 * 3.14159);  // phase in radians
     endfunction
 
 endclass

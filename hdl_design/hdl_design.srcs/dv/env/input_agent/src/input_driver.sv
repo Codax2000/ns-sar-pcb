@@ -29,11 +29,8 @@ class input_driver extends uvm_driver #(sin_packet);
     endtask
 
     virtual task drive_signals(sin_packet req);
-        // phase = req.frequency * 1e-9; // assume delay of 1 ns
-        // ain = req.get_amplitude(phase);
-        // vif.vip = ain;
-        // vif.vin = -ain;
-        // TODO: Implement some kind of static driver module for this part
+        vif.amplitude = req.amplitude;
+        vif.frequency = req.frequency;
     endtask
 
 endclass
