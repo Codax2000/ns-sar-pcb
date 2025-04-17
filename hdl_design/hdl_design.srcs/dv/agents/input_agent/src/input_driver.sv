@@ -1,11 +1,12 @@
 `timescale 1ns / 1ns
 
 import uvm_pkg::*;
-`include uvm_macros.svh
 
 class input_driver extends uvm_driver #(sin_packet);
 
     `uvm_component_utils(input_driver)
+
+    sin_packet req;
 
     virtual input_interface vif;
     int interface_drive_delay_in_ns;
@@ -24,7 +25,6 @@ class input_driver extends uvm_driver #(sin_packet);
 
     virtual task run_phase(uvm_phase phase);
         forever begin
-            sin_packet req;
             seq_item_port.get_next_item(req);
             drive_signals(req);
             seq_item_port.item_done();

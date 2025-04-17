@@ -1,5 +1,4 @@
 import uvm_pkg::*;
-`include uvm_macros.svh
 
 class const_packet extends sin_packet;
 

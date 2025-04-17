@@ -1,5 +1,5 @@
 import uvm_pkg::*;
-`include uvm_macros.svh
+`include "uvm_macros.svh"
 
 class input_monitor extends uvm_monitor;
     `uvm_component_utils(input_monitor)
@@ -21,7 +21,7 @@ class input_monitor extends uvm_monitor;
     endfunction
 
     virtual task run_phase(uvm_phase phase);
-        always @(vif.amplitude, vif.frequency) begin
+        forever begin
             sin_packet item = new();
             collect_transaction(item);
             mon_analysis_port.write(item);
@@ -29,10 +29,9 @@ class input_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_transaction(sin_packet item);
-        always @(vif.amplitude, vif.frequency) begin
-            item.amplitude = vif.amplitude;
-            item.frequency = vif.frequency;
-        end
+        @(vif.amplitude or vif.frequency);
+        item.amplitude = vif.amplitude;
+        item.frequency = vif.frequency;
     endtask
 
 endclass
