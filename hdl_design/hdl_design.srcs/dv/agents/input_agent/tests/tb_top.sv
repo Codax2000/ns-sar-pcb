@@ -1,7 +1,7 @@
 import uvm_pkg::*;
 import input_agent_pkg::*;
 
-module tb_sine_wave ();
+module tb_top ();
 
     if_input iut; // interface under test
 

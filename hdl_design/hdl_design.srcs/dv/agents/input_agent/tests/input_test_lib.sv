@@ -1,5 +1,6 @@
 import uvm_pkg::*;
 import input_agent_pkg::*;
+`include uvm_macros.svh
 
 class base_test extends uvm_test;
 

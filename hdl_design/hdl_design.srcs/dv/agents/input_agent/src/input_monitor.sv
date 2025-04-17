@@ -1,4 +1,5 @@
 import uvm_pkg::*;
+`include uvm_macros.svh
 
 class input_monitor extends uvm_monitor;
     `uvm_component_utils(input_monitor)

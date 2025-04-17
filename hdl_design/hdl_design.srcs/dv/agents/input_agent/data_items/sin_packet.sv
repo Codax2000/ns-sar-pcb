@@ -1,6 +1,7 @@
 `timescale 1ns / 1ns
 
 import uvm_pkg::*;
+`include uvm_macros.svh
 
 class sin_packet extends uvm_sequence_item;
 
