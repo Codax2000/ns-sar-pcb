@@ -1,3 +1,5 @@
+import uvm_pkg::*;
+
 class input_monitor extends uvm_monitor;
     `uvm_component_utils(input_monitor)
 
@@ -12,7 +14,7 @@ class input_monitor extends uvm_monitor;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db#(virtual input_interface)::get(this, "", "vif", vif)) begin
+        if (!uvm_config_db#(virtual input_interface)::get(this, "", "vif_input", vif)) begin
             `uvm_fatal("MON", "Virtual interface not found!")
         end
     endfunction

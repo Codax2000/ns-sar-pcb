@@ -1,11 +1,14 @@
-class drive_sine_wave extends uvm_sequence #(sin_packet);
+import uvm_pkg::*;
+
+class drive_random_values extends uvm_sequence #(sin_packet);
     `uvm_object_utils(drive_sine_wave)
 
     int n_samples;
 
-    function new(string name = "drive_sine_wave", int nfft);
+    function new(string name = "drive_random_values");
         super.new(name);
-        n_samples = nfft;
+        if (!uvm_config_db#(int)::get(this, "", "nfft", n_samples))
+            `uvm_fatal("CONFIG", "NFFT not found", UVM_LOW)
     endfunction
 
     virtual task body();
@@ -17,9 +20,9 @@ class drive_sine_wave extends uvm_sequence #(sin_packet);
             start_item(item);
             assert (item.randomize());
             finish_item(item);
+            `uvm_info("SEQ", "Sine wave frequency and amplitude changed", UVM_LOW)
         end
 
-        `uvm_info("SEQ", "Sine wave frequency and amplitude changed", UVM_LOW)
 
     endtask
 

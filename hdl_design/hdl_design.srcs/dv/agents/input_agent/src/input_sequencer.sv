@@ -1,3 +1,5 @@
+import uvm_pkg::*;
+
 class input_sequencer extends uvm_sequencer;
 
     `uvm_component_utils(input_sequencer)

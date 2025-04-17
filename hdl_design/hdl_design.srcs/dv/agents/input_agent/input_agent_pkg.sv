@@ -1,5 +1,6 @@
 package input_agent_pkg;
     import uvm_pkg::*;
+    `include "input_agent.sv"
     `include "input_driver.sv"
     `include "input_monitor.sv"
     `include "input_sequencer.sv"
