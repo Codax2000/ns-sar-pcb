@@ -22,7 +22,7 @@ class input_agent extends uvm_agent;
 
     function void connect_phase(uvm_phase phas);
         if (get_is_active())
-            input_driver.seq_item_port.connect(sequencer.seq_item_export);
+            driver.seq_item_port.connect(sequencer.seq_item_export);
     endfunction
 
 endclass

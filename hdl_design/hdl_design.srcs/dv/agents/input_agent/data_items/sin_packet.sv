@@ -1,6 +1,7 @@
 `timescale 1ns / 1ns
 
 import uvm_pkg::*;
+`include "uvm_macros.svh"
 
 class sin_packet extends uvm_sequence_item;
 
@@ -13,48 +14,47 @@ class sin_packet extends uvm_sequence_item;
     int amplitude_denominator;
     real amplitude;
     real frequency;
+    int driver_delay_ns;
 
-    constraint amplitude_lte_1 { amplitude_numerator <= amplitude_denominator; }
-    constraint index_is_valid { prime inside primes; }
+    constraint amplitude_lte_1 { amplitude_numerator < amplitude_denominator; }
+    constraint index_is_valid { prime inside {primes} ; }
 
     function new(string name = "sin_packet");
         super.new(name);
-        if (!uvm_config_db #(int)::get(this, "", "nfft", nfft))
-            `uvm_fatal("CONFIG", "NFFT not found", UVM_LOW)
-        primes = prime_numbers_under(nfft);
-        amplitude_denominator = primes[$];
+        gen_prime_numbers_under(nfft);
+        amplitude_denominator = primes[primes.size() - 1];
+    endfunction
+    
+    function set_nfft(int n_fft);
+        nfft = n_fft;
     endfunction
 
     function void post_randomize();
         amplitude = amplitude_numerator / amplitude_denominator;
         frequency = prime / nfft;  // equivalent to fin / fs
-        int driver_delay_ns = 2 * $rtoi(1 / frequency);
-        if (!uvm_config_db #(int)::set(this, "", "driver_delay_ns", nfft))
-            `uvm_warning("SIN_PKT", "Drive delay not updated", UVM_LOW)
+        driver_delay_ns = int'(2 * $rtoi(1 / frequency));
     endfunction
 
     function int prime_numbers_under(int top_val);
-        int primes[];
+        int i;
+        
+        if (top_val > 1) begin
 
-        if (top_val <= 1) begin
-            return primes;
-        end
-
-        foreach (int i in [2:top_val-1]) begin
-            bit is_prime = 1;
-
-            for (int j = 2; j * j <= i; j++) begin
-                if (i % j == 0) begin
-                    is_prime = 0;
-                    j = i; // Not prime, kill the loop
+            for (i = 2; i < top_val; i++) begin
+                bit is_prime = 1;
+    
+                for (int j = 2; j * j <= i; j++) begin
+                    if (i % j == 0) begin
+                        is_prime = 0;
+                        j = i; // Not prime, kill the loop
+                    end
+                end
+    
+                if (is_prime) begin
+                    primes = new [primes.size() + 1] (primes);
                 end
             end
-
-            if (is_prime) begin
-                primes.push_back(i);
-            end
         end
-        return primes;
     endfunction
 
 endclass

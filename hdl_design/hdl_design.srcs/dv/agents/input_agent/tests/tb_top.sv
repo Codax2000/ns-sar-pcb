@@ -1,8 +1,9 @@
-import uvm_pkg::*;
-import input_agent_pkg::*;
-`include "uvm_macros.svh"
-
 module tb_top ();
+
+    import uvm_pkg::*;
+    `include "uvm_macros.svh"
+    import input_agent_pkg::*;
+    `include "input_test_lib.sv"
 
     if_input iut; // interface under test
 

@@ -1,5 +1,3 @@
-import uvm_pkg::*;
-
 class drive_sine_wave extends uvm_sequence #(sin_packet);
     `uvm_object_utils(drive_sine_wave)
 

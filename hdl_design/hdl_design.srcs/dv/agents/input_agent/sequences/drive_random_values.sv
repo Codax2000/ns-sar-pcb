@@ -1,14 +1,12 @@
-import uvm_pkg::*;
-
 class drive_random_values extends uvm_sequence #(sin_packet);
-    `uvm_object_utils(drive_sine_wave)
+    `uvm_object_utils(drive_random_values)
 
     int n_samples;
 
     function new(string name = "drive_random_values");
         super.new(name);
         if (!uvm_config_db#(int)::get(this, "", "nfft", n_samples))
-            `uvm_fatal("CONFIG", "NFFT not found", UVM_LOW)
+            `uvm_fatal("CONFIG", "NFFT not found")
     endfunction
 
     virtual task body();
@@ -17,6 +15,7 @@ class drive_random_values extends uvm_sequence #(sin_packet);
 
         repeat (n_samples) begin
             item = sin_packet::type_id::create("item");
+            sin_packet.set_nfft(n_samples);
             start_item(item);
             assert (item.randomize());
             finish_item(item);

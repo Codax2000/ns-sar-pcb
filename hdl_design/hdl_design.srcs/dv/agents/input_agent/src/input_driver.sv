@@ -1,7 +1,5 @@
 `timescale 1ns / 1ns
 
-import uvm_pkg::*;
-
 class input_driver extends uvm_driver #(sin_packet);
 
     `uvm_component_utils(input_driver)

@@ -1,6 +1,3 @@
-import uvm_pkg::*;
-import input_agent_pkg::*;
-
 class base_test extends uvm_test;
 
     `uvm_component_utils (base_test)
@@ -15,10 +12,8 @@ class base_test extends uvm_test;
         super.build_phase(phase);
         agent = input_agent::type_id::create("agent", this);
         agent.is_active = UVM_ACTIVE;
-        if (!uvm_config_db#(int)::set(this, "", "nfft", 512))
-            `uvm_error("CONFIG", "NFFT not set", UVM_LOW)
-        if (!uvm_config_db#(int)::set(this, "", "driver_delay_ns", 512))
-            `uvm_error("CONFIG", "NFFT not set", UVM_LOW)
+        uvm_config_db#(int)::set(this, "", "nfft", 512);
+        uvm_config_db#(int)::set(this, "", "driver_delay_ns", 512);
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
