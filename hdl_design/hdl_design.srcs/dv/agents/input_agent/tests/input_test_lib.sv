@@ -7,13 +7,14 @@ class base_test extends uvm_test;
     endfunction
 
     input_agent agent;
+    drive_sine_wave seq;
 
     virtual function void build_phase (uvm_phase phase);
         super.build_phase(phase);
+        uvm_config_db#(uvm_active_passive_enum)::set(this, "agent", "is_active", UVM_ACTIVE);
+        uvm_config_db#(int)::set(null, "", "nfft", 512);
+        uvm_config_db#(int)::set(null, "", "driver_delay_ns", 512);
         agent = input_agent::type_id::create("agent", this);
-        agent.is_active = UVM_ACTIVE;
-        uvm_config_db#(int)::set(this, "", "nfft", 512);
-        uvm_config_db#(int)::set(this, "", "driver_delay_ns", 512);
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
@@ -22,7 +23,7 @@ class base_test extends uvm_test;
 
     virtual task run_phase(uvm_phase phase);
         phase.raise_objection(this);
-        drive_sin_wave seq = drive_sine_wave::type_id::create("seq");
+        seq = drive_sine_wave::type_id::create("seq");
         seq.start(agent.sequencer);
         phase.drop_objection(this);
     endtask
@@ -31,9 +32,11 @@ endclass
 
 class random_value_test extends base_test;
 
+    drive_random_values seq;
+
     virtual task run_phase(uvm_phase phase);
         phase.raise_objection(this);
-        drive_random_values seq = drive_random_values::type_id::create("seq");
+        seq = drive_random_values::type_id::create("seq");
         seq.start(agent.sequencer);
         phase.drop_objection(this);
     endtask

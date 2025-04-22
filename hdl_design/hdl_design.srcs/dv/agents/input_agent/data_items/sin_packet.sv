@@ -21,7 +21,7 @@ class sin_packet extends uvm_sequence_item;
 
     function new(string name = "sin_packet");
         super.new(name);
-        gen_prime_numbers_under(nfft);
+        prime_numbers_under(nfft);
         amplitude_denominator = primes[primes.size() - 1];
     endfunction
     
@@ -35,7 +35,7 @@ class sin_packet extends uvm_sequence_item;
         driver_delay_ns = int'(2 * $rtoi(1 / frequency));
     endfunction
 
-    function int prime_numbers_under(int top_val);
+    function void prime_numbers_under(int top_val);
         int i;
         
         if (top_val > 1) begin

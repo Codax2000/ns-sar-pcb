@@ -20,10 +20,9 @@ interface if_input ();
 
     always begin
         #delta_t;
-        if (frequency !== 0) begin
-            delta_phi = frequency * delta_t * 1e-9; // convert to ns
-            phase += delta_phi;
-        end else
+        if (frequency != 0)
+            phase += frequency * delta_t * 1e-9;
+        else
             phase = 0;
 
     end
