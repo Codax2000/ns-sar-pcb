@@ -14,8 +14,6 @@ class input_driver extends uvm_driver #(sin_packet);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        `uvm_info("HIER", $sformatf("Full Path: %s", get_full_name()), UVM_MEDIUM)
-        this.print_config();
         if (!uvm_config_db#(int)::get(this, "", "driver_delay_ns", interface_drive_delay_in_ns))
             `uvm_fatal("DRV", "Unclear how long to wait in between driving signals")
         if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif)) begin
