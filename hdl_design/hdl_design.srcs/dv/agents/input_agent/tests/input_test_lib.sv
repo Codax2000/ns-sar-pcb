@@ -24,6 +24,7 @@ class base_test extends uvm_test;
     virtual task run_phase(uvm_phase phase);
         phase.raise_objection(this);
         seq = drive_sine_wave::type_id::create("seq");
+        // seq.set_nfft(512);
         seq.start(agent.sequencer);
         phase.drop_objection(this);
     endtask
