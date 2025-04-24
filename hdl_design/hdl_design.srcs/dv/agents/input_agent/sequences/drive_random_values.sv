@@ -10,11 +10,11 @@ class drive_random_values extends uvm_sequence #(sin_packet);
     endfunction
 
     virtual task body();
-        sin_packet item;
+        const_packet item;
         `uvm_info("SEQ", "Driving random values", UVM_LOW)
 
         repeat (n_samples) begin
-            item = sin_packet::type_id::create("item");
+            item = const_packet::type_id::create("item");
             item.set_nfft(n_samples);
             start_item(item);
             assert (item.randomize());

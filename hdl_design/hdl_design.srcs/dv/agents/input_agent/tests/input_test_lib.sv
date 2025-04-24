@@ -24,7 +24,7 @@ class base_test extends uvm_test;
     virtual task run_phase(uvm_phase phase);
         phase.raise_objection(this);
         seq = drive_sine_wave::type_id::create("seq");
-        // seq.set_nfft(512);
+        `uvm_info("TEST", "Sequence initialized", UVM_LOW)
         seq.start(agent.sequencer);
         phase.drop_objection(this);
     endtask
@@ -32,6 +32,12 @@ class base_test extends uvm_test;
 endclass
 
 class random_value_test extends base_test;
+
+    `uvm_component_utils (random_value_test)
+
+    function new(string name = "random_value_test", uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
 
     drive_random_values seq;
 

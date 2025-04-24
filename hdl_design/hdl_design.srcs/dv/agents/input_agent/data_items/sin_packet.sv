@@ -16,8 +16,8 @@ class sin_packet extends uvm_sequence_item;
     real fs;
 
     constraint amplitude_lte_1 { 
-        amplitude_numerator < amplitude_denominator; 
-        amplitude_numerator > -amplitude_denominator;
+        amplitude_numerator <= amplitude_denominator; 
+        amplitude_numerator > 0;
     }
     constraint index_is_valid {
         prime inside {primes} ; 
@@ -36,8 +36,9 @@ class sin_packet extends uvm_sequence_item;
 
     function new(string name = "sin_packet");
         super.new(name);
-        set_nfft(16);
+        set_nfft(32);
         set_fs(100e6);
+        `uvm_info("PKT", "Packet creation successful", UVM_LOW)
     endfunction
     
     function void set_nfft(int n_fft);

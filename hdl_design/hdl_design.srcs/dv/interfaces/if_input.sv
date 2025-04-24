@@ -1,5 +1,3 @@
-`timescale 1ns/1ns
-
 interface if_input ();
 
     real vip;
@@ -7,10 +5,10 @@ interface if_input ();
     real phase;
     real frequency;
     real amplitude;
-    int delta_t = 1; // 1 ns sample rate
+    int delta_t = 1ns; // 1 ns sample rate
     localparam PI = 3.14159;
 
-    modport hardware_port (input vip, vin);
+    // modport hardware_port (input vip, vin);
 
     always begin
         vip <= $cos(phase * 2 * PI) * amplitude;

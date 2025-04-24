@@ -6,7 +6,7 @@ module tb_top ();
 
     initial begin
         uvm_config_db #(virtual if_input)::set(null, "uvm_test_top.agent.*", "vif", iut);
-        run_test("base_test");
+        run_test("random_value_test");
     end
 
     int fd;
