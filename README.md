@@ -101,5 +101,17 @@ capacitor mismatch, which is significant on discrete components.
 
 This is with a single stage IADC.
 
-## UVM Verification Environment
-The 
+## Verification Environment
+The UVM environment consists of 2 UVCs connected to the ADC and a SystemVerilog
+real-number model of the analog frontend, that should behave very closely to the actual circuit.
+The UVCs are for driving a differential sine wave and for connecting with the circuit via SPI.
+
+### UVM Testcases
+| Testcase Name | Purpose | Procedure |
+| :--- | :--- | :--- |
+| `test_reg_access` | Test that registers write and read correctly | Write a register, then read it back. The values should match |
+| `test_random_values` | Test that individual values are converted correctly | Generate `NFFT` random values and convert them, check that they match without necessarily showing a sine wave |
+| `test_dwa_snr` | Test that DWA and converter are working | Generate a sine wave on the input. Turn DWA off and convert, then turn DWA on and convert again. Assert that SNR and SNDR are close to expected values and compare correctly. |
+
+### Analog Simulation
+It will be necessary to show that the analog frontend matches the SV-RNM model. This will be the focus of the analog design and simulation.
