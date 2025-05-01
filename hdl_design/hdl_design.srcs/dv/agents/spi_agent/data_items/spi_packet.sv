@@ -5,7 +5,7 @@ class spi_packet extends uvm_object
     rand bit [3:0] mosi_data;
 
     bit  [3:0] reg_response;
-    bit [15:0] mem_response [$]; // data queue
+    bit  [15:0] mem_response [$]; // data queue
 
     constraint reg_is_legal { reg_index <= 2; reg_index >= 0; }
     constraint mosi_data_legal { 

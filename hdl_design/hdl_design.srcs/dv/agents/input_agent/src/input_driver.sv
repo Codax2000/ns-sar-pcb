@@ -17,7 +17,7 @@ class input_driver extends uvm_driver #(sin_packet);
         if (!uvm_config_db#(int)::get(this, "", "driver_delay_ns", interface_drive_delay_in_ns))
             `uvm_fatal("DRV", "Unclear how long to wait in between driving signals")
         if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif)) begin
-            `uvm_fatal("DRV", "No interface found!")
+            `uvm_fatal("DRV", "No interface found for the input driver")
         end
     endfunction
 
@@ -30,8 +30,6 @@ class input_driver extends uvm_driver #(sin_packet);
     endtask
 
     virtual task drive_signals(sin_packet req);
-        if (!uvm_config_db#(int)::get(this, "", "driver_delay_ns", interface_drive_delay_in_ns))
-            `uvm_error("DRV", "Drive delay changed to unresolved value")
         vif.amplitude = req.amplitude;
         vif.frequency = req.frequency;
         #interface_drive_delay_in_ns;
