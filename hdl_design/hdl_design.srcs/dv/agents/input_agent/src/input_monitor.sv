@@ -4,8 +4,6 @@ class input_monitor extends uvm_monitor;
     virtual if_input vif;
     uvm_analysis_port #(sin_packet) mon_analysis_port;
 
-    // data collection variables
-
     function new(string name, uvm_component parent);
         super.new(name, parent);
         mon_analysis_port = new("mon_analysis_port", this);
@@ -13,7 +11,7 @@ class input_monitor extends uvm_monitor;
 
     virtual function void build_phase(uvm_phase phase);
         if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif)) begin
-            `uvm_fatal("MON", "Virtual interface not found!")
+            `uvm_fatal("MON", "Virtual interface not found for input monitor")
         end
     endfunction
 
