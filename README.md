@@ -44,6 +44,54 @@ The analog circuitry is on the left, and the digital on the right. The digital l
 
 ![Block Diagram](./img/block_diagram.png)
 
+### Registers
+There are 3 4-bit registers on the device that can be read and written via SPI:
+| Register Address | Bit Breakdown | Meaning |
+| :--- | :--- | :--- |
+| 0x00 | NFFT Power (4-bit unsigned) | Power of 2 corresponding to NFFT, default 12, so number of samples would be 2 ^ 12 |
+| 0x01 | 3-bit OSR, 1-bit DWA Enable | Power of 2 corresponding to OSR, default 3, so oversample ratio would be 2 ^ 3, or 8 |
+| 0x02 | Sample Clock Divider (4-bit unsigned)  | Sample clock divider, used for testing max conversion speed |
+
+### SPI Interface
+There are 4 possible commands via SPI, each consisting of 1 byte from the master to slave, followed by
+1 or more half-byte responses. They are as follows.
+
+| Command | Bits [7:6] | Bits[5:4] | Bits[3:0] | Response
+| :--- | --- | --- | --- | :--- |
+| Write Register | 01 | 2'{reg_index} | Register Value | 4-bit Register Value |
+| Read Register | 00 | 2'{reg_index} | N/A | 4-bit Register Value |
+| Mem Read | 10 | N/A | N/A | MSB-first memory data in 4-bit packets |
+| Begin Sample | 11 | N/A | N/A | 4'1010 |
+
+Each sample of a memory read value will be 4-values, with each data word being 2
+unsigned bytes long, or 4 data packets. While chip select is low, the SPI module
+will send 2 ^ NFFT 2-byte words with MSB-first, and will not wait for an ACK from the MISO.
+
+CPOL and CPHA are both 0, e.g., SPI mode is 0.
+
+#### Example Register Write
+Write register 2 with value 0110, so set sample clock to (global clock frequency / 6)
+
+Packet Data: 8-bit `01_10_0110`
+Response: `0110`
+
+#### Example Register Read
+Read register 0 data, receiving a 12, meaning ADC will take 2 ^ 12 samples
+
+Packet Data: `00_00_0000`
+Response: `1100`
+
+#### Example Memory Read
+Read Data Memory, receiving NFFT 16-bit values
+
+Packet Data: `10_00_0000`
+Response:
+`0110_1001_0101_1001`
+`0010_0010_0111_1101`
+...
+`1010_0001_1111_0010`
+
+
 ## Python Simulation
 The Python simulation shows an SNR of over 40 dB. This is discounting mismatch
 noise, but DWA is shown to significantly reduce harmonics introduced by
@@ -52,3 +100,18 @@ capacitor mismatch, which is significant on discrete components.
 ![IADC Simulation](./img/dwa_compare.png)
 
 This is with a single stage IADC.
+
+## Verification Environment
+The UVM environment consists of 2 UVCs connected to the ADC and a SystemVerilog
+real-number model of the analog frontend, that should behave very closely to the actual circuit.
+The UVCs are for driving a differential sine wave and for connecting with the circuit via SPI.
+
+### UVM Testcases
+| Testcase Name | Purpose | Procedure |
+| :--- | :--- | :--- |
+| `test_reg_access` | Test that registers write and read correctly | Write a register, then read it back. The values should match |
+| `test_random_values` | Test that individual values are converted correctly | Generate `NFFT` random values and convert them, check that they match without necessarily showing a sine wave |
+| `test_dwa_snr` | Test that DWA and converter are working | Generate a sine wave on the input. Turn DWA off and convert, then turn DWA on and convert again. Assert that SNR and SNDR are close to expected values and compare correctly. |
+
+### Analog Simulation
+It will be necessary to show that the analog frontend matches the SV-RNM model. This will be the focus of the analog design and simulation.

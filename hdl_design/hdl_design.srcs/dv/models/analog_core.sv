@@ -10,7 +10,7 @@ module analog_frontend #(
     parameter N_QUANTIZER_BITS=3
 ) (
     // sampling inputs
-    if_input signal_in,
+    if_input.hardware_port signal_in,
 
     // control signals
     if_analog_to_fpga #(.N_QUANTIZER_BITS(N_QUANTIZER_BITS)) if_digital

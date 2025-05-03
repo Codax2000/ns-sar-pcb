@@ -1,4 +1,4 @@
-module top_level #(
+module digcore #(
     parameter N_SAR_BITS=3
 ) (
     input logic i_sar_compare,
