@@ -32,7 +32,7 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     // drive with 5 MHz clock, which is 200ns
     virtual task drive_signals(spi_packet req);
-        bit [7:0] mosi = {req.command, req.reg_index, mosi_data};
+        bit [7:0] mosi = {req.command, req.reg_index, req.mosi_data};
 
         #25;
         vif.csb = 1'b0;
@@ -49,14 +49,14 @@ class spi_driver extends uvm_driver #(spi_packet);
         if (req.command == 2'b10) begin : receive_mem
             for (int i = 0; i < nfft; i++) begin
                 bit [15:0] reg_temp;
-                for (int j = 15: j >= 0; j--) begin
+                for (int j = 15; j >= 0; j--) begin
                     #100;
                     vif.scl = 1'b1;
                     reg_temp[i] = vif.miso;
                     #100;
                     vif.scl = 1'b0;
                 end
-                req.mem_response.push_back(reg_temp)
+                req.mem_response.push_back(reg_temp);
             end
         end else begin
             for (int i = 3; i >= 0; i--) begin
