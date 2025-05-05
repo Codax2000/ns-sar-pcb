@@ -1,4 +1,4 @@
-interface reg_interface;
+interface reg_interface(input logic clk);
 
     logic [3:0] nfft_power;
     logic do_dwa;

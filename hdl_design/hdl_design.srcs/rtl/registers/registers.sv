@@ -1,5 +1,4 @@
 module registers (
-    input logic i_clk,
     input logic i_arst_b,
 
     reg_interface if_reg
@@ -10,7 +9,7 @@ module registers (
     logic [7:0 ] osr;
     logic [3:0] sampclk_div;
 
-    always_ff @(posedge i_clk or negedge i_arst_b) begin
+    always_ff @(posedge if_reg.clk or negedge i_arst_b) begin
         if (!i_arst_b) begin
             nfft <= 256;
             osr <= 8;
