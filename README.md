@@ -46,11 +46,12 @@ The analog circuitry is on the left, and the digital on the right. The digital l
 
 ### Registers
 There are 3 4-bit registers on the device that can be read and written via SPI:
-| Register Address | Bit Breakdown | Meaning |
-| :--- | :--- | :--- |
-| 0x00 | NFFT Power (4-bit unsigned) | Power of 2 corresponding to NFFT, default 12, so number of samples would be 2 ^ 12 |
-| 0x01 | 3-bit OSR, 1-bit DWA Enable | Power of 2 corresponding to OSR, default 3, so oversample ratio would be 2 ^ 3, or 8 |
-| 0x02 | Sample Clock Divider (4-bit unsigned)  | Sample clock divider, used for testing max conversion speed |
+| Register Address | Bit Breakdown | Meaning | Reset Value |
+| :--- | :--- | :--- | :--- |
+| 0x00 | NFFT Power (4-bit unsigned) | Power of 2 corresponding to NFFT, default 12, so number of samples would be 2 ^ 12 | 8 |
+| 0x01 | 3-bit OSR, 1-bit DWA Enable | Power of 2 corresponding to OSR, default 3, so oversample ratio would be 2 ^ 3, or 8 | 2, 0 |
+| 0x02 | Sample Clock Divider (4-bit unsigned)  | Sample clock divider, used for testing max conversion speed | 0 |
+| 0x03 | 1-bit Begin Sample, 1-bit Read Memory, 2-bit FSM Status | Status registers using RW1C or RO access | 0, 0, 00 |
 
 ### SPI Interface
 There are 4 possible commands via SPI, each consisting of 1 byte from the master to slave, followed by
