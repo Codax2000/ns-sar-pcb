@@ -7,6 +7,8 @@ class clkgen_agent extends uvm_agent;
     clkgen_monitor monitor;
     clkgen_sequencer sequencer;
 
+    virtual if_clkgen vif;
+
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -21,6 +23,10 @@ class clkgen_agent extends uvm_agent;
     endfunction
 
     function void connect_phase(uvm_phase phase);
+        if (!uvm_config_db #(virtual if_clkgen)::get(this, "", "vif", vif))
+            `uvm_fatal("CLKGEN_AGENT", "Could not find virtual interface");
+        uvm_config_db #(virtual if_clkgen)::set(this, "driver", "vif", vif);
+        uvm_config_db #(virtual if_clkgen)::set(this, "monitor", "vif", vif);
         if (get_is_active())
             driver.seq_item_port.connect(sequencer.seq_item_export);
     endfunction
