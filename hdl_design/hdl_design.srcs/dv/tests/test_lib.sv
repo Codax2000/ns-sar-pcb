@@ -1,19 +1,29 @@
 class base_test extends uvm_test;
 
+    // have to connect interfaces here too
+
+    virtual task reset_phase;
+        // run clock and reset through CLKGEN agent
+        // wait for FSM to be reset to the correct ready state
+    endtask
+
+    virtual task configure_phase;
+        // set registers using SPI
+    endtask
+
 endclass
 
-class test_register_read_write;
+class test_register_read_write extends base_test;
 
     // during run phase, write a random register
 
     // read it back
 
-    // should see the same value if the register is writeable,
-    // ref model should pull from toplevel config object
+    // should match up with RAL model
 
 endclass
 
-class test_random_conversion;
+class test_random_conversion extends base_test;
 
     // drive a bunch of random values onto the input and convert nfft
     // different values (nfft should be a random number written to the nfft
@@ -21,7 +31,7 @@ class test_random_conversion;
 
 endclass
 
-class test_dwa;
+class test_dwa extends base_test;
 
     // during build phase, override scoreboard to use a noise-based model instead
     // of a register-based one

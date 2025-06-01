@@ -1,11 +1,9 @@
 module board_top (
     if_input.hardware_port vin,
 
-    input i_clk,
-    input i_arst_b,
+    if_clkgen clkgen,
 
-    // SPI signals
-    spi_input spi
+    if_spi spi
 );
 
     localparam real VDD=3.3,

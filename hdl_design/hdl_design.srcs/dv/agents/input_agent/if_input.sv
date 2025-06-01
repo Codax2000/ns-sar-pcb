@@ -8,7 +8,7 @@ interface if_input ();
     int delta_t = 1ns; // 1 ns sample rate
     localparam PI = 3.14159;
 
-    // modport hardware_port (input vip, vin);
+    modport hardware_port (input vip, input vin);
 
     always begin
         vip <= $cos(phase * 2 * PI) * amplitude;

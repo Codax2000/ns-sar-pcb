@@ -6,7 +6,7 @@ class reg_env extends uvm_env;
     endfunction
 
     uvm_agent                       agent;
-    ral_cfg                         ral_model;
+    ral_registers                   ral_model;
     reg2spi_adapter                 adapter;
     uvm_reg_predictor #(spi_packet) spi_predictor;
 
