@@ -1,6 +1,9 @@
-module tb_cfg extends uvm_object ();
+import uvm_pkg::*;
+`include "uvm_macros.svh"
 
-    `uvm_object_utils(tb_cfg)
+class adc_env_cfg extends uvm_object ();
+
+    `uvm_object_utils(adc_env_cfg)
 
     rand int nfft_power;
     rand int osr_power;
@@ -13,7 +16,6 @@ module tb_cfg extends uvm_object ();
     virtual if_spi vif_spi;
     virtual if_clkgen vif_clkgen;
     virtual if_input vif_input;
-    virtual if_status vif_status;
 
     constraint legal_osr {
         osr_power <= 7;
@@ -39,4 +41,7 @@ module tb_cfg extends uvm_object ();
         `uvm_info("TB_CFG", $sformat("Randomized Config:\n%s", this.sprint()), UVM_MEDIUM)
     endfunction
 
-endmodule
+    function new(name = "adc_env_cfg");
+        super.new(name);
+    endfunction
+endclass

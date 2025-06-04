@@ -9,7 +9,9 @@ class reg2spi_adapter extends uvm_reg_adapter;
     endfunction
 
     virtual function uvm_sequence_item reg2bus(const ref uvm_reg_bus_op rw);
-        spi_packet pkt = spi_pkt::type_id::create("pkt");
+        spi_packet pkt;
+        
+        pkt = spi_packet::type_id::create("pkt");
         pkt.reg_index = rw.addr;
         pkt.mosi_data = rw.data;
         pkt.command = rw.kind == READ   ? 2'b00 :
