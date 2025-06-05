@@ -14,8 +14,7 @@ class input_driver extends uvm_driver #(sin_packet);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db#(int)::get(this, "", "driver_delay_ns", interface_drive_delay_in_ns))
-            `uvm_fatal("DRV", "Unclear how long to wait in between driving signals")
+        interface_drive_delay_in_ns = 10;
         if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif)) begin
             `uvm_fatal("DRV", "No interface found for the input driver")
         end

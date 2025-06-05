@@ -17,10 +17,9 @@ class spi_monitor extends uvm_monitor;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db#(virtual if_spi)::get(this, "", "", vif))
+        if (!uvm_config_db#(virtual if_spi)::get(this, "", "vif", vif))
             `uvm_fatal("MON", "Virtual interface not found for SPI Monitor")
-        if (!uvm_config_db#(int)::get(this, "", "nfft", nfft))
-            `uvm_fatal("MON", "NFFT not found for SPI Monitor")
+        nfft = 512;
     endfunction
 
     virtual task run_phase(uvm_phase phase);

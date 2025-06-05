@@ -1,15 +1,12 @@
-import uvm_pkg::*;
-`include "uvm_macros.svh"
-
 class adc_env extends uvm_env;
 
     `uvm_component_utils (adc_env)
 
     spi_agent spi;
-    clk_rst_gen_agent clkgen;
+    clkgen_agent clkgen;
     input_agent signal_gen;
 
-    env_cfg i_env_cfg;
+    adc_env_cfg i_env_cfg;
 
     reg_env ral;
 
@@ -20,7 +17,7 @@ class adc_env extends uvm_env;
     virtual function void build_phase (uvm_phase phase);
         super.build_phase(phase);
 
-        if (!uvm_config_db #(env_cfg)::get(this, "", "cfg", i_env_cfg))
+        if (!uvm_config_db #(adc_env_cfg)::get(this, "", "cfg", i_env_cfg))
             `uvm_fatal("ENV", "Could not attach environment config")
 
         uvm_config_db #(virtual if_spi)   ::set(this, "spi", "vif", i_env_cfg.vif_spi);
@@ -28,7 +25,7 @@ class adc_env extends uvm_env;
         uvm_config_db #(virtual if_input) ::set(this, "signal_gen", "vif", i_env_cfg.vif_input);
 
         spi = spi_agent::type_id::create("spi", this);
-        clkgen = clk_rst_gen_agent::type_id::create("clkgen", this);
+        clkgen = clkgen_agent::type_id::create("clkgen", this);
         signal_gen = input_agent::type_id::create("signal_gen", this);
         ral = reg_env::type_id::create("ral", this);
 
@@ -38,9 +35,8 @@ class adc_env extends uvm_env;
     virtual function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
         ral.agent = spi;
-        ral.ral_model.default_map.set_sequencer(spi.sequencer);
-        // TODO: if using a predictor, connect the agent analysis port to the predictor bus
-
+        ral.ral_model.default_map.set_sequencer(spi.sequencer, ral.adapter);
+        spi.monitor.mon_analysis_port.connect(ral.spi_predictor.bus_in);
     endfunction
 
 endclass

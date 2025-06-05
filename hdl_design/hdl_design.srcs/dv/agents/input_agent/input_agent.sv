@@ -15,6 +15,12 @@ class input_agent extends uvm_agent;
 
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
+
+        if (!uvm_config_db #(virtual if_input)::get(this, "", "vif", vif))
+            `uvm_fatal("INPUT_AGENT", "Could not find virtual interface");
+        uvm_config_db #(virtual if_input)::set(this, "driver", "vif", vif);
+        uvm_config_db #(virtual if_input)::set(this, "monitor", "vif", vif);
+
         monitor = input_monitor::type_id::create("monitor", this);
         if (get_is_active()) begin
             driver = input_driver::type_id::create("driver", this);
@@ -23,10 +29,6 @@ class input_agent extends uvm_agent;
     endfunction
 
     function void connect_phase(uvm_phase phase);
-        if (!uvm_config_db #(virtual if_input)::get(this, "", "vif", vif))
-            `uvm_fatal("INPUT_AGENT", "Could not find virtual interface");
-        uvm_config_db #(virtual if_input)::set(this, "driver", "vif", vif);
-        uvm_config_db #(virtual if_input)::set(this, "monitor", "vif", vif);
         if (get_is_active())
             driver.seq_item_port.connect(sequencer.seq_item_export);
     endfunction

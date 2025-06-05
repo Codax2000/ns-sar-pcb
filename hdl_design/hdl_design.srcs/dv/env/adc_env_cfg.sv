@@ -1,7 +1,7 @@
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 
-class adc_env_cfg extends uvm_object ();
+class adc_env_cfg extends uvm_object;
 
     `uvm_object_utils(adc_env_cfg)
 
@@ -9,8 +9,8 @@ class adc_env_cfg extends uvm_object ();
     rand int osr_power;
     rand int clk_div;
     rand bit is_dwa;
-
-         int clk_div;
+    
+         int osr;
          int nfft;
 
     virtual if_spi vif_spi;
@@ -32,13 +32,9 @@ class adc_env_cfg extends uvm_object ();
         clk_div < 16;
     }
 
-    function post_randomize();
+    function void post_randomize();
         nfft = 1 << nfft_power;
-        clk_div = 1 << clk_div_power;
-    endfunction
-
-    function print();
-        `uvm_info("TB_CFG", $sformat("Randomized Config:\n%s", this.sprint()), UVM_MEDIUM)
+        osr = 1 << osr_power;
     endfunction
 
     function new(name = "adc_env_cfg");

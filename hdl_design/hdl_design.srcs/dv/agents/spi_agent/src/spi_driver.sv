@@ -16,8 +16,7 @@ class spi_driver extends uvm_driver #(spi_packet);
     virtual function void build_phase(uvm_phase phase);
         if (!uvm_config_db #(virtual if_spi)::get(this, "", "vif", vif))
             `uvm_fatal("DRV", "No interface found for the SPI driver")
-        if (!uvm_config_db #(int)::get(this, "", "nfft", nfft))
-            `uvm_fatal("DRV", "Could not find NFFT for SPI driver")
+        nfft = 512;
     endfunction
 
     virtual task run_phase(uvm_phase phase);

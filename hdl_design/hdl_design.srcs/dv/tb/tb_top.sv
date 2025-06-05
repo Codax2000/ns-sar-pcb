@@ -1,7 +1,7 @@
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 
-import 
+import test_pkg::*;
 
 module tb_top ();
 
@@ -18,16 +18,16 @@ module tb_top ();
     // TODO: connect status interface signals
     // assign i_if_status.fsm_convert_status = DUT.
 
-    top_cfg cfg;
+    tb_top_cfg cfg;
 
     initial begin
-        cfg = new("top_cfg");
+        cfg = new("tb_top_cfg");
         cfg.vif_spi = i_if_spi;
         cfg.vif_clkgen = i_if_clkgen;
         cfg.vif_input = i_if_input;
         cfg.vif_status = i_if_status;
 
-        uvm_config_db #(top_cfg)::set(null, "*", "top_cfg", cfg);
+        uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
         run_test("base_test");
     end

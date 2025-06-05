@@ -1,10 +1,13 @@
+import adc_env_pkg::*;
+import clkgen_agent_pkg::*;
+
 class base_test extends uvm_test;
 
     `uvm_component_utils(base_test)
 
-    tb_env env;
-    top_cfg i_top_cfg;
-    env_cfg i_env_cfg;
+    adc_env env;
+    tb_top_cfg i_top_cfg;
+    adc_env_cfg i_env_cfg;
 
     virtual if_status vif_status;
 
@@ -13,7 +16,7 @@ class base_test extends uvm_test;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db #(top_cfg)::get(this, "*", "top_cfg", i_top_cfg))
+        if (!uvm_config_db #(tb_top_cfg)::get(this, "*", "tb_top_cfg", i_top_cfg))
             `uvm_fatal("TB_TOP", "Could not attach top-level configuration")
 
         i_env_cfg = new("i_env_cfg");
@@ -23,9 +26,9 @@ class base_test extends uvm_test;
         i_env_cfg.vif_input = i_top_cfg.vif_input;
         vif_status = i_top_cfg.vif_status;
 
-        uvm_config_db #(env_cfg)::set(this, "env", "cfg", i_env_cfg);
+        uvm_config_db #(adc_env_cfg)::set(this, "env", "cfg", i_env_cfg);
 
-        env = tb_env::type_id::create("env", this);
+        env = adc_env::type_id::create("env", this);
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
@@ -46,33 +49,33 @@ class base_test extends uvm_test;
 
     endtask
 
-    // virtual task configure_phase (uvm_phase phase);
-    //     ral_registers ral;
-    //     uvm_status_e status;
-    //     logic [3:0] rdata;
+    virtual task configure_phase (uvm_phase phase);
+        ral_registers ral;
+        uvm_status_e status;
+        logic [3:0] rdata;
 
-    //     `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
-    //     ral = env.ral.ral_model;
+        `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
+        ral = env.ral.ral_model;
 
-    //     phase.raise_objection(this);
-    //     cfg.print();
+        phase.raise_objection(this);
+        // i_env_cfg.print();
 
-    //     // write NFFT
-    //     ral.nfft_pow.write(status, cfg.nfft_power);
+        // write NFFT
+        ral.nfft_pow.write(status, i_env_cfg.nfft_power);
 
-    //     // set OSR and DWA and then update()
-    //     ral.osr_dwa.osr.set(cfg.osr_power);
-    //     ral.osr_dwa.dwa_enable.set(cfg.is_dwa);
-    //     ral.update(status);
+        // set OSR and DWA and then update()
+        ral.osr_dwa.osr.set(i_env_cfg.osr_power);
+        ral.osr_dwa.dwa_enable.set(i_env_cfg.is_dwa);
+        ral.update(status);
 
-    //     // write CLKDIV
-    //     ral.sample_clk_div.write(status, cfg.clk_div);
+        // write CLKDIV
+        ral.sample_clk_div.write(status, i_env_cfg.clk_div);
 
-    //     // TODO: read registers back to ensure correct config
-    //     // TODO: read status register to ensure the DUT is ready
+        // TODO: read registers back to ensure correct config
+        // TODO: read status register to ensure the DUT is ready
 
-    //     phase.drop_objection(this);
-    // endtask
+        phase.drop_objection(this);
+    endtask
 
 endclass
 
