@@ -1,4 +1,4 @@
-`timescale 1ns / 1ns
+`timescale 1ns / 1ps
 
 import uvm_pkg::*;
 `include "uvm_macros.svh"
@@ -12,8 +12,8 @@ class sin_packet extends uvm_sequence_item;
     int amplitude_denominator;
     real amplitude;
     real frequency;
-    int driver_delay_ns;
-    real fs;
+    realtime driver_delay_ns;
+    int fs;
 
     constraint amplitude_lte_1 { 
         amplitude_numerator <= amplitude_denominator; 
@@ -31,7 +31,9 @@ class sin_packet extends uvm_sequence_item;
         `uvm_field_int(amplitude_denominator, UVM_DEFAULT)
         `uvm_field_real(amplitude, UVM_DEFAULT)
         `uvm_field_real(frequency, UVM_DEFAULT)
-        `uvm_field_int(driver_delay_ns, UVM_DEFAULT)
+        `uvm_field_real(driver_delay_ns, UVM_DEFAULT)
+        `uvm_field_queue_int(primes, UVM_DEFAULT)
+        `uvm_field_int(fs, UVM_DEFAULT)
     `uvm_object_utils_end
 
     function new(string name = "sin_packet");
@@ -46,7 +48,7 @@ class sin_packet extends uvm_sequence_item;
         `uvm_info("PKT", $sformatf("Primes: %p", primes), UVM_LOW)
     endfunction
 
-    function void set_fs(real sampling_freq);
+    function void set_fs(int sampling_freq);
         fs = sampling_freq;
     endfunction
 

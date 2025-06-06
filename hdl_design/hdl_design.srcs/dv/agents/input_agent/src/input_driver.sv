@@ -1,4 +1,4 @@
-`timescale 1ns / 1ns
+`timescale 1ns / 1ps
 
 class input_driver extends uvm_driver #(sin_packet);
 
@@ -7,17 +7,20 @@ class input_driver extends uvm_driver #(sin_packet);
     sin_packet req;
 
     virtual if_input vif;
-    int interface_drive_delay_in_ns;
+    realtime fs;
+    realtime interface_drive_delay_in_ns;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        interface_drive_delay_in_ns = 10;
-        if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif)) begin
-            `uvm_fatal("DRV", "No interface found for the input driver")
-        end
+        real fs;
+        if (!uvm_config_db#(virtual if_input)::get(this, "", "vif", vif))
+            `uvm_fatal("DRV", "Could not attach virtual interface")
+        if (!uvm_config_db#(real)::get(this, "", "fs", fs))
+            `uvm_fatal("DRV", "Could not attach sampling frequency")
+        interface_drive_delay_in_ns = 1e9 / fs;
     endfunction
 
     virtual task run_phase(uvm_phase phase);

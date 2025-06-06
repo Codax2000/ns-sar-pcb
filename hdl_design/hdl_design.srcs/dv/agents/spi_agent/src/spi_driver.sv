@@ -9,14 +9,22 @@ class spi_driver extends uvm_driver #(spi_packet);
     virtual if_spi vif;
     int nfft;
 
+    bit CPOL;
+    bit CPHA;
+
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
         if (!uvm_config_db #(virtual if_spi)::get(this, "", "vif", vif))
-            `uvm_fatal("DRV", "No interface found for the SPI driver")
-        nfft = 512;
+            `uvm_fatal("DRV", "Could not attach driver virtual interface")
+        if (!uvm_config_db #(int)::get(this, "", "nfft", nfft))
+            `uvm_fatal("DRV", "Could not attach driver NFFT")
+        if (!uvm_config_db #(bit)::get(this, "", "CPOL", CPOL))
+            `uvm_fatal("DRV", "Could not attach driver CPOL")
+        if (!uvm_config_db #(bit)::get(this, "", "CPHA", CPHA))
+            `uvm_fatal("DRV", "Could not attach driver CPHA")
     endfunction
 
     virtual task run_phase(uvm_phase phase);

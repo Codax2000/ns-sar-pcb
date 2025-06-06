@@ -5,17 +5,30 @@ class adc_env_cfg extends uvm_object;
 
     `uvm_object_utils(adc_env_cfg)
 
+    // agent virtual interfaces
+    virtual if_spi vif_spi;
+    virtual if_clkgen vif_clkgen;
+    virtual if_input vif_input;
+
+    // randomized register/clock fields
+    rand int sys_clk;
     rand int nfft_power;
     rand int osr_power;
     rand int clk_div;
     rand bit is_dwa;
     
-         int osr;
-         int nfft;
+    // post-randomization fields
+    int osr;
+    int nfft;
 
-    virtual if_spi vif_spi;
-    virtual if_clkgen vif_clkgen;
-    virtual if_input vif_input;
+    // simulation coverage fields
+    bit checks_enable;
+    bit coverage_enable;
+
+    // constraints literally match HW/RTL constraints
+    constraint system_clk_matches_syn {
+        sys_clk == 100e6;
+    }
 
     constraint legal_osr {
         osr_power <= 7;
