@@ -1,17 +1,15 @@
 module board_top (
     if_input.hardware_port vin,
 
-    input i_clk,
-    input i_arst_b,
+    if_clkgen clkgen,
 
-    // SPI signals
-    spi_input spi
+    if_spi spi
 );
 
     localparam real VDD=3.3,
     localparam N_QUANTIZER_BITS=3
 
-    analog_core #(
+    analog_frontend #(
         .VDD(VDD),
         .N_QUANTIZER_BITS(N_QUANTIZER_BITS)
     ) analog_core_model (

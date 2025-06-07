@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_top_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="adc_env_pkg" />
+            <top_module name="clkgen_agent_pkg" />
+            <top_module name="glbl" />
+            <top_module name="input_agent_pkg" />
+            <top_module name="spi_agent_pkg" />
+            <top_module name="std" />
+            <top_module name="tb_top" />
+            <top_module name="test_pkg" />
+            <top_module name="uvm_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000000 us"></ZoomStartTime>
+      <ZoomEndTime time="19.660001 us"></ZoomEndTime>
+      <Cursor1Time time="19.660000 us"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="162"></NameColumnWidth>
+      <ValueColumnWidth column_width="234"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="19" />
+   <wvobject fp_name="/tb_top/i_if_clkgen/clk_period_in_ns" type="array">
+      <obj_property name="ElementShortName">clk_period_in_ns[31:0]</obj_property>
+      <obj_property name="ObjectShortName">clk_period_in_ns[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_clkgen/reset_duration_in_ns" type="array">
+      <obj_property name="ElementShortName">reset_duration_in_ns[31:0]</obj_property>
+      <obj_property name="ObjectShortName">reset_duration_in_ns[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_clkgen/reset_delay_in_ns" type="array">
+      <obj_property name="ElementShortName">reset_delay_in_ns[31:0]</obj_property>
+      <obj_property name="ObjectShortName">reset_delay_in_ns[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_clkgen/clk_is_running" type="logic">
+      <obj_property name="ElementShortName">clk_is_running</obj_property>
+      <obj_property name="ObjectShortName">clk_is_running</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_clkgen/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_clkgen/rst_b" type="logic">
+      <obj_property name="ElementShortName">rst_b</obj_property>
+      <obj_property name="ObjectShortName">rst_b</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider7">
+      <obj_property name="label">Input</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/vip" type="other">
+      <obj_property name="ElementShortName">vip</obj_property>
+      <obj_property name="ObjectShortName">vip</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/vin" type="other">
+      <obj_property name="ElementShortName">vin</obj_property>
+      <obj_property name="ObjectShortName">vin</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/phase" type="other">
+      <obj_property name="ElementShortName">phase</obj_property>
+      <obj_property name="ObjectShortName">phase</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/frequency" type="other">
+      <obj_property name="ElementShortName">frequency</obj_property>
+      <obj_property name="ObjectShortName">frequency</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/amplitude" type="other">
+      <obj_property name="ElementShortName">amplitude</obj_property>
+      <obj_property name="ObjectShortName">amplitude</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/vcm" type="other">
+      <obj_property name="ElementShortName">vcm</obj_property>
+      <obj_property name="ObjectShortName">vcm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_input/values_changed" type="logic">
+      <obj_property name="ElementShortName">values_changed</obj_property>
+      <obj_property name="ObjectShortName">values_changed</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider15">
+      <obj_property name="label">SPI</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_spi/scl" type="logic">
+      <obj_property name="ElementShortName">scl</obj_property>
+      <obj_property name="ObjectShortName">scl</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_spi/mosi" type="logic">
+      <obj_property name="ElementShortName">mosi</obj_property>
+      <obj_property name="ObjectShortName">mosi</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_spi/csb" type="logic">
+      <obj_property name="ElementShortName">csb</obj_property>
+      <obj_property name="ObjectShortName">csb</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/i_if_spi/miso" type="logic">
+      <obj_property name="ElementShortName">miso</obj_property>
+      <obj_property name="ObjectShortName">miso</obj_property>
+   </wvobject>
+</wave_config>
