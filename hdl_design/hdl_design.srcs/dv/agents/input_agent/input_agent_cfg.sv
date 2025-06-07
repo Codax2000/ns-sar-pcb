@@ -7,7 +7,9 @@ class input_agent_cfg extends uvm_object;
     endfunction
 
     int nfft;
+    int osr;
     real fs;
+    real vdd;
 
     virtual if_input vif;
 

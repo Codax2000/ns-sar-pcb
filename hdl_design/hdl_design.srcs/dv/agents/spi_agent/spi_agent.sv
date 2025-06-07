@@ -27,13 +27,14 @@ class spi_agent extends uvm_agent;
         uvm_config_db #(int)::set(this, "monitor", "nfft", cfg.nfft);
         uvm_config_db #(bit)::set(this, "driver", "CPOL", cfg.CPOL);
         uvm_config_db #(bit)::set(this, "driver", "CPHA", cfg.CPHA);
+        uvm_config_db #(int)::set(this, "driver", "speed", cfg.speed);
         uvm_config_db #(bit)::set(this, "monitor", "CPOL", cfg.CPOL);
         uvm_config_db #(bit)::set(this, "monitor", "CPHA", cfg.CPHA);
 
         monitor = spi_monitor::type_id::create("monitor", this);
         if (get_is_active()) begin
             driver = spi_driver::type_id::create("driver", this);
-            sequencer = spi_sequencer::type_id::create("sequencer", this);
+            sequencer = uvm_sequencer #(spi_packet)::type_id::create("sequencer", this);
         end
     endfunction
 

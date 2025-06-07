@@ -8,6 +8,7 @@ class spi_agent_cfg extends uvm_object;
 
     virtual if_spi vif;
     int nfft;
+    int speed;
 
     uvm_active_passive_enum is_active;
     rand bit                checks_enable;

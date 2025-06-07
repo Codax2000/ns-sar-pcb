@@ -5,6 +5,6 @@ package clkgen_agent_pkg;
     `include "sequences/clkgen_seq_lib.sv"
     `include "src/clkgen_driver.sv"
     `include "src/clkgen_monitor.sv"
-    `include "clkgen_sequencer.sv"
+    `include "clkgen_agent_cfg.sv"
     `include "clkgen_agent.sv"
 endpackage

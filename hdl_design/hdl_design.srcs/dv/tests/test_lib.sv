@@ -1,5 +1,6 @@
-import adc_env_pkg::*;
+import adc_env_pkg     ::*;
 import clkgen_agent_pkg::*;
+import input_agent_pkg ::*;
 
 class base_test extends uvm_test;
 
@@ -44,46 +45,53 @@ class base_test extends uvm_test;
     endfunction
 
     virtual task reset_phase(uvm_phase phase);
-        start_clk_seq seq;
+        start_clk_seq clk_seq;
+        drive_sine_wave_seq input_seq;
 
         `uvm_info("RESET_PHASE", "Resetting DUT", UVM_MEDIUM)
         phase.raise_objection(this);
 
-        seq = start_clk_seq::type_id::create("seq");
-        seq.start(env.clkgen.sequencer);
+        clk_seq = start_clk_seq::type_id::create("clk_seq");
+        input_seq = drive_sine_wave_seq::type_id::create("input_seq");
 
-        `uvm_info("RESET_PHASE", "DUT Successfully reset", UVM_MEDIUM)
+        fork
+            clk_seq.start(env.clkgen.sequencer);
+            input_seq.start(env.signal_gen.sequencer);
+        join
+
+        `uvm_info("RESET_PHASE", "DUT Successfully reset and sine wave being generated", UVM_MEDIUM)
         phase.drop_objection(this);
 
     endtask
 
-    // virtual task configure_phase (uvm_phase phase);
-    //     ral_registers ral;
-    //     uvm_status_e status;
-    //     logic [3:0] rdata;
+    virtual task configure_phase (uvm_phase phase);
+        ral_registers ral;
+        uvm_status_e status;
+        logic [3:0] rdata;
 
-    //     `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
-    //     ral = env.ral.ral_model;
+        `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
+        ral = env.ral.ral_model;
 
-    //     phase.raise_objection(this);
-    //     i_env_cfg.print();
+        phase.raise_objection(this);
+        i_env_cfg.print();
 
-    //     // write NFFT
-    //     ral.nfft_pow.write(status, i_env_cfg.nfft_power);
+        // write NFFT
+        ral.nfft_pow.write(status, i_env_cfg.nfft_power);
 
-    //     // set OSR and DWA and then update()
-    //     ral.osr_dwa.osr.set(i_env_cfg.osr_power);
-    //     ral.osr_dwa.dwa_enable.set(i_env_cfg.is_dwa);
-    //     ral.update(status);
+        // set OSR and DWA and then update()
+        ral.osr_dwa.osr.set(i_env_cfg.osr_power);
+        ral.osr_dwa.dwa_enable.set(i_env_cfg.is_dwa);
+        ral.update(status);
 
-    //     // write CLKDIV
-    //     ral.sample_clk_div.write(status, i_env_cfg.clk_div);
+        // write CLKDIV
+        ral.sample_clk_div.write(status, i_env_cfg.clk_div);
 
-    //     // TODO: read registers back to ensure correct config
-    //     // TODO: read status register to ensure the DUT is ready
+        // TODO: read registers back to ensure correct config
+        // TODO: read status register to ensure the DUT is ready
 
-    //     phase.drop_objection(this);
-    // endtask
+        `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
+        phase.drop_objection(this);
+    endtask
 
 endclass
 

@@ -1,33 +1,33 @@
+`timescale 1ns/1ps
+
 interface if_input ();
 
     real vip;
     real vin;
+
     real phase;
     real frequency;
     real amplitude;
-    int delta_t = 1ns; // 1 ns sample rate
+    real vcm;
+
     localparam PI = 3.14159;
+    bit values_changed;
 
     modport hardware_port (input vip, input vin);
 
-    always begin
-        vip <= $cos(phase * 2 * PI) * amplitude;
-        vin <= -1 * $cos(phase * 2 * PI) * amplitude;
-        #delta_t;
-    end
-
-    always begin
-        #delta_t;
-        if (frequency != 0)
-            phase += frequency * delta_t * 1e-9;
-        else
-            phase = 0;
-
-    end
-
     initial begin
+        vcm = 0;
         phase = 0;
-        amplitude = 0;
+        values_changed = 1'b0;
+        forever begin
+            #1;
+            if (frequency != 0)
+                phase += frequency * 1e-9;
+            else
+                phase = 0;
+            vip <= vcm + $cos(phase * 2 * PI) * amplitude / 2;
+            vin <= vcm - $cos(phase * 2 * PI) * amplitude / 2;
+        end
     end
 
 endinterface

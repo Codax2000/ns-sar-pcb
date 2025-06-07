@@ -5,8 +5,7 @@ package input_agent_pkg;
     `include "data_items/const_packet.sv"
     `include "src/input_driver.sv"
     `include "src/input_monitor.sv"
-    `include "sequences/drive_random_values.sv"
-    `include "sequences/drive_sin_wave.sv"
+    `include "sequences/input_seq_lib.sv"
     `include "input_agent_cfg.sv"
     `include "input_agent.sv"
 endpackage

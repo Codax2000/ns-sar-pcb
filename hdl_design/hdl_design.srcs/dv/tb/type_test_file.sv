@@ -9,7 +9,7 @@ module type_test ();
     initial begin
         fs = 100000000;
         clk_div = 13;
-        delay = 1e9 * clk_div / fs;
+        delay = 1.0*clk_div / fs;
 
         $display("FS = %d, clk_div = %d, delay = %.12f", fs, clk_div, delay);
     end
