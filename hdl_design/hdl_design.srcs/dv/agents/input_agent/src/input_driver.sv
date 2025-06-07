@@ -21,6 +21,7 @@ class input_driver extends uvm_driver #(sin_packet);
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        vif.vcm = vdd / 2;
         forever begin
             seq_item_port.get_next_item(req);
             drive_signals(req);
@@ -29,7 +30,6 @@ class input_driver extends uvm_driver #(sin_packet);
     endtask
 
     virtual task drive_signals(sin_packet req);
-        vif.vcm = vdd / 2;
         vif.amplitude = req.amplitude;
         vif.frequency = req.frequency;
         vif.values_changed = 1'b1;

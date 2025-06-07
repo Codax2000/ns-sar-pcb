@@ -41,6 +41,7 @@ class spi_monitor extends uvm_monitor;
 
     virtual task collect_transaction(spi_packet item);
         @(negedge vif.csb);
+        `uvm_info("MON", "Collecting SPI Packet", UVM_HIGH)
         collect_signals(item);
     endtask
 

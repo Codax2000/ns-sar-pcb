@@ -6,6 +6,7 @@ class adc_env_cfg extends uvm_object;
     `uvm_object_utils_begin(adc_env_cfg)
         `uvm_field_real(vdd, UVM_DEFAULT)
         `uvm_field_int(sys_clk, UVM_DEFAULT)
+        `uvm_field_int(spi_clk, UVM_DEFAULT)
         `uvm_field_int(nfft, UVM_DEFAULT)
         `uvm_field_int(osr, UVM_DEFAULT)
         `uvm_field_int(is_dwa, UVM_DEFAULT)

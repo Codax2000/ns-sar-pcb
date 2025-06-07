@@ -40,7 +40,6 @@ class adc_env extends uvm_env;
 
     virtual function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
-        ral.agent = spi;
         ral.ral_model.default_map.set_sequencer(spi.sequencer, ral.adapter);
         spi.monitor.mon_analysis_port.connect(ral.spi_predictor.bus_in);
     endfunction

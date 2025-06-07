@@ -82,13 +82,13 @@ class ral_status extends uvm_reg;
         this.fsm_status = uvm_reg_field::type_id::create("fsm_status", , get_full_name());
 
         this.begin_sample.configure(
-            this, 1, 3, "W1C", 0, 0, 0, 0, 0
+            this, 1, 3, "W1C", 0, 0, 0, 0, 1
         );
         this.read_mem.configure(
-            this, 1, 2, "W1C", 0, 0, 0, 0, 0
+            this, 1, 2, "W1C", 0, 0, 0, 0, 1
         );
         this.fsm_status.configure(
-            this, 2, 0, "RO", 0, 2'b00, 1, 0, 0
+            this, 2, 0, "RO", 0, 2'b00, 1, 0, 1
         );
     endfunction
 

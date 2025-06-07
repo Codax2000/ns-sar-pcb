@@ -39,6 +39,7 @@ class spi_driver extends uvm_driver #(spi_packet);
         vif.mosi = 1'b0;
         forever begin
             seq_item_port.get_next_item(req);
+            `uvm_info("DRV", "Driving SPI packet", UVM_HIGH)
             drive_signals(req);
             seq_item_port.item_done();
         end

@@ -1,6 +1,8 @@
 import adc_env_pkg     ::*;
 import clkgen_agent_pkg::*;
 import input_agent_pkg ::*;
+import uvm_pkg         ::*;
+`include "uvm_macros.svh"
 
 class base_test extends uvm_test;
 
@@ -14,6 +16,8 @@ class base_test extends uvm_test;
 
     bit checks_enable;
     bit coverage_enable;
+
+    uvm_status_e status;
 
     function new (string name = "base_test", uvm_component parent = null);
         super.new(name, parent);
@@ -66,7 +70,6 @@ class base_test extends uvm_test;
 
     virtual task configure_phase (uvm_phase phase);
         ral_registers ral;
-        uvm_status_e status;
         logic [3:0] rdata;
 
         `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
@@ -86,24 +89,61 @@ class base_test extends uvm_test;
         // write CLKDIV
         ral.sample_clk_div.write(status, i_env_cfg.clk_div);
 
-        // TODO: read registers back to ensure correct config
-        // TODO: read status register to ensure the DUT is ready
+        ral.print();
+
+        // mirror values back to make sure they are what we just wrote
+        ral.nfft_pow.predict(i_env_cfg.nfft_power);
+        ral.nfft_pow.mirror(status, UVM_CHECK);
+
+        ral.osr_dwa.predict({i_env_cfg.osr_power, i_env_cfg.is_dwa});
+        ral.osr_dwa.mirror(status, UVM_CHECK);
+
+        ral.sample_clk_div.predict(i_env_cfg.clk_div);
+        ral.sample_clk_div.mirror(status, UVM_CHECK);
+
+        ral.status.predict(4'h0);
+        ral.status.mirror(status, UVM_CHECK);
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
         phase.drop_objection(this);
     endtask
 
+    virtual task main_phase(uvm_phase phase);
+        `uvm_info("MAIN_PHASE", "Running randomized conversion test", UVM_MEDIUM)
+        begin_conversion();
+        allow_conversion_to_end();
+        read_conversion_results();
+        `uvm_info("MAIN_PHASE", "Finished random conversion test", UVM_MEDIUM)
+    endtask
+
+    virtual task post_main_phase(uvm_phase phase);
+        `uvm_info("POST_MAIN_PHASE", "Checking device status registers", UVM_MEDIUM)
+
+        env.ral.ral_model.status.predict(4'h0);
+        env.ral.ral_model.status.mirror(status, UVM_CHECK);
+
+        `uvm_info("POST_MAIN_PHASE", "Status checking finished", UVM_MEDIUM)
+    endtask
+
+    task begin_conversion();
+        ral_registers ral;
+        ral = env.ral.ral_model;
+        ral.status.begin_sample.set(1'b1);
+        ral.update(status);
+    endtask
+
+    task read_conversion_results();
+        ral_registers ral;
+        ral = env.ral.ral_model;
+        ral.status.read_mem.set(1'b1);
+        ral.update(status);
+    endtask
+
+    task allow_conversion_to_end();
+        wait (vif_status.fsm_convert_status == 2'b00);
+    endtask
+
 endclass
-
-// class test_register_read_write extends base_test;
-
-//     // during run phase, write a random register
-
-//     // read it back
-
-//     // should match up with RAL model
-
-// endclass
 
 // class test_random_conversion extends base_test;
 

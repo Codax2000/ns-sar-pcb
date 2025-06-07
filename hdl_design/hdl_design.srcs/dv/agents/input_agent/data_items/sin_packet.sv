@@ -49,8 +49,7 @@ class sin_packet extends uvm_sequence_item;
     function void set_nfft(int nfft);
         int nfft_adjusted;
         this.nfft = nfft;
-        nfft_adjusted = (nfft >> (1 + $clog2(osr)));
-        calc_primes(nfft_adjusted, primes);
+        calc_primes(nfft, primes);
     endfunction
 
     function void set_osr(int osr);
