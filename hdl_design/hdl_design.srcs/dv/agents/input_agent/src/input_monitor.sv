@@ -16,15 +16,16 @@ class input_monitor extends uvm_monitor;
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        sin_packet item;
         forever begin
-            sin_packet item = new();
+            item = new();
             collect_transaction(item);
             mon_analysis_port.write(item);
         end
     endtask
 
     virtual task collect_transaction(sin_packet item);
-        @(vif.amplitude or vif.frequency);
+        @(posedge vif.values_changed);
         item.amplitude = vif.amplitude;
         item.frequency = vif.frequency;
     endtask

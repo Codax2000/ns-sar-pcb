@@ -1,3 +1,6 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 class ral_nfft_power extends uvm_reg;
 
     rand uvm_reg_field nfft_power;
@@ -79,13 +82,13 @@ class ral_status extends uvm_reg;
         this.fsm_status = uvm_reg_field::type_id::create("fsm_status", , get_full_name());
 
         this.begin_sample.configure(
-            this, 1, 3, "W1C", 0, 0, 0, 0, 0
+            this, 1, 3, "W1C", 0, 0, 0, 0, 1
         );
         this.read_mem.configure(
-            this, 1, 2, "W1C", 0, 0, 0, 0, 0
+            this, 1, 2, "W1C", 0, 0, 0, 0, 1
         );
         this.fsm_status.configure(
-            this, 2, 0, "RO", 0, 2'b00, 1, 0, 0
+            this, 2, 0, "RO", 0, 2'b00, 1, 0, 1
         );
     endfunction
 
@@ -113,17 +116,17 @@ class ral_registers extends uvm_reg_block;
         this.nfft_pow.build();
         this.default_map.add_reg(this.nfft_pow, `UVM_REG_ADDR_WIDTH'h0, "RW");
 
-        this.osr_dwa = osr_dwa::type_id::create("osr_dwa", , get_full_name());
+        this.osr_dwa = ral_osr_dwa::type_id::create("osr_dwa", , get_full_name());
         this.osr_dwa.configure(this, null, "");
         this.osr_dwa.build();
         this.default_map.add_reg(this.osr_dwa, `UVM_REG_ADDR_WIDTH'h1, "RW");
 
-        this.sample_clk_div = sample_clk_div::type_id::create("sample_clk_div", , get_full_name());
+        this.sample_clk_div = ral_sample_clk_div::type_id::create("sample_clk_div", , get_full_name());
         this.sample_clk_div.configure(this, null, "");
         this.sample_clk_div.build();
         this.default_map.add_reg(this.sample_clk_div, `UVM_REG_ADDR_WIDTH'h2, "RW");
 
-        this.status = status::type_id::create("status", , get_full_name());
+        this.status = ral_status::type_id::create("status", , get_full_name());
         this.status.configure(this, null, "");
         this.status.build();
         this.default_map.add_reg(this.status, `UVM_REG_ADDR_WIDTH'h3, "RW");

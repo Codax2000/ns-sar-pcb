@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 
-interface if_spi ();
+interface if_clkgen ();
 
     int clk_period_in_ns;
     int reset_duration_in_ns;
@@ -13,11 +13,11 @@ interface if_spi ();
 
     modport module_clkgen (input clk, input rst_b);
 
-    task start_clk;
+    task run_clk;
         clk = 1'b0;
         clk_is_running = 1'b1;
         while (clk_is_running)
-            #(clk_delay_in_ns / 2) clk = !clk;
+            #(clk_period_in_ns / 2) clk = !clk;
     endtask
 
     task run_reset;

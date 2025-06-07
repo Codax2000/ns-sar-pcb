@@ -11,21 +11,29 @@ class spi_monitor extends uvm_monitor;
     bit [3:0] reg_response;
     bit [15:0] mem_response [$];
 
+    bit CPOL;
+    bit CPHA;
+
     function new(string name, uvm_component parent);
         super.new(name, parent);
         mon_analysis_port = new("mon_analysis_port", this);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db#(virtual if_spi)::get(this, "", "", vif))
+        if (!uvm_config_db#(virtual if_spi)::get(this, "", "vif", vif))
             `uvm_fatal("MON", "Virtual interface not found for SPI Monitor")
-        if (!uvm_config_db#(int)::get(this, "", "nfft", nfft))
-            `uvm_fatal("MON", "NFFT not found for SPI Monitor")
+        if (!uvm_config_db #(int)::get(this, "", "nfft", nfft))
+            `uvm_fatal("MON", "Could not attach monitor NFFT")
+        if (!uvm_config_db #(bit)::get(this, "", "CPOL", CPOL))
+            `uvm_fatal("MON", "Could not attach monitor CPOL")
+        if (!uvm_config_db #(bit)::get(this, "", "CPHA", CPHA))
+            `uvm_fatal("MON", "Could not attach monitor CPHA")
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        spi_packet item;
         forever begin
-            spi_packet item = new();
+            item = new();
             collect_transaction(item);
             mon_analysis_port.write(item);
         end
@@ -33,13 +41,11 @@ class spi_monitor extends uvm_monitor;
 
     virtual task collect_transaction(spi_packet item);
         @(negedge vif.csb);
+        `uvm_info("MON", "Collecting SPI Packet", UVM_HIGH)
         collect_signals(item);
     endtask
 
     virtual task collect_signals(spi_packet item);
-        if (!uvm_config_db#(int)::get(this, "", "nfft", nfft)) begin
-            `uvm_fatal("MON", "NFFT not found for SPI Monitor")
-        end
         mem_response = {};
         reg_response = 4'h0;
         mosi = 8'h00;

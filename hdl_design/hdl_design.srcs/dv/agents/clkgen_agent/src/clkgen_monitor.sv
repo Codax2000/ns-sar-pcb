@@ -27,8 +27,9 @@ class clkgen_monitor extends uvm_monitor;
         end
     endtask
 
-    virtual task collect_transaction(spi_packet item);
-        // TODO: define transaction collection
+    virtual task collect_transaction(clkgen_packet item);
+        @(negedge vif.rst_b);
+        `uvm_info("CLKGEN_MONITOR", "Collecting clock gen packet", UVM_MEDIUM)
     endtask
 
 endclass
