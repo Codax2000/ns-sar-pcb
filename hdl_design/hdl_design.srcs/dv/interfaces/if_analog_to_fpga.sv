@@ -1,6 +1,6 @@
-interface if_analog_to_fpga #(
-    parameter N_QUANTIZER_BITS=3
-);
+interface if_analog_to_fpga;
+
+    parameter N_QUANTIZER_BITS=3;
 
     logic sample;
     logic en_sar;

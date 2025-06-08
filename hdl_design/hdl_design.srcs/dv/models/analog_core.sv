@@ -5,7 +5,7 @@ capacitor control switches. It is assumed that nonoverlapping clocks and
 bootstrapping switches are implemented on board using discrete components.
 */
 
-module analog_frontend #(
+module analog_core #(
     parameter real VDD=3.3,
     parameter N_QUANTIZER_BITS=3
 ) (
@@ -13,7 +13,7 @@ module analog_frontend #(
     if_input.hardware_port signal_in,
 
     // control signals
-    if_analog_to_fpga #(.N_QUANTIZER_BITS(N_QUANTIZER_BITS)) if_digital
+    if_analog_to_fpga if_digital
 );
 
     localparam real VCM = VDD / 2;
@@ -24,7 +24,7 @@ module analog_frontend #(
     real i2p, i2n, i2p_r, i2n_r;
     real vresp, vresn;
     real vintp, vintn;
-    real [2**N_QUANTIZER_BITS-1:0] cap_voltages_p, cap_voltages_n;
+    real cap_voltages_p, cap_voltages_n [(2<<N_QUANTIZER_BITS)-1:0];
 
     always_ff @(posedge if_digital.sample) begin
         vip_sample <= VDD - signal_in.vip;

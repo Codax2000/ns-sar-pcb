@@ -48,8 +48,8 @@ The analog circuitry is on the left, and the digital on the right. The digital l
 There are 3 4-bit registers on the device that can be read and written via SPI:
 | Register Address | Bit Breakdown | Meaning | Reset Value |
 | :--- | :--- | :--- | :--- |
-| 0x00 | NFFT Power (4-bit unsigned) | Power of 2 corresponding to NFFT, default 12, so number of samples would be 2 ^ 12 | 8 |
-| 0x01 | 3-bit OSR, 1-bit DWA Enable | Power of 2 corresponding to OSR, default 3, so oversample ratio would be 2 ^ 3, or 8 | 2, 0 |
+| 0x00 | NFFT Power (4-bit unsigned) | Power of 2 corresponding to NFFT8, so number of samples would be 2 ^ nfft_power | 8 |
+| 0x01 | 3-bit OSR, 1-bit DWA Enable | Power of 2 corresponding to OSR, so oversample ratio would be 2 ^ osr_power | 2, 0 |
 | 0x02 | Sample Clock Divider (4-bit unsigned)  | Sample clock divider, used for testing max conversion speed | 0 |
 | 0x03 | 1-bit Begin Sample, 1-bit Read Memory, 2-bit FSM Status | Status registers using RW1C or RO access | 0, 0, 00 |
 
@@ -61,7 +61,7 @@ There are 4 possible commands via SPI, each consisting of 1 byte from the master
 | :--- | --- | --- | --- | :--- |
 | Write Register | 01 | 2'{reg_index} | Register Value | 4-bit Register Value |
 | Read Register | 00 | 2'{reg_index} | N/A | 4-bit Register Value |
-| Mem Read | 10 | N/A | N/A | MSB-first memory data in 4-bit packets |
+| Mem Read | 10 | N/A | N/A | MSB-first memory data in 16-bit packets |
 | Begin Sample | 11 | N/A | N/A | 4'1010 |
 
 Each sample of a memory read value will be 4-values, with each data word being 2
