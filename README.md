@@ -59,8 +59,8 @@ There are 4 possible commands via SPI, each consisting of 1 byte from the master
 
 | Command | Bits [7:6] | Bits[5:4] | Bits[3:0] | Response
 | :--- | --- | --- | --- | :--- |
-| Write Register | 01 | 2'{reg_index} | Register Value | 4-bit Register Value |
 | Read Register | 00 | 2'{reg_index} | N/A | 4-bit Register Value |
+| Write Register | 01 | 2'{reg_index} | Register Value | 4-bit Register Value |
 | Mem Read | 10 | N/A | N/A | MSB-first memory data in 16-bit packets |
 | Begin Sample | 11 | N/A | N/A | 4'1010 |
 
