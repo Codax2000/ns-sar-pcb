@@ -50,7 +50,7 @@ module spi #(
     assign next_state_is_transfer_register = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command != MEM_READ);
     assign next_state_is_transfer_memory   = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == MEM_READ);
     assign next_state_is_begin_sample      = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == BEGIN_SAMPLE);
-    assign data_send_done = ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h7)) || // register send case
+    assign data_send_done = ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) || // register send case
                             ((ps_e == SEND_MEMORY)   && (nfft_send_counter_r == (nfft - 1)) && (data_send_counter_r == 4'hF));
     assign load_mem_lsb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'hF)) || next_state_is_transfer_memory;
     assign load_mem_msb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'h7));
@@ -64,7 +64,7 @@ module spi #(
     assign data_send_counter_n =    ((ps_e == READY)) ||
                                     ((ps_e == RECEIVE_DATA)  && (data_send_counter_r == 4'h7)) ||
                                     ((ps_e == SEND_MEMORY)   && (data_send_counter_r == 4'hF)) || 
-                                    ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h7)) ? 4'h0 : data_send_counter_r + 1;
+                                    ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) ? 4'h0 : data_send_counter_r + 1;
 
     // shifting logic
     always_comb begin
@@ -88,7 +88,7 @@ module spi #(
             miso_n = {miso_r[6:0], 1'b0};
     end
 
-    assign o_miso = miso_r[7]; // LSB-first shifting
+    assign o_miso = mosi_r[7]; // LSB-first shifting
     assign mosi_n = ps_e == READY ? {mosi_r[6:0], i_mosi} :
                     ps_e == RECEIVE_DATA ? {mosi_r[6:0], i_mosi} : 8'h00;
     assign o_rd_addr = nfft_send_counter_r;
