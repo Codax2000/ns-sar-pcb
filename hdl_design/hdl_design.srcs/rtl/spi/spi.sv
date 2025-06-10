@@ -8,8 +8,9 @@ module spi #(
     input logic i_mosi,
     output logic o_miso,
 
-    // FIFO interface
-    logic o_start_coversion,
+    // FIFO interface and FSM stuff
+    output logic o_start_coversion,
+    input logic [1:0] i_fsm_status,
 
     // Mem read interface
     output logic [ADDR_WIDTH-1:0] o_rd_addr,
@@ -66,17 +67,35 @@ module spi #(
                                     ((ps_e == SEND_MEMORY)   && (data_send_counter_r == 4'hF)) || 
                                     ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) ? 4'h0 : data_send_counter_r + 1;
 
+    // register logic
+    assign i_if_reg.i_nfft_wr_en     = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h0);
+    assign i_if_reg.i_dwa_wr_en      = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h1);
+    assign i_if_reg.i_osr_wr_en      = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h1);
+    assign i_if_reg.i_clk_div_wr_en  = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h2);
+    assign i_if_reg.i_dwa        = mosi_r[0];
+    assign i_if_reg.i_osr_power  = mosi_r[3:1];
+    assign i_if_reg.i_nfft_power = mosi_r[3:0];
+    assign i_if_reg.i_clk_div    = mosi_r[3:0];
+
     // shifting logic
     always_comb begin
         if (next_state_is_transfer_register) begin
             if (next_state_is_begin_sample)
                 miso_n = 4'b1010;
-            else begin
+            else if (command == RECEIVE_DATA) begin
+                case (reg_index)
+                    2'h0: miso_n = {i_if_reg.i_nfft_power, 4'h0};
+                    2'h1: miso_n = {i_if_reg.i_osr_power, i_if_reg.i_dwa, 4'h0};
+                    2'h2: miso_n = {i_if_reg.i_clk_div, 4'h0};
+                    2'h3: miso_n = {o_start_coversion, o_start_coversion, i_fsm_status, 4'h0};
+                    default: miso_n = 8'h0; // should never be touched
+                endcase
+            end else begin
                 case (reg_index)
                     2'h0: miso_n = {i_if_reg.nfft_power, 4'h0};
                     2'h1: miso_n = {i_if_reg.osr_power, i_if_reg.dwa, 4'h0};
                     2'h2: miso_n = {i_if_reg.clk_div, 4'h0};
-                    2'h3: miso_n = {o_start_coversion, 1'b0, 2'h0, 4'h0};
+                    2'h3: miso_n = {o_start_coversion, o_start_coversion, i_fsm_status, 4'h0};
                     default: miso_n = 8'h0; // should never be touched
                 endcase
             end
@@ -88,8 +107,8 @@ module spi #(
             miso_n = {miso_r[6:0], 1'b0};
     end
 
-    assign o_miso = mosi_r[7]; // LSB-first shifting
-    assign mosi_n = ps_e == READY ? {mosi_r[6:0], i_mosi} :
+    assign o_miso = miso_r[7]; // LSB-first shifting
+    assign mosi_n = ps_e == READY ? {7'h00, i_mosi} :
                     ps_e == RECEIVE_DATA ? {mosi_r[6:0], i_mosi} : 8'h00;
     assign o_rd_addr = nfft_send_counter_r;
     assign o_start_coversion = next_state_is_begin_sample;
@@ -109,18 +128,23 @@ module spi #(
     // clocked logic
     always_ff @(posedge i_scl or negedge i_csb) begin
         if (i_csb) begin
-            miso_r <= 8'h00;
             mosi_r <= 8'h00;
             ps_e <= READY;
             data_send_counter_r <= 4'h0;
             nfft_send_counter_r <= 16'h0000;
         end else begin
-            miso_r <= miso_n;
             mosi_r <= mosi_n;
             ps_e <= ns_e;
             data_send_counter_r <= data_send_counter_n;
             nfft_send_counter_r <= nfft_send_counter_n;
         end
+    end
+
+    always_ff @(negedge i_scl or negedge i_csb) begin
+        if (i_csb)
+            miso_r <= 8'h00;
+        else
+            miso_r <= miso_n;
     end
 
 endmodule

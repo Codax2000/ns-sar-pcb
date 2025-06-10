@@ -32,7 +32,7 @@ module dig_core #(
     logic [DATA_WIDTH-1:0] memory_data;
     assign memory_data = !rd_addr[0] ? 16'hCAFE : 16'hFEED ;
 
-    if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_cs_b));
+    if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_sysrst_b));
 
     spi #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -44,6 +44,7 @@ module dig_core #(
         .o_miso,
 
         .o_start_coversion(start_conversion),
+        .i_fsm_status(2'h0),
 
         .o_rd_addr(rd_addr),
         .i_memory_data(memory_data),
