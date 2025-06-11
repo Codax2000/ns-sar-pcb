@@ -30,7 +30,7 @@ class base_test extends uvm_test;
             `uvm_fatal("TB_TOP", "Could not attach top-level configuration")
 
         i_env_cfg = new("i_env_cfg");
-        i_env_cfg.randomize();
+        randomize_config();
         i_env_cfg.vif_spi = i_top_cfg.vif_spi;
         i_env_cfg.vif_clkgen = i_top_cfg.vif_clkgen;
         i_env_cfg.vif_input = i_top_cfg.vif_input;
@@ -42,6 +42,10 @@ class base_test extends uvm_test;
         uvm_config_db #(adc_env_cfg)::set(this, "env", "cfg", i_env_cfg);
 
         env = adc_env::type_id::create("env", this);
+    endfunction
+
+    virtual function int randomize_config();
+        return i_env_cfg.randomize();
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
@@ -78,80 +82,113 @@ class base_test extends uvm_test;
         phase.raise_objection(this);
         i_env_cfg.print();
 
-        // write NFFT
-        ral.nfft_pow.write(status, i_env_cfg.nfft_power);
+        set_field("nfft_power", i_env_cfg.nfft_power);
+        set_field("osr", i_env_cfg.osr_power);
+        set_field("dwa_enable", i_env_cfg.is_dwa);
+        set_field("sample_clk_div", i_env_cfg.clk_div);
 
-        // set OSR and DWA and then update()
-        ral.osr_dwa.osr.set(i_env_cfg.osr_power);
-        ral.osr_dwa.dwa_enable.set(i_env_cfg.is_dwa);
-        ral.update(status);
-
-        // write CLKDIV
-        ral.sample_clk_div.write(status, i_env_cfg.clk_div);
-
+        update_reg();
         ral.print();
 
+        `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
+
         // mirror values back to make sure they are what we just wrote
-        ral.nfft_pow.predict(i_env_cfg.nfft_power);
-        ral.nfft_pow.mirror(status, UVM_CHECK);
-
-        ral.osr_dwa.predict({i_env_cfg.osr_power, i_env_cfg.is_dwa});
-        ral.osr_dwa.mirror(status, UVM_CHECK);
-
-        ral.sample_clk_div.predict(i_env_cfg.clk_div);
-        ral.sample_clk_div.mirror(status, UVM_CHECK);
-
-        ral.status.predict(4'h0);
-        ral.status.mirror(status, UVM_CHECK);
+        check_field("nfft_power",       i_env_cfg.nfft_power);
+        check_field("dwa_enable",       i_env_cfg.is_dwa);
+        check_field("osr",              i_env_cfg.osr_power);
+        check_field("sample_clk_div",   i_env_cfg.clk_div);
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
         phase.drop_objection(this);
     endtask
 
     virtual task main_phase(uvm_phase phase);
+        phase.raise_objection(this);
         `uvm_info("MAIN_PHASE", "Running randomized conversion test", UVM_MEDIUM)
         begin_conversion();
         allow_conversion_to_end();
         read_conversion_results();
         `uvm_info("MAIN_PHASE", "Finished random conversion test", UVM_MEDIUM)
+        phase.drop_objection(this);
     endtask
 
     virtual task post_main_phase(uvm_phase phase);
+        phase.raise_objection(this);
         `uvm_info("POST_MAIN_PHASE", "Checking device status registers", UVM_MEDIUM)
 
-        env.ral.ral_model.status.predict(4'h0);
-        env.ral.ral_model.status.mirror(status, UVM_CHECK);
+        check_field("fsm_status", 0);
+        check_field("read_mem", 0);
+        check_field("begin_sample", 0);
 
         `uvm_info("POST_MAIN_PHASE", "Status checking finished", UVM_MEDIUM)
+        phase.drop_objection(this);
     endtask
 
     task begin_conversion();
-        ral_registers ral;
-        ral = env.ral.ral_model;
-        ral.status.begin_sample.set(1'b1);
-        ral.update(status);
+        write_field("begin_sample", 1);
     endtask
 
     task read_conversion_results();
-        ral_registers ral;
-        ral = env.ral.ral_model;
-        ral.status.read_mem.set(1'b1);
-        ral.update(status);
+        write_field("read_mem", 1);
     endtask
 
     task allow_conversion_to_end();
-        wait (vif_status.fsm_convert_status == 2'b00);
+        uvm_reg_data_t fsm_status_rb;
+        do begin
+            `uvm_info("BASE_TEST", "Waiting for conversion to end", UVM_MEDIUM);
+            read_field("fsm_status", fsm_status_rb);
+        end while (fsm_status_rb != 0);
+    endtask
+
+    task write_field(string name, uvm_reg_data_t value);
+        uvm_reg_field field_to_write;
+        field_to_write = env.ral.ral_model.get_field_by_name(name);
+        field_to_write.write(status, value);
+    endtask
+
+    task set_field(string name, uvm_reg_data_t value);
+        uvm_reg_field field_to_set;
+        field_to_set = env.ral.ral_model.get_field_by_name(name);
+        field_to_set.set(value);
+    endtask
+
+    task update_reg();
+        env.ral.ral_model.update(status);
+    endtask
+
+    task check_field(string name, uvm_reg_data_t expected_value);
+        uvm_reg_field field_to_check;
+        field_to_check = env.ral.ral_model.get_field_by_name(name);
+        field_to_check.predict(expected_value);
+        field_to_check.mirror(status, UVM_CHECK);
+    endtask
+
+    task read_field(string name, output uvm_reg_data_t reg_value);
+        uvm_reg_field field_to_read;
+        field_to_read = env.ral.ral_model.get_field_by_name(name);
+        field_to_read.read(status, reg_value);
     endtask
 
 endclass
 
-// class test_random_conversion extends base_test;
+class test_random_conversion extends base_test;
 
-//     // drive a bunch of random values onto the input and convert nfft
-//     // different values (nfft should be a random number written to the nfft
-//     // register at start of test)
+    `uvm_component_utils(test_random_conversion)
 
-// endclass
+    function new(string name = "test_random_conversion", uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    single_const_value_conversion_seq seq;
+
+    virtual task main_phase(uvm_phase phase);
+        phase.raise_objection(this);
+        seq = single_const_value_conversion_seq::type_id::create("seq");
+        seq.start(env.mc_sequencer);
+        phase.drop_objection(this);
+    endtask
+
+endclass
 
 // class test_dwa extends base_test;
 
