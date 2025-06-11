@@ -30,7 +30,6 @@ module dig_core #(
 
     logic [ADDR_WIDTH-1:0] rd_addr;
     logic [DATA_WIDTH-1:0] memory_data;
-    assign memory_data = !rd_addr[0] ? 16'hCAFE : 16'hFEED ;
 
     if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_sysrst_b));
 
@@ -53,5 +52,11 @@ module dig_core #(
     );
 
     registers i_reg (i_if_reg);
+
+    simple_data_mem mem (
+        .i_clk(i_scl),
+        .rd_addr,
+        .out_data(memory_data)
+    );
 
 endmodule

@@ -35,6 +35,8 @@ class spi_monitor extends uvm_monitor;
         forever begin
             item = new();
             collect_transaction(item);
+            if (item.command == 2'h2)
+                item.print();
             mon_analysis_port.write(item);
         end
     endtask
@@ -46,6 +48,7 @@ class spi_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_signals(spi_packet item);
+        bit [15:0] reg_temp;
         mem_response = {};
         reg_response = 4'h0;
         mosi = 8'h00;
@@ -62,10 +65,10 @@ class spi_monitor extends uvm_monitor;
         // receive MISO data
         if (item.command == 2'b10) begin : receive_mem
             for (int i = 0; i < nfft; i++) begin
-                bit [15:0] reg_temp;
+                reg_temp = 16'h0000;
                 for (int j = 15; j >= 0; j--) begin
                     @(posedge vif.scl);
-                    reg_temp[i] = vif.miso;
+                    reg_temp[j] = vif.miso;
                 end
                 item.mem_response.push_back(reg_temp);
             end

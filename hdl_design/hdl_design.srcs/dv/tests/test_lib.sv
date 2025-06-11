@@ -30,7 +30,7 @@ class base_test extends uvm_test;
             `uvm_fatal("TB_TOP", "Could not attach top-level configuration")
 
         i_env_cfg = new("i_env_cfg");
-        i_env_cfg.randomize();
+        randomize_config();
         i_env_cfg.vif_spi = i_top_cfg.vif_spi;
         i_env_cfg.vif_clkgen = i_top_cfg.vif_clkgen;
         i_env_cfg.vif_input = i_top_cfg.vif_input;
@@ -42,6 +42,10 @@ class base_test extends uvm_test;
         uvm_config_db #(adc_env_cfg)::set(this, "env", "cfg", i_env_cfg);
 
         env = adc_env::type_id::create("env", this);
+    endfunction
+
+    virtual function int randomize_config();
+        return i_env_cfg.randomize();
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
@@ -78,10 +82,10 @@ class base_test extends uvm_test;
         phase.raise_objection(this);
         i_env_cfg.print();
 
-        write_field("nfft_power", i_env_cfg.nfft_power);
+        set_field("nfft_power", i_env_cfg.nfft_power);
         set_field("osr", i_env_cfg.osr_power);
         set_field("dwa_enable", i_env_cfg.is_dwa);
-        write_field("sample_clk_div", i_env_cfg.clk_div);
+        set_field("sample_clk_div", i_env_cfg.clk_div);
 
         update_reg();
         ral.print();
@@ -167,13 +171,24 @@ class base_test extends uvm_test;
 
 endclass
 
-// class test_random_conversion extends base_test;
+class test_random_conversion extends base_test;
 
-//     // drive a bunch of random values onto the input and convert nfft
-//     // different values (nfft should be a random number written to the nfft
-//     // register at start of test)
+    `uvm_component_utils(test_random_conversion)
 
-// endclass
+    function new(string name = "test_random_conversion", uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    single_const_value_conversion_seq seq;
+
+    virtual task main_phase(uvm_phase phase);
+        phase.raise_objection(this);
+        seq = single_const_value_conversion_seq::type_id::create("seq");
+        seq.start(env.mc_sequencer);
+        phase.drop_objection(this);
+    endtask
+
+endclass
 
 // class test_dwa extends base_test;
 

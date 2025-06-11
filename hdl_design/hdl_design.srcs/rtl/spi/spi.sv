@@ -52,16 +52,17 @@ module spi #(
     assign next_state_is_transfer_memory   = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == MEM_READ);
     assign next_state_is_begin_sample      = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == BEGIN_SAMPLE);
     assign data_send_done = ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) || // register send case
-                            ((ps_e == SEND_MEMORY)   && (nfft_send_counter_r == (nfft - 1)) && (data_send_counter_r == 4'hF));
-    assign load_mem_lsb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'hF)) || next_state_is_transfer_memory;
-    assign load_mem_msb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'h7));
-    assign increment_nfft_counter = data_send_done || ((ps_e == SEND_REGISTER) && (ns_e == SEND_MEMORY));
+                            ((ps_e == SEND_MEMORY)   && (nfft_send_counter_r == (nfft - 1)) && (data_send_counter_n == 4'hF));
+    assign load_mem_msb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'hF)) || next_state_is_transfer_memory;
+    assign load_mem_lsb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'h7));
+    assign increment_nfft_counter = (ps_e == SEND_MEMORY) && (data_send_counter_n == 4'hF);
     assign command = mosi_r[7:6];
     assign reg_index = mosi_r[5:4];
 
     // counting logic
     assign nfft = 1 << i_if_reg.nfft_power;
-    assign nfft_send_counter_n = increment_nfft_counter ? nfft_send_counter_r + 1 : nfft_send_counter_r;
+    assign nfft_send_counter_n = (ps_e == READY) ? 16'h0000 :
+                                 increment_nfft_counter ? nfft_send_counter_r + 1 : nfft_send_counter_r;
     assign data_send_counter_n =    ((ps_e == READY)) ||
                                     ((ps_e == RECEIVE_DATA)  && (data_send_counter_r == 4'h7)) ||
                                     ((ps_e == SEND_MEMORY)   && (data_send_counter_r == 4'hF)) || 
@@ -87,7 +88,7 @@ module spi #(
                     2'h0: miso_n = {i_if_reg.i_nfft_power, 4'h0};
                     2'h1: miso_n = {i_if_reg.i_osr_power, i_if_reg.i_dwa, 4'h0};
                     2'h2: miso_n = {i_if_reg.i_clk_div, 4'h0};
-                    2'h3: miso_n = {o_start_coversion, o_start_coversion, i_fsm_status, 4'h0};
+                    2'h3: miso_n = {o_start_coversion, ns_e == SEND_MEMORY, i_fsm_status, 4'h0};
                     default: miso_n = 8'h0; // should never be touched
                 endcase
             end else begin
@@ -95,7 +96,7 @@ module spi #(
                     2'h0: miso_n = {i_if_reg.nfft_power, 4'h0};
                     2'h1: miso_n = {i_if_reg.osr_power, i_if_reg.dwa, 4'h0};
                     2'h2: miso_n = {i_if_reg.clk_div, 4'h0};
-                    2'h3: miso_n = {o_start_coversion, o_start_coversion, i_fsm_status, 4'h0};
+                    2'h3: miso_n = {o_start_coversion, ns_e == SEND_MEMORY, i_fsm_status, 4'h0};
                     default: miso_n = 8'h0; // should never be touched
                 endcase
             end
@@ -110,7 +111,7 @@ module spi #(
     assign o_miso = miso_r[7]; // LSB-first shifting
     assign mosi_n = ps_e == READY ? {7'h00, i_mosi} :
                     ps_e == RECEIVE_DATA ? {mosi_r[6:0], i_mosi} : 8'h00;
-    assign o_rd_addr = nfft_send_counter_r;
+    assign o_rd_addr = nfft_send_counter_n;
     assign o_start_coversion = next_state_is_begin_sample;
 
     // next state logic
@@ -126,7 +127,7 @@ module spi #(
     end
 
     // clocked logic
-    always_ff @(posedge i_scl or negedge i_csb) begin
+    always_ff @(posedge i_scl or posedge i_csb) begin
         if (i_csb) begin
             mosi_r <= 8'h00;
             ps_e <= READY;
@@ -140,7 +141,7 @@ module spi #(
         end
     end
 
-    always_ff @(negedge i_scl or negedge i_csb) begin
+    always_ff @(negedge i_scl or posedge i_csb) begin
         if (i_csb)
             miso_r <= 8'h00;
         else
