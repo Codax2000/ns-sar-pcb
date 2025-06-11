@@ -18,6 +18,10 @@ package adc_env_pkg;
 
     // eventually, include scoreboard package
 
+    // include multichannel sequencer
+    `include "adc_mc_sequencer.sv"
+    `include "adc_mc_seq_lib.sv"
+
     // finally, include environment
     `include "adc_env_cfg.sv"
     `include "adc_env.sv"

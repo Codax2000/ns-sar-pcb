@@ -19,14 +19,14 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0.000000 us"></ZoomStartTime>
-      <ZoomEndTime time="19.660001 us"></ZoomEndTime>
-      <Cursor1Time time="19.660000 us"></Cursor1Time>
+      <ZoomEndTime time="45.860001 us"></ZoomEndTime>
+      <Cursor1Time time="45.860000 us"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="162"></NameColumnWidth>
-      <ValueColumnWidth column_width="234"></ValueColumnWidth>
+      <ValueColumnWidth column_width="230"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="19" />
+   <WVObjectSize size="24" />
    <wvobject fp_name="/tb_top/i_if_clkgen/clk_period_in_ns" type="array">
       <obj_property name="ElementShortName">clk_period_in_ns[31:0]</obj_property>
       <obj_property name="ObjectShortName">clk_period_in_ns[31:0]</obj_property>
@@ -102,5 +102,25 @@
    <wvobject fp_name="/tb_top/i_if_spi/miso" type="logic">
       <obj_property name="ElementShortName">miso</obj_property>
       <obj_property name="ObjectShortName">miso</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider24">
+      <obj_property name="label">Registers</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/nfft_power" type="array">
+      <obj_property name="ElementShortName">nfft_power[3:0]</obj_property>
+      <obj_property name="ObjectShortName">nfft_power[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/osr_power" type="array">
+      <obj_property name="ElementShortName">osr_power[2:0]</obj_property>
+      <obj_property name="ObjectShortName">osr_power[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/dwa" type="logic">
+      <obj_property name="ElementShortName">dwa</obj_property>
+      <obj_property name="ObjectShortName">dwa</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/clk_div" type="array">
+      <obj_property name="ElementShortName">clk_div[3:0]</obj_property>
+      <obj_property name="ObjectShortName">clk_div[3:0]</obj_property>
    </wvobject>
 </wave_config>

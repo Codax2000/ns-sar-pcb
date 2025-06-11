@@ -13,9 +13,11 @@ module tb_top ();
 
     if_status i_if_status();
 
-    // board_top DUT (
-    //     // TODO: add test signals
-    // );
+    board_top DUT (
+        .vin(i_if_input.hardware_port),
+        .clkgen(i_if_clkgen.module_clkgen),
+        .spi(i_if_spi)
+    );
 
     // TODO: connect status interface signals
     // assign i_if_status.fsm_convert_status = DUT.

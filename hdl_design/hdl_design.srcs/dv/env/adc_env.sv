@@ -12,6 +12,7 @@ class adc_env extends uvm_env;
     input_agent_cfg signal_gen_cfg;
 
     adc_env_cfg i_env_cfg;
+    adc_mc_sequencer mc_sequencer;
 
     reg_env ral;
 
@@ -34,6 +35,7 @@ class adc_env extends uvm_env;
         clkgen = clkgen_agent::type_id::create("clkgen", this);
         signal_gen = input_agent::type_id::create("signal_gen", this);
         ral = reg_env::type_id::create("ral", this);
+        mc_sequencer = adc_mc_sequencer::type_id::create("mc_sequencer", this);
 
         uvm_reg::include_coverage ("*", UVM_CVR_ALL);
     endfunction
@@ -42,6 +44,8 @@ class adc_env extends uvm_env;
         super.connect_phase(phase);
         ral.ral_model.default_map.set_sequencer(spi.sequencer, ral.adapter);
         spi.monitor.mon_analysis_port.connect(ral.spi_predictor.bus_in);
+        mc_sequencer.ral = ral;
+        mc_sequencer.input_sequencer = signal_gen.sequencer;
     endfunction
 
     virtual function void create_configs();

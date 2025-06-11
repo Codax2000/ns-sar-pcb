@@ -52,6 +52,7 @@ class spi_driver extends uvm_driver #(spi_packet);
         #(clk_period_ns/2);
         vif.csb = 1'b0;
         #(clk_period_ns/2);
+
         // send MOSI data
         for (int i = 7; i >= 0; i--) begin
             vif.mosi = mosi[i]; // MSB first
@@ -60,6 +61,8 @@ class spi_driver extends uvm_driver #(spi_packet);
             #(clk_period_ns/2);
             vif.scl = 1'b0;
         end
+        vif.mosi = 1'b0; // drive low to avoid MOSI staying high and being confusing
+
         // receive MISO data
         if (req.command == 2'b10) begin : receive_mem
             for (int i = 0; i < nfft; i++) begin
