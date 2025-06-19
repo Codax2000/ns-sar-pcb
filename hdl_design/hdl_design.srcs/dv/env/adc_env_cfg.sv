@@ -41,7 +41,7 @@ class adc_env_cfg extends uvm_object;
 
     // constraints literally match HW/RTL constraints
     constraint clk_matches_syn {
-        sys_clk == 100000000;
+        sys_clk ==  24000000;
         spi_clk ==   2000000;
     }
 
@@ -63,6 +63,13 @@ class adc_env_cfg extends uvm_object;
     constraint legal_clk_div {
         clk_div >= 0;
         clk_div < 16;
+    }
+
+    constraint TEMP_known_values {
+        nfft_power == 3;
+        osr_power == 3;
+        is_dwa == 0;
+        clk_div == 0; 
     }
 
     function void post_randomize();

@@ -9,9 +9,12 @@ if has not been written.
 Port A has write-before-read capability, so keeping address the same will
 read out the value written on the previous clock cycle, if any
 */
+`ifndef VIVADO
+`define NON_IP_MEM
+`endif
 
 module data_mem #(
-    parameter ADDR_WIDTH=20,  // defines maximum NFFT
+    parameter ADDR_WIDTH=15,
     parameter DATA_WIDTH=16
 ) (
     input logic clka,
@@ -24,6 +27,8 @@ module data_mem #(
     input logic [ADDR_WIDTH-1:0] addr_b,
     output logic [DATA_WIDTH-1:0] rd_data_b
 );
+
+    `ifdef NON_IP_MEM
     localparam MEM_DEPTH = 1 << ADDR_WIDTH;
     logic [DATA_WIDTH-1:0] mem [MEM_DEPTH-1:0];
 
@@ -38,5 +43,19 @@ module data_mem #(
 
     always_ff @(posedge clkb)
         rd_data_b <= mem[addr_b];
+    `else
+    conversion_data_mem_gen data_mem (
+        .addra(addr_a),
+        .dina(wr_data_a),
+        .clka,
+        .wea(wr_enable_a),
+        .ena(we_enable_a),
+
+        .addrb(addr_b),
+        .clkb,
+        .doutb(rd_data_b)
+    );
+    assign rd_data_a = { DATA_WIDTH { 1'b0 } };
+    `endif
 
 endmodule
