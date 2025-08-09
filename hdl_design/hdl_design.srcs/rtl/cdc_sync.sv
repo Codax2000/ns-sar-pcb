@@ -1,5 +1,5 @@
 module cdc_sync #(
-    parameter N_SYNC_STAGES=4
+    parameter N_SYNC_STAGES=2
 ) (
     input  logic i_dwa,
     output logic o_dwa,
@@ -10,8 +10,8 @@ module cdc_sync #(
     input  logic [3:0] i_clk_div,
     output logic [3:0] o_clk_div,
 
-    input  logic [2:0] i_fsm_status,
-    output logic [2:0] o_fsm_status,
+    input  logic [1:0] i_fsm_status,
+    output logic [1:0] o_fsm_status,
 
     input  logic i_clk_spi,
     input  logic i_clk_sys

@@ -68,6 +68,8 @@ class base_test extends uvm_test;
             input_seq.start(env.signal_gen.sequencer);
         join
 
+        #10us;
+
         `uvm_info("RESET_PHASE", "DUT Successfully reset and sine wave being generated", UVM_MEDIUM)
         phase.drop_objection(this);
 
@@ -117,7 +119,7 @@ class base_test extends uvm_test;
         phase.raise_objection(this);
         `uvm_info("POST_MAIN_PHASE", "Checking device status registers", UVM_MEDIUM)
 
-        check_field("fsm_status", 0);
+        check_field("fsm_status", 1);
         check_field("read_mem", 0);
         check_field("begin_sample", 0);
 
@@ -136,9 +138,10 @@ class base_test extends uvm_test;
     task allow_conversion_to_end();
         uvm_reg_data_t fsm_status_rb;
         do begin
-            `uvm_info("BASE_TEST", "Waiting for conversion to end", UVM_MEDIUM);
+            `uvm_info("BASE_TEST", "Waiting for conversion to end", UVM_MEDIUM)
             read_field("fsm_status", fsm_status_rb);
-        end while (fsm_status_rb != 0);
+        end while (fsm_status_rb == 0);
+        `uvm_info("BASE_TEST", "Conversion finished", UVM_MEDIUM)
     endtask
 
     task write_field(string name, uvm_reg_data_t value);
@@ -172,12 +175,21 @@ class base_test extends uvm_test;
 
 endclass
 
-class test_random_conversion extends base_test;
+class random_conversion_test extends base_test;
 
-    `uvm_component_utils(test_random_conversion)
+    `uvm_component_utils(random_conversion_test)
 
-    function new(string name = "test_random_conversion", uvm_component parent = null);
+    function new(string name = "random_conversion_test", uvm_component parent = null);
         super.new(name, parent);
+    endfunction
+
+    function int randomize_config();
+        return i_env_cfg.randomize() with {
+            nfft_power == 3;
+            osr_power == 3;
+            is_dwa == 0;
+            clk_div == 0; 
+        };
     endfunction
 
     single_const_value_conversion_seq seq;

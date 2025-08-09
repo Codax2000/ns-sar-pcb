@@ -41,8 +41,8 @@ class adc_env_cfg extends uvm_object;
 
     // constraints literally match HW/RTL constraints
     constraint clk_matches_syn {
-        sys_clk ==  24000000;
-        spi_clk ==   2000000;
+        sys_clk ==  24000000; // 24 MHz crystal oscillator
+        spi_clk ==   2000000; // 2 MHz SPI clock
     }
 
     constraint legal_vdd {
@@ -66,10 +66,10 @@ class adc_env_cfg extends uvm_object;
     }
 
     constraint TEMP_known_values {
-        nfft_power == 3;
-        osr_power == 3;
-        is_dwa == 0;
-        clk_div == 0; 
+        clk_div == 4;
+        nfft_power == 2;
+        osr_power == 2;
+        is_dwa == 1;
     }
 
     function void post_randomize();

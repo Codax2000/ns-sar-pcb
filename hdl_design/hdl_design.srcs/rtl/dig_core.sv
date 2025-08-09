@@ -53,7 +53,7 @@ module dig_core #(
     logic sys_rst_b;
     logic sys_rst;
 
-    if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_sysrst_b));
+    if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_sysrst_b && pll_is_locked));
 
     spi #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -86,6 +86,7 @@ module dig_core #(
         .o_clk_div(clk_div),
         .o_osr_power(osr_power),
 
+        .i_fsm_status(fsm_status_sysclk),
         .o_fsm_status(fsm_status_spiclk),
 
         .i_clk_spi(i_scl),
@@ -110,19 +111,25 @@ module dig_core #(
         .rd_data_b(memory_data)
     );
 
-    main_state_machine i_main_state_machine (
-        .i_arst_b(sys_rst_b),
+    sar_logic i_sar_logic (
+        .i_arst_b(sys_rst_b && pll_is_locked),
         .i_clk(pll_clk),
 
         .o_ready(sm_ready),
-        .i_start((!fifo_is_empty) && pll_is_locked),
+        .i_start(!fifo_is_empty),
 
-        .o_start_coversion(start_sar_conversion),
-        .i_conversion_done(sar_conversion_done)
+        .wr_addr(wr_addr),
+        .wr_data(write_data),
+        .wr_en(wr_en),
+
+        .i_dwa(dwa),
+        .i_nfft_power(nfft_power),
+        .i_osr_power(osr_power),
+        .i_clk_div(clk_div)
     );
 
     fifo i_conversion_fifo (
-        .rst(sys_rst_b),
+        .rst(sys_rst || (!pll_is_locked)),
         .rd_clk(pll_clk),
         .wr_clk(i_scl),
 
@@ -148,6 +155,5 @@ module dig_core #(
     // temporary, in lieu of SAR logic
     assign fsm_status_sysclk[0] = sm_ready;
     assign fsm_status_sysclk[1] = 1'b0;
-    assign sar_conversion_done  = 1'b1;
 
 endmodule
