@@ -4,7 +4,7 @@ across projects. Implements utility functions and generates register CSV values
 for readability. Address space is defined as a global parameter
 
 Generated files:
-- ral_reg_cfg.sv : UVM RAL support, building out the register objects and the register map,
+- ral_dut_cfg.sv : UVM RAL support, building out the register objects and the register map,
                    including internal memories.
 - fields.csv     : CSV of fields, sizes, descriptions, etc, in the same order as in fields.json
 - reg_map.csv    : CSV of register map, not including memories
@@ -13,11 +13,15 @@ Generated files:
 
 
 import json
+import os
 import pandas as pd
 import pdb
 
 
-FIELDS_PATH = './fields.json'
+FIELDS_PATH = './hdl_design/hdl_design.srcs/registers/fields.json'
+REG_IF_PATH = './hdl_design/hdl_design.srcs/registers/fields.csv'
+REGISTERS_PATH = 
+RAL_DUT_CONFIG_PATH
 FIELD_WIDTH = 16
 
 
@@ -42,7 +46,7 @@ def gen_fields_sheet(data, save_csv=True):
     df = df.reset_index(names='field_name')
 
     if save_csv:
-        df.to_csv('./fields.csv', index=False)
+        df.to_csv('./hdl_design/hdl_design.srcs/registers/fields.csv', index=False)
     
     return df
 
@@ -56,7 +60,7 @@ def gen_field_map(data):
         data : DataFrame : register fields
     '''
     top_address = data['reg_address'].max()
-    with open('./reg_map.csv', 'w') as f:
+    with open('./hdl_design/hdl_design.srcs/registers/reg_map.csv', 'w') as f:
         # print headers in CSV
         print('address', file=f, end='')
         for i in range(15,-1,-1):
@@ -153,11 +157,11 @@ def add_register_object_to_ral(fields, address, file):
         field_row = fields[fields['field_name'] == reg_field]
         print(f'        this.{reg_field}.configure(', file=file)
         print(f'            this,', file=file)
-        print(f'            {field_row['width'].iloc[0]},', file=file)
-        print(f'            {field_row['lsb_bit_position'].iloc[0]},', file=file)
-        print(f'            {field_row['access'].iloc[0]},', file=file)
-        print(f'            {field_row['volatile'].iloc[0]},', file=file)
-        print(f'            {field_row['reset_value'].iloc[0]},', file=file)
+        # print(f'            {field_row['width'].iloc[0]},', file=file)
+        # print(f'            {field_row['lsb_bit_position'].iloc[0]},', file=file)
+        # print(f'            {field_row['access'].iloc[0]},', file=file)
+        # print(f'            {field_row['volatile'].iloc[0]},', file=file)
+        # print(f'            {field_row['reset_value'].iloc[0]},', file=file)
         print(f'            1,', file=file)
         print(f'            0,', file=file)
         print(f'            0', file=file)
@@ -168,12 +172,12 @@ def add_register_object_to_ral(fields, address, file):
 
 def generate_ral_config_file(fields):
     '''
-    Generate the ral_reg_cfg.sv file contents.
+    Generate the ral_dut_cfg.sv file contents.
 
     Arguments:
         fields : DataFrame : register fields with information
     '''
-    with open('./ral_reg_cfg.sv', 'w') as file:
+    with open('./hdl_design/hdl_design.srcs/dv/env/ral_dut_cfg.sv', 'w') as file:
         print('import uvm_pkg::*;', file=file)
         print('`include "uvm_macros.svh"`', file=file, end='\n\n')
         for idx in fields['reg_address'].unique():
@@ -206,12 +210,12 @@ def generate_ral_config_file(fields):
 def generate_interface_file(fields):
     '''
     Generates the interface.sv file for use in passing registers around the
-    design
+    design. Generates it in the rtl/registers directory
 
     Arguments:
         fields : DataFrame : register field dataframe with access type
     '''
-    with open('reg_if.sv', 'w') as file:
+    with open(REG_IF_PATH, 'w') as file:
         print('interface reg_if;', file=file)
         for field in fields['field_name']:
             width = fields.loc[fields['field_name'] == field, 'width'].iloc[0]
@@ -247,7 +251,22 @@ def generate_interface_file(fields):
         print('\nendinterface', file=file)
 
 
+def remove_generated_files():
+    '''
+    Removes all generated files before regeneration
+    '''
+    if os.path.isfile(REG_IF_PATH):
+        os.remove(REG_IF_PATH)
+    if os.path.isfile('./hdl_design/hdl_design.srcs/dv/env/ral_dut_cfg.sv'):
+        os.remove('./hdl_design/hdl_design.srcs/dv/env/ral_dut_cfg.sv')
+    if os.path.isfile('./hdl_design/hdl_design.srcs/registers/reg_map.csv'):
+        os.remove('./hdl_design/hdl_design.srcs/registers/reg_map.csv')
+    if os.path.isfile('./hdl_design/hdl_design.srcs/registers/fields.csv'):
+        os.remove('./hdl_design/hdl_design.srcs/registers/fields.csv')
+
+
 def main():
+    remove_generated_files()
     fields_json = parse_registers_json(FIELDS_PATH)
     fields_df = gen_fields_sheet(fields_json)
     gen_field_map(fields_df)

@@ -15,11 +15,6 @@ class ral_register_0 extends uvm_reg;
         this.NFFT_POWER = uvm_reg_field::type_id::create("NFFT_POWER", , get_full_name());
         this.NFFT_POWER.configure(
             this,
-            14,
-            0,
-            RW,
-            0,
-            0,
             1,
             0,
             0
@@ -27,11 +22,6 @@ class ral_register_0 extends uvm_reg;
         this.DWA_EN = uvm_reg_field::type_id::create("DWA_EN", , get_full_name());
         this.DWA_EN.configure(
             this,
-            1,
-            15,
-            RW,
-            0,
-            0,
             1,
             0,
             0
@@ -53,11 +43,6 @@ class ral_register_1 extends uvm_reg;
         this.OSR_POWER = uvm_reg_field::type_id::create("OSR_POWER", , get_full_name());
         this.OSR_POWER.configure(
             this,
-            8,
-            0,
-            RW,
-            0,
-            0,
             1,
             0,
             0
@@ -79,11 +64,6 @@ class ral_register_2 extends uvm_reg;
         this.N_SH_TOTAL_CYCLES = uvm_reg_field::type_id::create("N_SH_TOTAL_CYCLES", , get_full_name());
         this.N_SH_TOTAL_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -105,11 +85,6 @@ class ral_register_3 extends uvm_reg;
         this.N_SH_ACTIVE_CYCLES = uvm_reg_field::type_id::create("N_SH_ACTIVE_CYCLES", , get_full_name());
         this.N_SH_ACTIVE_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -131,11 +106,6 @@ class ral_register_4 extends uvm_reg;
         this.N_BOTTOM_PLATE_ACTIVE_CYCLES = uvm_reg_field::type_id::create("N_BOTTOM_PLATE_ACTIVE_CYCLES", , get_full_name());
         this.N_BOTTOM_PLATE_ACTIVE_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -157,11 +127,6 @@ class ral_register_5 extends uvm_reg;
         this.N_SAR_CYCLES = uvm_reg_field::type_id::create("N_SAR_CYCLES", , get_full_name());
         this.N_SAR_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -183,11 +148,6 @@ class ral_register_6 extends uvm_reg;
         this.N_INT1_TOTAL_CYCLES = uvm_reg_field::type_id::create("N_INT1_TOTAL_CYCLES", , get_full_name());
         this.N_INT1_TOTAL_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -209,11 +169,6 @@ class ral_register_7 extends uvm_reg;
         this.N_INT1_ACTIVE_CYCLES = uvm_reg_field::type_id::create("N_INT1_ACTIVE_CYCLES", , get_full_name());
         this.N_INT1_ACTIVE_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -235,11 +190,6 @@ class ral_register_8 extends uvm_reg;
         this.N_INT2_TOTAL_CYCLES = uvm_reg_field::type_id::create("N_INT2_TOTAL_CYCLES", , get_full_name());
         this.N_INT2_TOTAL_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -261,11 +211,6 @@ class ral_register_9 extends uvm_reg;
         this.N_INT2_ACTIVE_CYCLES = uvm_reg_field::type_id::create("N_INT2_ACTIVE_CYCLES", , get_full_name());
         this.N_INT2_ACTIVE_CYCLES.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            1,
             1,
             0,
             0
@@ -290,21 +235,11 @@ class ral_register_10 extends uvm_reg;
             this,
             1,
             0,
-            W1C,
-            0,
-            0,
-            1,
-            0,
             0
         );
         this.MAIN_STATE_RB = uvm_reg_field::type_id::create("MAIN_STATE_RB", , get_full_name());
         this.MAIN_STATE_RB.configure(
             this,
-            3,
-            1,
-            RO,
-            1,
-            0,
             1,
             0,
             0
@@ -326,11 +261,6 @@ class ral_register_11 extends uvm_reg;
         this.CLKGEN_DRP_DADDR = uvm_reg_field::type_id::create("CLKGEN_DRP_DADDR", , get_full_name());
         this.CLKGEN_DRP_DADDR.configure(
             this,
-            7,
-            0,
-            RW,
-            0,
-            0,
             1,
             0,
             0
@@ -352,11 +282,6 @@ class ral_register_12 extends uvm_reg;
         this.CLKGEN_DRP_DI = uvm_reg_field::type_id::create("CLKGEN_DRP_DI", , get_full_name());
         this.CLKGEN_DRP_DI.configure(
             this,
-            16,
-            0,
-            RW,
-            0,
-            0,
             1,
             0,
             0
@@ -378,11 +303,6 @@ class ral_register_13 extends uvm_reg;
         this.CLKGEN_DRP_DO = uvm_reg_field::type_id::create("CLKGEN_DRP_DO", , get_full_name());
         this.CLKGEN_DRP_DO.configure(
             this,
-            16,
-            0,
-            RO,
-            0,
-            0,
             1,
             0,
             0
@@ -407,21 +327,11 @@ class ral_register_14 extends uvm_reg;
             this,
             1,
             0,
-            W1C,
-            0,
-            0,
-            1,
-            0,
             0
         );
         this.CLKGEN_DRP_WR_EN = uvm_reg_field::type_id::create("CLKGEN_DRP_WR_EN", , get_full_name());
         this.CLKGEN_DRP_WR_EN.configure(
             this,
-            1,
-            1,
-            W1C,
-            0,
-            0,
             1,
             0,
             0
