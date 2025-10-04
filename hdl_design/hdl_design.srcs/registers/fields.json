@@ -1,0 +1,122 @@
+{
+    "NFFT_POWER": {
+        "width": 14,
+        "access": "RW",
+        "reg_address": 0,
+        "description": "Configures ADC to take 2^NFFT_POWER samples"
+    },
+    "DWA_EN": {
+        "width": 1,
+        "access": "RW",
+        "lsb_bit_position": 15,
+        "reg_address": 0,
+        "description": "1 - enable DWA. 0 - leave DWA off"
+    },
+    "OSR_POWER": {
+        "width": 8,
+        "access": "RW",
+        "reg_address": 1,
+        "description": "OSR power - configures ADC to have an oversampling ratio of 2^OSR_POWER"
+    },
+    "N_SH_TOTAL_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 2,
+        "description": "Total number of clock cycles for the sample-and-hold circuit"
+    },
+    "N_SH_ACTIVE_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 3,
+        "description": "Number of clock cycles that the sample-and-hold circuit will actually be enabled, to allow non-overlapping clocks"
+    },
+    "N_BOTTOM_PLATE_ACTIVE_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 4,
+        "description": "Number of clock cycles that the bottom sampling capacitor plates will be connected to the sample net"
+    },
+    "N_SAR_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 5,
+        "description": "Number of clock cycles that the SAR logic will take for each segment, both positive and negative phases (so the whole SAR logic will take 8 * N_SAR_CYCLES)"
+    },
+    "N_INT1_TOTAL_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 6,
+        "description": "Total number of clock cycles that the INT1 state will take"
+    },
+    "N_INT1_ACTIVE_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 7,
+        "description": "Total number of clock cycles in which the INT1 state will be active"
+    },
+    "N_INT2_TOTAL_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 8,
+        "description": "Total number of clock cycles that the INT2 state will take"
+    },
+    "N_INT2_ACTIVE_CYCLES": {
+        "width": 16,
+        "access": "RW",
+        "reset_value": 1,
+        "reg_address": 9,
+        "description": "Total number of clock cycles in which the INT2 state will be active"
+    },
+    "START_CONVERSION": {
+        "width": 1,
+        "access": "W1C",
+        "reg_address": 10,
+        "description": "When a 1 is written, begins the ADC conversion"
+    },
+    "MAIN_STATE_RB": {
+        "width": 3,
+        "access": "RO",
+        "reg_address": 10,
+        "lsb_bit_position": 1,
+        "volatile": true,
+        "description": "Main state readback"
+    },
+    "CLKGEN_DRP_DADDR": {
+        "width": 7,
+        "access": "RW",
+        "reg_address": 11,
+        "description": "Read/Write address for CLKGEN xip"
+    },
+    "CLKGEN_DRP_DI": {
+        "width": 16,
+        "access": "RW",
+        "reg_address": 12,
+        "description": "Write data for CLKGEN xip"
+    },
+    "CLKGEN_DRP_DO": {
+        "width": 16,
+        "access": "RO",
+        "reg_address": 13,
+        "description": "Stored read data for CLKGEN xip"
+    },
+    "CLKGEN_DRP_RD_EN": {
+        "width": 1,
+        "access": "W1C",
+        "reg_address": 14,
+        "description": "When a 1 is written, reads the data in the CLKGEN IP at the address specified by CLKGEN_DRP_DADDR and stores in the {CLKGEN_DRP_DO1, CLKGEN_DRP_DO0} registers"
+    },
+    "CLKGEN_DRP_WR_EN": {
+        "width": 1,
+        "access": "W1C",
+        "lsb_bit_position": 1,
+        "reg_address": 14,
+        "description": "When a 1 is written, writes the data in {DRP_DI1, DRP_DI0} to the address of the CLKGEN xip specified by CLKGEN_DRP_DADDR"
+    }
+}
