@@ -14,11 +14,15 @@ class reg2spi_adapter extends uvm_reg_adapter;
         spi_packet pkt;
         
         pkt = spi_packet::type_id::create("pkt");
-        pkt.reg_index = rw.addr;
-        pkt.mosi_data = rw.data;
-        pkt.command = rw.kind == UVM_READ   ? 2'b00 :
-                      rw.addr <= 2      ? 2'b01 :
-                      rw.data[2]        ? 2'b10 : 2'b11;
+        pkt.rd_en = rw.kind == UVM_READ;
+        pkt.address = rw.addr;
+        pkt.n_reads = rw.kind == UVM_READ ? 1 : 0;
+        pkt.write_data.delete();
+        pkt.read_data.delete();
+        if (rw.kind == UVM_WRITE)
+            pkt.write_data.push_back(rw.data);
+            
+        
         `uvm_info ("adapter",
                    $sformatf ("reg2bus addr=0x%0h data=0x%0h kind=%s",
                               rw.addr, rw.data, rw.kind.name()),
@@ -32,10 +36,9 @@ class reg2spi_adapter extends uvm_reg_adapter;
         if (! $cast (pkt, bus_item))
             `uvm_fatal("reg2spi_adapter", "Failed to cast bus item to SPI packet");
             
-        rw.kind = pkt.command == 2'b00 ? UVM_READ : UVM_WRITE ;
-        rw.addr = (pkt.command == 2'b10 || pkt.command == 2'b11) ? 2'h3 : pkt.reg_index;
-        rw.data = (pkt.command == 2'b10) ? 4'h4 :
-                  (pkt.command == 2'b11) ? 4'h8 : pkt.reg_response;
+        rw.kind = pkt.rd_en ? UVM_READ : UVM_WRITE ;
+        rw.addr = pkt.address;
+        rw.data = pkt.rd_en ? pkt.read_data[0] : pkt.write_data[0];
         rw.status = UVM_IS_OK;
 
         `uvm_info ("adapter", 

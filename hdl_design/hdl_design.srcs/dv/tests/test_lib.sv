@@ -9,8 +9,8 @@ class base_test extends uvm_test;
 
     `uvm_component_utils(base_test)
 
-    adc_env env;
-    tb_top_cfg i_top_cfg;
+    adc_env     env;
+    tb_top_cfg  i_top_cfg;
     adc_env_cfg i_env_cfg;
 
     virtual if_status vif_status;
@@ -76,7 +76,7 @@ class base_test extends uvm_test;
     endtask
 
     virtual task configure_phase (uvm_phase phase);
-        ral_registers ral;
+        dut_memory ral;
         logic [3:0] rdata;
 
         `uvm_info("CONFIG_PHASE", "Configuring DUT", UVM_MEDIUM)
@@ -85,63 +85,19 @@ class base_test extends uvm_test;
         phase.raise_objection(this);
         i_env_cfg.print();
 
-        set_field("nfft_power", i_env_cfg.nfft_power);
-        set_field("osr", i_env_cfg.osr_power);
-        set_field("dwa_enable", i_env_cfg.is_dwa);
-        set_field("sample_clk_div", i_env_cfg.clk_div);
+        // TODO: write config to device
+        write_field("OSR_POWER", 4);
+        check_field("OSR_POWER", 16'hABBA);
 
-        update_reg();
+        // update_reg();
         ral.print();
 
         `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
 
-        // mirror values back to make sure they are what we just wrote
-        check_field("nfft_power",       i_env_cfg.nfft_power);
-        check_field("dwa_enable",       i_env_cfg.is_dwa);
-        check_field("osr",              i_env_cfg.osr_power);
-        check_field("sample_clk_div",   i_env_cfg.clk_div);
+        // TODO: mirror values back to make sure they are what we just wrote
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
         phase.drop_objection(this);
-    endtask
-
-    virtual task main_phase(uvm_phase phase);
-        phase.raise_objection(this);
-        `uvm_info("MAIN_PHASE", "Running randomized conversion test", UVM_MEDIUM)
-        begin_conversion();
-        allow_conversion_to_end();
-        read_conversion_results();
-        `uvm_info("MAIN_PHASE", "Finished random conversion test", UVM_MEDIUM)
-        phase.drop_objection(this);
-    endtask
-
-    virtual task post_main_phase(uvm_phase phase);
-        phase.raise_objection(this);
-        `uvm_info("POST_MAIN_PHASE", "Checking device status registers", UVM_MEDIUM)
-
-        check_field("fsm_status", 1);
-        check_field("read_mem", 0);
-        check_field("begin_sample", 0);
-
-        `uvm_info("POST_MAIN_PHASE", "Status checking finished", UVM_MEDIUM)
-        phase.drop_objection(this);
-    endtask
-
-    task begin_conversion();
-        write_field("begin_sample", 1);
-    endtask
-
-    task read_conversion_results();
-        write_field("read_mem", 1);
-    endtask
-
-    task allow_conversion_to_end();
-        uvm_reg_data_t fsm_status_rb;
-        do begin
-            `uvm_info("BASE_TEST", "Waiting for conversion to end", UVM_MEDIUM)
-            read_field("fsm_status", fsm_status_rb);
-        end while (fsm_status_rb == 0);
-        `uvm_info("BASE_TEST", "Conversion finished", UVM_MEDIUM)
     endtask
 
     task write_field(string name, uvm_reg_data_t value);
@@ -174,45 +130,3 @@ class base_test extends uvm_test;
     endtask
 
 endclass
-
-class random_conversion_test extends base_test;
-
-    `uvm_component_utils(random_conversion_test)
-
-    function new(string name = "random_conversion_test", uvm_component parent = null);
-        super.new(name, parent);
-    endfunction
-
-    function int randomize_config();
-        return i_env_cfg.randomize() with {
-            nfft_power == 3;
-            osr_power == 3;
-            is_dwa == 0;
-            clk_div == 0; 
-        };
-    endfunction
-
-    single_const_value_conversion_seq seq;
-
-    virtual task main_phase(uvm_phase phase);
-        phase.raise_objection(this);
-        seq = single_const_value_conversion_seq::type_id::create("seq");
-        seq.start(env.mc_sequencer);
-        phase.drop_objection(this);
-    endtask
-
-endclass
-
-// class test_dwa extends base_test;
-
-//     // during build phase, override scoreboard to use a noise-based model instead
-//     // of a register-based one
-
-//     // write nfft to be a random power of 2
-//     // set DWA to be off
-//     // convert, compare SNDR/SFDR to ref model (should be close, within 1 dB)
-//     // turn DWA on
-//     // convert same signal again, compare SNDR/SFDR to ref model (should be
-//     // within 1 dB also)
-
-// endclass

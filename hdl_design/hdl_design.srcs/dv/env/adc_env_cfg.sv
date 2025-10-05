@@ -7,10 +7,6 @@ class adc_env_cfg extends uvm_object;
         `uvm_field_real(vdd, UVM_DEFAULT)
         `uvm_field_int(sys_clk, UVM_DEFAULT)
         `uvm_field_int(spi_clk, UVM_DEFAULT)
-        `uvm_field_int(nfft, UVM_DEFAULT)
-        `uvm_field_int(osr, UVM_DEFAULT)
-        `uvm_field_int(is_dwa, UVM_DEFAULT)
-        `uvm_field_int(clk_div, UVM_DEFAULT)
     `uvm_object_utils_end
 
     // agent virtual interfaces
@@ -25,13 +21,12 @@ class adc_env_cfg extends uvm_object;
     rand int  sys_clk;
     rand int  spi_clk;
 
-    // randomized register fields
+    // TODO: randomized register fields
     rand int nfft_power;
     rand int osr_power;
     rand int clk_div;
-    rand bit is_dwa;
-    
-    // post-randomization fields
+
+    // TODO: post-randomization fields
     int osr;
     int nfft;
 
@@ -50,32 +45,10 @@ class adc_env_cfg extends uvm_object;
         vdd_index >= 0;
     }
 
-    constraint legal_osr {
-        osr_power <= 7;
-        osr_power >= 1;
-    }
-
-    constraint legal_nfft {
-        nfft_power < 16;
-        nfft_power > 0;
-    }
-
-    constraint legal_clk_div {
-        clk_div >= 0;
-        clk_div < 16;
-    }
-
-    constraint TEMP_known_values {
-        clk_div == 4;
-        nfft_power == 2;
-        osr_power == 2;
-        is_dwa == 1;
-    }
-
     function void post_randomize();
-        nfft = 1 << nfft_power;
-        osr = 1 << osr_power;
         vdd = vdd_options[vdd_index];
+        osr = 1 << osr_power;
+        nfft = 1 << nfft_power;
     endfunction
 
     function new(name = "adc_env_cfg");

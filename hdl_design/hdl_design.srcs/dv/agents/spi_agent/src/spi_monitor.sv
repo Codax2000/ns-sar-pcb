@@ -5,14 +5,10 @@ class spi_monitor extends uvm_monitor;
     virtual if_spi vif;
     uvm_analysis_port #(spi_packet) mon_analysis_port;
 
-    // data collection variables
-    int nfft;
-    bit [7:0] mosi;
-    bit [3:0] reg_response;
-    bit [15:0] mem_response [$];
-
     bit CPOL;
     bit CPHA;
+
+    bit [15:0] read_data_queue [$];
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -22,8 +18,6 @@ class spi_monitor extends uvm_monitor;
     virtual function void build_phase(uvm_phase phase);
         if (!uvm_config_db#(virtual if_spi)::get(this, "", "vif", vif))
             `uvm_fatal("MON", "Virtual interface not found for SPI Monitor")
-        if (!uvm_config_db #(int)::get(this, "", "nfft", nfft))
-            `uvm_fatal("MON", "Could not attach monitor NFFT")
         if (!uvm_config_db #(bit)::get(this, "", "CPOL", CPOL))
             `uvm_fatal("MON", "Could not attach monitor CPOL")
         if (!uvm_config_db #(bit)::get(this, "", "CPHA", CPHA))
@@ -35,8 +29,6 @@ class spi_monitor extends uvm_monitor;
         forever begin
             item = new();
             collect_transaction(item);
-            if (item.command == 2'h2)
-                item.print();
             mon_analysis_port.write(item);
         end
     endtask
@@ -49,35 +41,46 @@ class spi_monitor extends uvm_monitor;
 
     virtual task collect_signals(spi_packet item);
         bit [15:0] reg_temp;
-        mem_response = {};
-        reg_response = 4'h0;
-        mosi = 8'h00;
-        // collect MOSI data
-        for (int i = 7; i >= 0; i--) begin
-            @(posedge vif.scl);
-            mosi[i] = vif.mosi;
+        item.read_data.delete();
+        item.write_data.delete();
+        
+        // collect transaction type
+        @(posedge vif.scl);
+        item.rd_en = vif.mosi;
+        
+        // collect address
+        for (int i = 14; (i >= 0) && (!vif.csb); i--) begin
+            @(posedge vif.scl or posedge vif.csb);
+            item.address[i] = vif.mosi;
         end
 
-        item.command = mosi[7:6];
-        item.reg_index = mosi[5:4];
-        item.mosi_data = mosi[3:0];
-
-        // receive MISO data
-        if (item.command == 2'b10) begin : receive_mem
-            for (int i = 0; i < nfft; i++) begin
+        // receive MISO data if read, MOSI if write
+        if (item.rd_en) begin : reg_read
+            while (!vif.csb) begin
                 reg_temp = 16'h0000;
-                for (int j = 15; j >= 0; j--) begin
-                    @(posedge vif.scl);
+                for (int j = 15; (j >= 0) && (!vif.csb); j--) begin
+                    @(posedge vif.scl or posedge vif.csb);
                     reg_temp[j] = vif.miso;
                 end
-                item.mem_response.push_back(reg_temp);
+                if (!vif.csb) begin
+                    item.n_reads++;
+                    item.read_data.push_back(reg_temp);
+                end
             end
-        end else begin
-            for (int i = 3; i >= 0; i--) begin
-                @(posedge vif.scl);
-                item.reg_response[i] = vif.miso;
+        end else begin : reg_write
+            while (!vif.csb) begin
+                reg_temp = 16'h0000;
+                for (int j = 15; (j >= 0) && (!vif.csb); j--) begin
+                    @(posedge vif.scl or posedge vif.csb);
+                    reg_temp[j] = vif.mosi;
+                end
+                if (!vif.csb)
+                    item.write_data.push_back(reg_temp);
             end
         end
+
+        `uvm_info("MON", "Sending Packet", UVM_LOW)
+        item.print();
 
     endtask
 endclass

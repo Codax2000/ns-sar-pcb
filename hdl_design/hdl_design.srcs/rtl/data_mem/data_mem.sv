@@ -28,7 +28,20 @@ module data_mem #(
     output logic [DATA_WIDTH-1:0] rd_data_b
 );
 
-    `ifdef NON_IP_MEM
+    `ifdef VIVADO
+    mem_xip data_mem (
+        .addra(addr_a),
+        .dina(wr_data_a),
+        .clka,
+        .wea(wr_enable_a),
+        .ena(we_enable_a),
+
+        .addrb(addr_b),
+        .clkb,
+        .doutb(rd_data_b)
+    );
+    assign rd_data_a = { DATA_WIDTH { 1'b0 } };
+    `else
     localparam MEM_DEPTH = 1 << ADDR_WIDTH;
     logic [DATA_WIDTH-1:0] mem [MEM_DEPTH-1:0];
 
@@ -43,19 +56,6 @@ module data_mem #(
 
     always_ff @(posedge clkb)
         rd_data_b <= mem[addr_b];
-    `else
-    conversion_data_mem_gen data_mem (
-        .addra(addr_a),
-        .dina(wr_data_a),
-        .clka,
-        .wea(wr_enable_a),
-        .ena(we_enable_a),
-
-        .addrb(addr_b),
-        .clkb,
-        .doutb(rd_data_b)
-    );
-    assign rd_data_a = { DATA_WIDTH { 1'b0 } };
     `endif
 
 endmodule

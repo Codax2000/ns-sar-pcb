@@ -13,7 +13,7 @@ package adc_env_pkg;
 
     // include RAL
     `include "reg2spi_adapter.sv"
-    `include "ral_cfg.sv"
+    `include "ral_dut_cfg.sv"
     `include "reg_env.sv"
 
     // eventually, include scoreboard package

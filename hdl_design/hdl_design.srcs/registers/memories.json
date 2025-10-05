@@ -4,6 +4,7 @@
         "data_width": 16,
         "address_offset": 16384,
         "access": "RO",
-        "coverage": "UVM_UVM_CVR_ADDR_MAP"
+        "coverage": "UVM_UVM_CVR_ADDR_MAP",
+        "module_name": "data_mem"
     }
 }
