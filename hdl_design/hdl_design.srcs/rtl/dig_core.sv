@@ -23,40 +23,68 @@ module dig_core #(
 );
 
     localparam DATA_WIDTH = 16;
-    localparam ADDR_WIDTH = 4;
+    localparam ADDR_WIDTH = 15;
 
-    // internal wires
-    logic start_conversion;
+    // system signals from clock gen and reset IP
+    logic pll_clk;
+    logic pll_is_locked;
+    logic sys_rst_b;
+    logic sys_rst;
 
-    logic [ADDR_WIDTH-1:0] rd_addr;
-    logic [DATA_WIDTH-1:0] memory_data;
+    // bus interface registers
+    logic [DATA_WIDTH-1:0] reg_wr_data;
+    logic [DATA_WIDTH-1:0] reg_rd_data;
+    logic [ADDR_WIDTH-1:0] reg_addr;
+    logic                  reg_rd_en;
+    logic                  reg_wr_en;
 
-    if_reg i_if_reg (.i_clk(i_scl), .i_rst_b(i_sysrst_b));
+    logic [15:0] temp_data;
+    always_ff @(posedge i_scl or posedge i_cs_b) begin
+        if (i_cs_b)
+            temp_data <= 0;
+        else begin
+            if (reg_rd_en)
+                temp_data <= 16'hABBA;
+            else
+                temp_data <= 0;
+        end
+    end
 
     spi #(
-        .DATA_WIDTH(DATA_WIDTH),
-        .ADDR_WIDTH(ADDR_WIDTH)
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
     ) i_spi (
-        .i_scl,
-        .i_csb(i_cs_b),
-        .i_mosi,
-        .o_miso,
+        .scl(i_scl),
+        .mosi(i_mosi),
+        .miso(o_miso),
+        .cs_b(i_cs_b && sys_rst_b), // hold SPI in reset if the device is in reset
 
-        .o_start_coversion(start_conversion),
-        .i_fsm_status(2'h0),
+        .reg_wr_data,
+        .reg_rd_data(temp_data),
+        .reg_addr,
+        .reg_rd_en,
+        .reg_wr_en,
 
-        .o_rd_addr(rd_addr),
-        .i_memory_data(memory_data),
-    
-        .i_if_reg(i_if_reg)
+        .en_addr_auto_adjust(1'b1) // TODO: add register value
     );
 
-    registers i_reg (i_if_reg);
-
-    simple_data_mem mem (
-        .i_clk(i_scl),
-        .rd_addr,
-        .out_data(memory_data)
+    clk_gen_xip i_clk_gen (
+        .reset(sys_rst),
+        .clk_in1(i_sysclk),
+        .clk_out1(pll_clk),
+        .locked(pll_is_locked)
     );
+
+    reset_gen_xip i_reset_gen (
+        .slowest_sync_clk(i_sysclk),
+        .ext_reset_in(i_sysrst_b),
+
+        .dcm_locked(1'b1),
+        .aux_reset_in(1'b1),
+        .mb_debug_sys_rst(1'b0),
+
+        .peripheral_reset(sys_rst)
+    );
+    assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
 endmodule

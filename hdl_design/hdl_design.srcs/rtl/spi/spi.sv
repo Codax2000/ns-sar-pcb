@@ -1,151 +1,116 @@
 module spi #(
-    parameter DATA_WIDTH=16,
-    parameter ADDR_WIDTH=4
-) (
-    // SPI interface
-    input logic i_scl,
-    input logic i_csb,
-    input logic i_mosi,
-    output logic o_miso,
+    parameter ADDR_WIDTH = 15,
+    parameter DATA_WIDTH = 16
+)(
+    input  logic        scl,        // SPI clock
+    input  logic        mosi,       // Master Out Slave In
+    output logic        miso,       // Master In Slave Out
+    input  logic        cs_b,       // Chip Select (active low)
 
-    // FIFO interface and FSM stuff
-    output logic o_start_coversion,
-    input logic [1:0] i_fsm_status,
+    output logic [DATA_WIDTH-1:0] reg_wr_data,
+    input  logic [DATA_WIDTH-1:0] reg_rd_data,
+    output logic [ADDR_WIDTH-1:0] reg_addr,
+    output logic                  reg_rd_en,
+    output logic                  reg_wr_en,
 
-    // Mem read interface
-    output logic [ADDR_WIDTH-1:0] o_rd_addr,
-    input logic [DATA_WIDTH-1:0] i_memory_data,
-
-    // register interface
-    if_reg i_if_reg
+    input  logic                  en_addr_auto_adjust
 );
 
-    enum logic [1:0] {
-        READY=2'b00,
-        RECEIVE_DATA=2'b01,
-        SEND_REGISTER=2'b10,
-        SEND_MEMORY=2'b11
-    } ps_e, ns_e;
+    typedef enum logic [1:0] {
+        RESET,
+        ADDR_DECODE,
+        REG_RECEIVE,
+        REG_SEND
+    } spi_state_e;
 
-    enum logic [1:0] {
-        READ_REG=2'h0,
-        WRITE_REG=2'h1,
-        MEM_READ=2'h2,
-        BEGIN_SAMPLE=2'h3
-    } command;
+    spi_state_e state, next_state;
 
-    logic  [3:0] data_send_counter_r, data_send_counter_n;
-    logic [15:0] nfft_send_counter_r, nfft_send_counter_n;
-    logic [15:0] nfft;
+    logic [$clog2(ADDR_WIDTH+1)-1:0] addr_count;
+    logic [ADDR_WIDTH:0] addr_shift;
+    logic [DATA_WIDTH-1:0] rx_shift, tx_shift;
+    logic [$clog2(DATA_WIDTH)-1:0] bit_cnt;
+    logic miso_n;
 
-    logic  [7:0] miso_r, miso_n, mosi_r, mosi_n;
-    logic  [1:0] reg_index;
-
-    logic data_send_done;
-    logic next_state_is_transfer_register;
-    logic next_state_is_transfer_memory;
-    logic next_state_is_begin_sample;
-    logic load_mem_lsb, load_mem_msb;
-    logic increment_nfft_counter;
-
-    assign next_state_is_transfer_register = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command != MEM_READ);
-    assign next_state_is_transfer_memory   = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == MEM_READ);
-    assign next_state_is_begin_sample      = (ps_e == RECEIVE_DATA) && (data_send_counter_r == 4'h7) && (command == BEGIN_SAMPLE);
-    assign data_send_done = ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) || // register send case
-                            ((ps_e == SEND_MEMORY)   && (nfft_send_counter_r == (nfft - 1)) && (data_send_counter_n == 4'hF));
-    assign load_mem_msb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'hF)) || next_state_is_transfer_memory;
-    assign load_mem_lsb = ((ps_e == SEND_MEMORY) && (data_send_counter_r == 4'h7));
-    assign increment_nfft_counter = (ps_e == SEND_MEMORY) && (data_send_counter_n == 4'hF);
-    assign command = mosi_r[7:6];
-    assign reg_index = mosi_r[5:4];
-
-    // counting logic
-    assign nfft = 1 << i_if_reg.nfft_power;
-    assign nfft_send_counter_n = (ps_e == READY) ? 16'h0000 :
-                                 increment_nfft_counter ? nfft_send_counter_r + 1 : nfft_send_counter_r;
-    assign data_send_counter_n =    ((ps_e == READY)) ||
-                                    ((ps_e == RECEIVE_DATA)  && (data_send_counter_r == 4'h7)) ||
-                                    ((ps_e == SEND_MEMORY)   && (data_send_counter_r == 4'hF)) || 
-                                    ((ps_e == SEND_REGISTER) && (data_send_counter_r == 4'h3)) ? 4'h0 : data_send_counter_r + 1;
-
-    // register logic
-    assign i_if_reg.i_nfft_wr_en     = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h0);
-    assign i_if_reg.i_dwa_wr_en      = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h1);
-    assign i_if_reg.i_osr_wr_en      = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h1);
-    assign i_if_reg.i_clk_div_wr_en  = next_state_is_transfer_register && (command == WRITE_REG) && (reg_index == 2'h2);
-    assign i_if_reg.i_dwa        = mosi_r[0];
-    assign i_if_reg.i_osr_power  = mosi_r[3:1];
-    assign i_if_reg.i_nfft_power = mosi_r[3:0];
-    assign i_if_reg.i_clk_div    = mosi_r[3:0];
-
-    // shifting logic
-    always_comb begin
-        if (next_state_is_transfer_register) begin
-            if (next_state_is_begin_sample)
-                miso_n = 4'b1010;
-            else if (command == RECEIVE_DATA) begin
-                case (reg_index)
-                    2'h0: miso_n = {i_if_reg.i_nfft_power, 4'h0};
-                    2'h1: miso_n = {i_if_reg.i_osr_power, i_if_reg.i_dwa, 4'h0};
-                    2'h2: miso_n = {i_if_reg.i_clk_div, 4'h0};
-                    2'h3: miso_n = {o_start_coversion, ns_e == SEND_MEMORY, i_fsm_status, 4'h0};
-                    default: miso_n = 8'h0; // should never be touched
-                endcase
-            end else begin
-                case (reg_index)
-                    2'h0: miso_n = {i_if_reg.nfft_power, 4'h0};
-                    2'h1: miso_n = {i_if_reg.osr_power, i_if_reg.dwa, 4'h0};
-                    2'h2: miso_n = {i_if_reg.clk_div, 4'h0};
-                    2'h3: miso_n = {o_start_coversion, ns_e == SEND_MEMORY, i_fsm_status, 4'h0};
-                    default: miso_n = 8'h0; // should never be touched
-                endcase
-            end
-        end else if (load_mem_lsb)
-            miso_n = i_memory_data[7:0];
-        else if (load_mem_msb)
-            miso_n = i_memory_data[15:8];
-        else // if not load, then shift
-            miso_n = {miso_r[6:0], 1'b0};
+    // FSM state transition
+    always_ff @(posedge scl or posedge cs_b) begin
+        if (cs_b)
+            state <= ADDR_DECODE;
+        else
+            state <= next_state;
     end
 
-    assign o_miso = miso_r[7]; // LSB-first shifting
-    assign mosi_n = ps_e == READY ? {7'h00, i_mosi} :
-                    ps_e == RECEIVE_DATA ? {mosi_r[6:0], i_mosi} : 8'h00;
-    assign o_rd_addr = nfft_send_counter_n;
-    assign o_start_coversion = next_state_is_begin_sample;
-
-    // next state logic
+    // FSM next state logic
     always_comb begin
-        case (ps_e)
-            READY:          ns_e =  RECEIVE_DATA;
-            RECEIVE_DATA:   ns_e =  next_state_is_transfer_memory ? SEND_MEMORY :
-                                    next_state_is_transfer_register ? SEND_REGISTER : RECEIVE_DATA;
-            SEND_REGISTER:  ns_e =  data_send_done ? READY : SEND_REGISTER;
-            SEND_MEMORY:    ns_e =  data_send_done ? READY : SEND_MEMORY;
-            default:        ns_e =  READY;
+        case (state)
+            ADDR_DECODE: begin
+                if (addr_count == ADDR_WIDTH)
+                    next_state = addr_shift[ADDR_WIDTH-1] ? REG_SEND : REG_RECEIVE;
+                else
+                    next_state = ADDR_DECODE;
+            end
+            REG_RECEIVE: next_state = REG_RECEIVE; // burst mode write
+            REG_SEND   : next_state = REG_SEND;    // burst mode read
+            RESET      : next_state = ADDR_DECODE;
+            default    : next_state = RESET;
         endcase
     end
 
-    // clocked logic
-    always_ff @(posedge i_scl or posedge i_csb) begin
-        if (i_csb) begin
-            mosi_r <= 8'h00;
-            ps_e <= READY;
-            data_send_counter_r <= 4'h0;
-            nfft_send_counter_r <= 16'h0000;
+    // Shift logic reset on cs_b deassertion
+    always_ff @(posedge scl or posedge cs_b) begin
+        if (cs_b) begin
+            addr_count  <= 0;
+            addr_shift  <= 0;
+            rx_shift    <= 0;
+            tx_shift    <= 0;
+            bit_cnt     <= 0;
+            reg_rd_en   <= 0;
+            reg_wr_en   <= 0;
         end else begin
-            mosi_r <= mosi_n;
-            ps_e <= ns_e;
-            data_send_counter_r <= data_send_counter_n;
-            nfft_send_counter_r <= nfft_send_counter_n;
+            case (state)
+
+                ADDR_DECODE: begin
+                    addr_shift <= {addr_shift[ADDR_WIDTH-1:0], mosi};
+                    if (addr_count < ADDR_WIDTH)
+                        addr_count <= addr_count + 1;
+                end
+
+                REG_RECEIVE: begin
+                    rx_shift <= {rx_shift[DATA_WIDTH-2:0], mosi};
+                    if (bit_cnt == DATA_WIDTH-1) begin
+                        bit_cnt <= 0;
+                        if (en_addr_auto_adjust)
+                            addr_shift <= addr_shift + 1;
+                    end else begin
+                        bit_cnt  <= bit_cnt + 1;
+                    end
+                end
+
+                REG_SEND: begin
+                    if (bit_cnt == 0)
+                        tx_shift <= {reg_rd_data[DATA_WIDTH-2:0], 1'b0};
+                    else
+                        tx_shift <= {tx_shift[DATA_WIDTH-2:0], 1'b0};
+                    bit_cnt  <= bit_cnt + 1;
+                    if ((bit_cnt == (DATA_WIDTH-1)) && en_addr_auto_adjust)
+                        addr_shift <= addr_shift + 1;
+                end
+            endcase
         end
     end
 
-    always_ff @(negedge i_scl or posedge i_csb) begin
-        if (i_csb)
-            miso_r <= 8'h00;
+    always_ff @(negedge scl or posedge cs_b) begin
+        if (cs_b)
+            miso <= 0;
         else
-            miso_r <= miso_n;
+            miso <= miso_n;
     end
+
+    assign reg_rd_en   = ((state == ADDR_DECODE) && (next_state == REG_SEND)) ||
+                         ((state == REG_SEND)    && (bit_cnt == DATA_WIDTH-1));
+    assign reg_wr_en   = ((state == REG_RECEIVE) && (bit_cnt == DATA_WIDTH-1));
+    assign reg_wr_data = {rx_shift[DATA_WIDTH-2:0], mosi};
+    assign miso_n      = (state == REG_SEND) && (bit_cnt == 0) ? reg_rd_data[DATA_WIDTH-1] : 
+                         (state == REG_SEND)                   ? tx_shift[DATA_WIDTH-1]    : 0;
+    assign reg_addr    = (state == ADDR_DECODE) ? {addr_shift[ADDR_WIDTH-1:0], mosi} : addr_shift + 1;
 
 endmodule

@@ -7,10 +7,10 @@ class clkgen_packet extends uvm_sequence_item;
 
     // constrain to 1-100MHz
     constraint valid_reset {
-        rst_period_ns <= 10 * clk_period_int;
-        rst_period_ns >= 2  * clk_period_int;
-        rst_delay_ns  <= 2  * clk_period_int;
-        rst_delay_ns  >= 0;
+        rst_period_ns <= 36 * clk_period_int;
+        rst_period_ns >= 24  * clk_period_int;
+        rst_delay_ns  <= 10 * clk_period_int;
+        rst_delay_ns  >= 1  * clk_period_int;
     }
 
     `uvm_object_utils_begin(clkgen_packet)

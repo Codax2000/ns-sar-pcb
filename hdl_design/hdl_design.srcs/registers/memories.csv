@@ -1,0 +1,2 @@
+mem_name,n_address_bits,data_width,address_offset,access,coverage,module_name
+ADC_MEM,14,16,16384,RO,UVM_UVM_CVR_ADDR_MAP,data_mem

@@ -1,0 +1,10 @@
+{
+    "ADC_MEM": {
+        "n_address_bits": 14,
+        "data_width": 16,
+        "address_offset": 16384,
+        "access": "RO",
+        "coverage": "UVM_UVM_CVR_ADDR_MAP",
+        "module_name": "data_mem"
+    }
+}

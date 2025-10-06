@@ -51,7 +51,6 @@ class adc_env extends uvm_env;
     virtual function void create_configs();
         spi_cfg = new("spi_cfg");
         spi_cfg.vif = i_env_cfg.vif_spi;
-        spi_cfg.nfft = i_env_cfg.nfft;
         spi_cfg.speed = i_env_cfg.spi_clk;
         spi_cfg.is_active = UVM_ACTIVE;
         spi_cfg.checks_enable = i_env_cfg.checks_enable;
