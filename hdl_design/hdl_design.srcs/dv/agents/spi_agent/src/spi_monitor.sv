@@ -27,9 +27,15 @@ class spi_monitor extends uvm_monitor;
     virtual task run_phase(uvm_phase phase);
         spi_packet item;
         forever begin
-            item = new();
+            item = spi_packet::type_id::create("mon_packet", this);
             collect_transaction(item);
-            mon_analysis_port.write(item);
+            do begin // send an item for each register read/write observed
+                mon_analysis_port.write(item);
+                if (item.rd_en)
+                    item.read_data.pop_front();
+                else
+                    item.write_data.pop_front();
+            end while (item.read_data.size() > 0 && item.write_data.size() > 0);
         end
     endtask
 
@@ -80,7 +86,6 @@ class spi_monitor extends uvm_monitor;
         end
 
         `uvm_info("MON", "Sending Packet", UVM_LOW)
-        item.print();
 
     endtask
 endclass

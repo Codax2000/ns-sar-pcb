@@ -102,33 +102,36 @@ module registers(
             i0.CLKGEN_DRP_DI <= bus_if_wr_data[15:0]
     end
 
-
-    // generated W1S register set/clear logic
-    always_ff(@posedge clk) begin
-        if (!rst_b)
-            i0.START_CONVERSION <= 'd0;
-        else if (bus_if_wr_en && (bus_if_wr_addr == 'd10))
-            i0.START_CONVERSION <= (i0.START_CONVERSION | bus_if_wr_data[0]) & (~i0.START_CONVERSION_clear);
-        else
-            i0.START_CONVERSION <= (i0.START_CONVERSION) & (~i0.START_CONVERSION_clear);
-    end
-
     always_ff(@posedge clk) begin
         if (!rst_b)
             i0.CLKGEN_DRP_RD_EN <= 'd0;
         else if (bus_if_wr_en && (bus_if_wr_addr == 'd14))
-            i0.CLKGEN_DRP_RD_EN <= (i0.CLKGEN_DRP_RD_EN | bus_if_wr_data[0]) & (~i0.CLKGEN_DRP_RD_EN_clear);
-        else
-            i0.CLKGEN_DRP_RD_EN <= (i0.CLKGEN_DRP_RD_EN) & (~i0.CLKGEN_DRP_RD_EN_clear);
+            i0.CLKGEN_DRP_RD_EN <= bus_if_wr_data[0]
     end
 
     always_ff(@posedge clk) begin
         if (!rst_b)
             i0.CLKGEN_DRP_WR_EN <= 'd0;
         else if (bus_if_wr_en && (bus_if_wr_addr == 'd14))
-            i0.CLKGEN_DRP_WR_EN <= (i0.CLKGEN_DRP_WR_EN | bus_if_wr_data[1]) & (~i0.CLKGEN_DRP_WR_EN_clear);
+            i0.CLKGEN_DRP_WR_EN <= bus_if_wr_data[1]
+    end
+
+    always_ff(@posedge clk) begin
+        if (!rst_b)
+            i0.CLKGEN_DRP_DEN <= 'd0;
+        else if (bus_if_wr_en && (bus_if_wr_addr == 'd14))
+            i0.CLKGEN_DRP_DEN <= bus_if_wr_data[2]
+    end
+
+
+    // generated W1C register set/clear logic
+    always_ff(@posedge clk) begin
+        if (!rst_b)
+            i0.START_CONVERSION <= 'd0;
+        else if (bus_if_wr_en && (bus_if_wr_addr == 'd10))
+            i0.START_CONVERSION <= (i0.START_CONVERSION & (~bus_if_wr_data[0])) | (i0.START_CONVERSION_set);
         else
-            i0.CLKGEN_DRP_WR_EN <= (i0.CLKGEN_DRP_WR_EN) & (~i0.CLKGEN_DRP_WR_EN_clear);
+            i0.START_CONVERSION <= (i0.START_CONVERSION) | (i0.START_CONVERSION_set);
     end
 
     // synchronous readback data
@@ -151,7 +154,7 @@ module registers(
                 11 : bus_if_rd_data <= 16'{1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, i0.CLKGEN_DRP_DADDR[6], i0.CLKGEN_DRP_DADDR[5], i0.CLKGEN_DRP_DADDR[4], i0.CLKGEN_DRP_DADDR[3], i0.CLKGEN_DRP_DADDR[2], i0.CLKGEN_DRP_DADDR[1], i0.CLKGEN_DRP_DADDR[0]};
                 12 : bus_if_rd_data <= 16'{i0.CLKGEN_DRP_DI[15], i0.CLKGEN_DRP_DI[14], i0.CLKGEN_DRP_DI[13], i0.CLKGEN_DRP_DI[12], i0.CLKGEN_DRP_DI[11], i0.CLKGEN_DRP_DI[10], i0.CLKGEN_DRP_DI[9], i0.CLKGEN_DRP_DI[8], i0.CLKGEN_DRP_DI[7], i0.CLKGEN_DRP_DI[6], i0.CLKGEN_DRP_DI[5], i0.CLKGEN_DRP_DI[4], i0.CLKGEN_DRP_DI[3], i0.CLKGEN_DRP_DI[2], i0.CLKGEN_DRP_DI[1], i0.CLKGEN_DRP_DI[0]};
                 13 : bus_if_rd_data <= 16'{i0.CLKGEN_DRP_DO[15], i0.CLKGEN_DRP_DO[14], i0.CLKGEN_DRP_DO[13], i0.CLKGEN_DRP_DO[12], i0.CLKGEN_DRP_DO[11], i0.CLKGEN_DRP_DO[10], i0.CLKGEN_DRP_DO[9], i0.CLKGEN_DRP_DO[8], i0.CLKGEN_DRP_DO[7], i0.CLKGEN_DRP_DO[6], i0.CLKGEN_DRP_DO[5], i0.CLKGEN_DRP_DO[4], i0.CLKGEN_DRP_DO[3], i0.CLKGEN_DRP_DO[2], i0.CLKGEN_DRP_DO[1], i0.CLKGEN_DRP_DO[0]};
-                14 : bus_if_rd_data <= 16'{1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, i0.CLKGEN_DRP_WR_EN[0], i0.CLKGEN_DRP_RD_EN[0]};
+                14 : bus_if_rd_data <= 16'{1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, i0.CLKGEN_DRP_DEN[0], i0.CLKGEN_DRP_WR_EN[0], i0.CLKGEN_DRP_RD_EN[0]};
                 default: bus_if_rd_data <= 'd0;
             endcase
         end else

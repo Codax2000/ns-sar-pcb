@@ -290,8 +290,8 @@ class ral_register_10 extends uvm_reg;
             this,
             1,
             0,
-            "W1S",
-            1,
+            "W1C",
+            0,
             0,
             1,
             0,
@@ -394,6 +394,7 @@ endclass
 class ral_register_14 extends uvm_reg;
     uvm_reg_field CLKGEN_DRP_RD_EN;
     uvm_reg_field CLKGEN_DRP_WR_EN;
+    uvm_reg_field CLKGEN_DRP_DEN;
 
     `uvm_object_utils(ral_register_14)
 
@@ -407,8 +408,8 @@ class ral_register_14 extends uvm_reg;
             this,
             1,
             0,
-            "W1S",
-            1,
+            "RW",
+            0,
             0,
             1,
             0,
@@ -419,8 +420,20 @@ class ral_register_14 extends uvm_reg;
             this,
             1,
             1,
-            "W1S",
+            "RW",
+            0,
+            0,
             1,
+            0,
+            0
+        );
+        this.CLKGEN_DRP_DEN = uvm_reg_field::type_id::create("CLKGEN_DRP_DEN", , get_full_name());
+        this.CLKGEN_DRP_DEN.configure(
+            this,
+            1,
+            2,
+            "RW",
+            0,
             0,
             1,
             0,

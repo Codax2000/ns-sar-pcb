@@ -6,10 +6,9 @@ class spi_packet extends uvm_sequence_item;
     rand bit        rd_en;
     rand bit [14:0] address;
     rand bit [15:0] write_data [$];
-    rand bit [15:0] write_data_mon;
     
     rand int        n_reads;
-         bit [15:0] read_data; // data out - monitor publishes multiple transactions
+         bit [15:0] read_data [$]; // data out - monitor publishes multiple transactions
 
     constraint no_write_data_if_read {
         rd_en -> (write_data.size() == 0);

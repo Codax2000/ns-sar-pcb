@@ -271,8 +271,8 @@ def generate_interface_file(fields):
             else:
                 print(f'    logic [{width-1}:0] {field};', file=file)
 
-            # generate set/clear bits for W1S fields
-            if access == 'W1S':
+            # generate set/clear bits for W1C fields
+            if access == 'W1C':
                 if width == 1:
                     print(f'    logic        {field}_set;', file=file)
                     print(f'    logic        {field}_clear;', file=file)
@@ -282,13 +282,13 @@ def generate_interface_file(fields):
 
 
         print('', file=file)
-        is_writeable = (fields['access'] == 'W1S') | (fields['access'] == 'RW')
+        is_writeable = (fields['access'] == 'W1C') | (fields['access'] == 'RW')
         print('    modport WR_BUS_IF (', file=file)
         for field in fields[is_writeable]['field_name']:
             access = fields.loc[fields['field_name'] == field, 'access'].iloc[0]
             if access == 'RW':
                 print(f'        output {field};', file=file)
-            elif access == 'W1S':
+            elif access == 'W1C':
                 print(f'        output {field}_set;', file=file)
                 print(f'        input  {field};', file=file)
         for field in fields[~is_writeable]['field_name']:
@@ -311,8 +311,8 @@ def generate_interface_file(fields):
             print(f'    modport WR_{field} (output {field});', file=file)
 
         print(file=file)
-        is_w1s = fields['access'] == 'W1S'
-        for field in fields[is_w1s]['field_name']:
+        is_w1c = fields['access'] == 'W1C'
+        for field in fields[is_w1c]['field_name']:
             print(f'    modport CLEAR_{field} (output {field}_clear);', file=file)
 
         print('\nendinterface', file=file)
@@ -377,8 +377,8 @@ def generate_register_rtl(fields_df):
                 print(f'            i0.{field_name} <= bus_if_wr_data[{lsb_position + field_width - 1}:{lsb_position}]', file=file)
             print('    end', file=file, end='\n\n')
 
-        print(f'\n    // generated W1S register set/clear logic', file=file)
-        filt = fields_df['access'] == 'W1S'
+        print(f'\n    // generated W1C register set/clear logic', file=file)
+        filt = fields_df['access'] == 'W1C'
         for field_name in fields_df[filt]['field_name']:
             field_row = fields_df.loc[fields_df['field_name'] == field_name, :]
             reset_value = field_row['reset_value'].iloc[0]
@@ -390,11 +390,11 @@ def generate_register_rtl(fields_df):
             print(f'            i0.{field_name} <= \'d{reset_value};', file=file)
             print(f'        else if (bus_if_wr_en && (bus_if_wr_addr == \'d{field_address}))', file=file)
             if field_width == 1:
-                print(f'            i0.{field_name} <= (i0.{field_name} | bus_if_wr_data[{lsb_position}]) & (~i0.{field_name}_clear);', file=file)
+                print(f'            i0.{field_name} <= (i0.{field_name} & (~bus_if_wr_data[{lsb_position}])) | (i0.{field_name}_set);', file=file)
             else:
-                print(f'            i0.{field_name} <= (i0.{field_name} | bus_if_wr_data[{lsb_position + field_width - 1}:{lsb_position}]) & (~i0.{field_name}_clear);', file=file)
+                print(f'            i0.{field_name} <= (i0.{field_name} & (~bus_if_wr_data[{lsb_position + field_width - 1}:{lsb_position}])) | (i0.{field_name}_set);', file=file)
             print('        else', file=file)
-            print(f'            i0.{field_name} <= (i0.{field_name}) & (~i0.{field_name}_clear);', file=file)
+            print(f'            i0.{field_name} <= (i0.{field_name}) | (i0.{field_name}_set);', file=file)
             print('    end', file=file, end='\n\n')
 
         print('    // synchronous readback data', file=file)

@@ -18,11 +18,8 @@ interface reg_if;
     logic [15:0] CLKGEN_DRP_DI;
     logic [15:0] CLKGEN_DRP_DO;
     logic        CLKGEN_DRP_RD_EN;
-    logic        CLKGEN_DRP_RD_EN_set;
-    logic        CLKGEN_DRP_RD_EN_clear;
     logic        CLKGEN_DRP_WR_EN;
-    logic        CLKGEN_DRP_WR_EN_set;
-    logic        CLKGEN_DRP_WR_EN_clear;
+    logic        CLKGEN_DRP_DEN;
 
     modport WR_BUS_IF (
         output NFFT_POWER;
@@ -40,10 +37,9 @@ interface reg_if;
         input  START_CONVERSION;
         output CLKGEN_DRP_DADDR;
         output CLKGEN_DRP_DI;
-        output CLKGEN_DRP_RD_EN_set;
-        input  CLKGEN_DRP_RD_EN;
-        output CLKGEN_DRP_WR_EN_set;
-        input  CLKGEN_DRP_WR_EN;
+        output CLKGEN_DRP_RD_EN;
+        output CLKGEN_DRP_WR_EN;
+        output CLKGEN_DRP_DEN;
         input MAIN_STATE_RB;
         input CLKGEN_DRP_DO;
     );
@@ -67,6 +63,7 @@ interface reg_if;
         input CLKGEN_DRP_DO;
         input CLKGEN_DRP_RD_EN;
         input CLKGEN_DRP_WR_EN;
+        input CLKGEN_DRP_DEN;
     );
 
     modport WR_RO (
@@ -88,13 +85,12 @@ interface reg_if;
         input CLKGEN_DRP_DI;
         input CLKGEN_DRP_RD_EN;
         input CLKGEN_DRP_WR_EN;
+        input CLKGEN_DRP_DEN;
     );
 
     modport WR_MAIN_STATE_RB (output MAIN_STATE_RB);
     modport WR_CLKGEN_DRP_DO (output CLKGEN_DRP_DO);
 
     modport CLEAR_START_CONVERSION (output START_CONVERSION_clear);
-    modport CLEAR_CLKGEN_DRP_RD_EN (output CLKGEN_DRP_RD_EN_clear);
-    modport CLEAR_CLKGEN_DRP_WR_EN (output CLKGEN_DRP_WR_EN_clear);
 
 endinterface

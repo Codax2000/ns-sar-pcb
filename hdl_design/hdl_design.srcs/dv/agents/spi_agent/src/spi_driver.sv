@@ -38,6 +38,7 @@ class spi_driver extends uvm_driver #(spi_packet);
             seq_item_port.get_next_item(req);
             `uvm_info("DRV", "Driving SPI packet", UVM_HIGH)
             drive_signals(req);
+            req.print();
             seq_item_port.item_done();
         end
     endtask
@@ -45,6 +46,7 @@ class spi_driver extends uvm_driver #(spi_packet);
     // drive with 5 MHz clock, which is 200ns
     virtual task drive_signals(spi_packet req);
         bit [15:0] mosi = {req.rd_en, req.address};
+        bit [15:0] reg_temp;
 
         #(clk_period_ns/2);
         vif.csb = 1'b0;
@@ -64,11 +66,11 @@ class spi_driver extends uvm_driver #(spi_packet);
             vif.mosi = 1'b0; // drive low to avoid MOSI staying high and being confusing
             req.read_data.delete();
             for (int i = 0; i < req.n_reads; i++) begin
-                bit [15:0] reg_temp;
+                reg_temp = 16'h0000;
                 for (int j = 15; j >= 0; j--) begin
                     #(clk_period_ns/2);
                     vif.scl = 1'b1;
-                    reg_temp[i] = vif.miso;
+                    reg_temp[j] = vif.miso;
                     #(clk_period_ns/2);
                     vif.scl = 1'b0;
                 end

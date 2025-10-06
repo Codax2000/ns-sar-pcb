@@ -57,7 +57,7 @@ module dig_core #(
         .scl(i_scl),
         .mosi(i_mosi),
         .miso(o_miso),
-        .cs_b(i_cs_b),
+        .cs_b(i_cs_b && sys_rst_b), // hold SPI in reset if the device is in reset
 
         .reg_wr_data,
         .reg_rd_data(temp_data),
@@ -85,6 +85,6 @@ module dig_core #(
 
         .peripheral_reset(sys_rst)
     );
-    assign sys_rst_b = !sys_rst;
+    assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
 endmodule

@@ -10,10 +10,11 @@ N_INT1_TOTAL_CYCLES,16,RW,6,Total number of clock cycles that the INT1 state wil
 N_INT1_ACTIVE_CYCLES,16,RW,7,Total number of clock cycles in which the INT1 state will be active,0,1,0
 N_INT2_TOTAL_CYCLES,16,RW,8,Total number of clock cycles that the INT2 state will take,0,1,0
 N_INT2_ACTIVE_CYCLES,16,RW,9,Total number of clock cycles in which the INT2 state will be active,0,1,0
-START_CONVERSION,1,W1S,10,"When a 1 is written, begins the ADC conversion",0,0,1
+START_CONVERSION,1,W1C,10,"When a 1 is written, begins the ADC conversion. Also serves as a flag that means the ADC is ready to convert",0,0,0
 MAIN_STATE_RB,3,RO,10,Main state readback,1,0,1
 CLKGEN_DRP_DADDR,7,RW,11,Read/Write address for CLKGEN xip,0,0,0
 CLKGEN_DRP_DI,16,RW,12,Write data for CLKGEN xip,0,0,0
 CLKGEN_DRP_DO,16,RO,13,Stored read data for CLKGEN xip,0,0,0
-CLKGEN_DRP_RD_EN,1,W1S,14,"When a 1 is written, reads the data in the CLKGEN IP at the address specified by CLKGEN_DRP_DADDR and stores in the {CLKGEN_DRP_DO1, CLKGEN_DRP_DO0} registers",0,0,1
-CLKGEN_DRP_WR_EN,1,W1S,14,"When a 1 is written, writes the data in {DRP_DI1, DRP_DI0} to the address of the CLKGEN xip specified by CLKGEN_DRP_DADDR",1,0,1
+CLKGEN_DRP_RD_EN,1,RW,14,"When a 1 is written, reads the data in the CLKGEN IP at the address specified by CLKGEN_DRP_DADDR and stores in the {CLKGEN_DRP_DO1, CLKGEN_DRP_DO0} registers",0,0,0
+CLKGEN_DRP_WR_EN,1,RW,14,"When a 1 is written, writes the data in {DRP_DI1, DRP_DI0} to the address of the CLKGEN xip specified by CLKGEN_DRP_DADDR",1,0,0
+CLKGEN_DRP_DEN,1,RW,14,Starts a dynamic reconfiguration transaction for the CLKGEN xip,2,0,0

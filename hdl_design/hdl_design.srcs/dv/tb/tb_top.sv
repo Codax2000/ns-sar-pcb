@@ -22,6 +22,7 @@ module tb_top ();
     // TODO: connect status interface signals
     // assign i_if_status.fsm_convert_status = DUT.
     assign i_if_status.fsm_convert_status = 2'b00;
+    assign i_if_status.rst_b = DUT.DIGTOP.sys_rst_b;
 
     tb_top_cfg cfg;
     assign i_if_spi.miso = 1'b0;

@@ -67,8 +67,8 @@ class base_test extends uvm_test;
             clk_seq.start(env.clkgen.sequencer);
             input_seq.start(env.signal_gen.sequencer);
         join
-
-        #10us;
+        
+        wait(vif_status.rst_b == 1);
 
         `uvm_info("RESET_PHASE", "DUT Successfully reset and sine wave being generated", UVM_MEDIUM)
         phase.drop_objection(this);
@@ -85,16 +85,36 @@ class base_test extends uvm_test;
         phase.raise_objection(this);
         i_env_cfg.print();
 
-        // TODO: write config to device
-        write_field("OSR_POWER", 4);
-        check_field("OSR_POWER", 16'hABBA);
-
-        // update_reg();
+        // write config to device
+        set_field("NFFT_POWER", i_env_cfg.nfft_power);
+        set_field("DWA_EN", i_env_cfg.dwa_en);
+        set_field("OSR_POWER", i_env_cfg.osr_power);
+        set_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
+        set_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
+        set_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
+        set_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
+        set_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
+        set_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
+        set_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
+        set_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
+        update_reg();
+        
         ral.print();
 
         `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
 
         // TODO: mirror values back to make sure they are what we just wrote
+        check_field("NFFT_POWER", i_env_cfg.nfft_power);
+        check_field("DWA_EN", i_env_cfg.dwa_en);
+        check_field("OSR_POWER", i_env_cfg.osr_power);
+        check_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
+        check_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
+        check_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
+        check_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
+        check_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
+        check_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
+        check_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
+        check_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
         phase.drop_objection(this);
