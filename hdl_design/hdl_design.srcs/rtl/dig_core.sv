@@ -14,6 +14,8 @@ module dig_core #(
     output logic o_integrator_1,
     output logic o_integrator_2,
     output logic o_sample,
+    // TODO: connect bottom plates
+    // TODO: connect analog boundary pins to status interface for verification in the scoreboard
     
     // SPI IO pins
     input logic i_cs_b,
