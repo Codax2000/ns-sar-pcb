@@ -7,7 +7,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
     function new (string name = "reg2spi_adapter");
         super.new(name);
         supports_byte_enable = 0;
-        provides_responses = 1;
+        provides_responses = 0;
     endfunction
 
     virtual function uvm_sequence_item reg2bus(const ref uvm_reg_bus_op rw);

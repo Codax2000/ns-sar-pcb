@@ -42,22 +42,6 @@ class spi_driver extends uvm_driver #(spi_packet);
             seq_item_port.get_next_item(req);
             drive_signals(req);
             seq_item_port.item_done(req);
-
-            // TODO: consider adding several more put() calls here for accurate prediction
-            req_copy.copy(req);
-            req_copy.is_subsequent_transaction = 1;
-            while (req_copy.write_data.size() > 1) begin
-                req_copy.write_data.pop_front();
-                req_copy.address++;
-                req_copy.set_id_info(req);
-                seq_item_port.put(req_copy);
-            end
-            while (req_copy.read_data.size() > 1) begin
-                req_copy.read_data.pop_front();
-                req_copy.address++;
-                req_copy.set_id_info(req);
-                seq_item_port.put(req_copy);
-            end
         end
     endtask
 
