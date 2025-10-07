@@ -5,7 +5,7 @@ import uvm_pkg::*;
 
 import test_pkg::*;
 
-module tb_top ();
+module uvm_tb_top ();
 
     if_clkgen i_if_clkgen();
     if_input i_if_input();

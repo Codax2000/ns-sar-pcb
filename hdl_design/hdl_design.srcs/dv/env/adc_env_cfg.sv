@@ -28,7 +28,9 @@ class adc_env_cfg extends uvm_object;
     virtual if_input vif_input;
 
     // board parameters
-    rand real vdd;
+    rand int  vdd_index;
+         real vdd_options [3];
+         real vdd;
     rand int  sys_clk;
     rand int  spi_clk;
 
@@ -62,7 +64,7 @@ class adc_env_cfg extends uvm_object;
     }
 
     constraint legal_vdd {
-        vdd inside {1.8, 2.5, 3.3};
+        vdd_index inside {[1:3]};
     }
 
     constraint legal_osr_power {
@@ -92,9 +94,11 @@ class adc_env_cfg extends uvm_object;
     function void post_randomize();
         osr = 1 << osr_power;
         nfft = 1 << nfft_power;
+        vdd = vdd_options[vdd_index];
     endfunction
 
     function new(name = "adc_env_cfg");
         super.new(name);
+        vdd_options = {1.8, 2.5, 3.3};
     endfunction
 endclass

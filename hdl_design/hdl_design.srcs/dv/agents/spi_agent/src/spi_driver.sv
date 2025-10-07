@@ -31,15 +31,33 @@ class spi_driver extends uvm_driver #(spi_packet);
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        spi_packet req_copy;
+
+        req_copy = spi_packet::type_id::create("driver_spi_pkt_copy");
+
         vif.csb = 1'b1; // SPI off to start
         vif.scl = 1'b0; // SPI mode 0 CPHA idle
         vif.mosi = 1'b0;
         forever begin
             seq_item_port.get_next_item(req);
-            `uvm_info("DRV", "Driving SPI packet", UVM_HIGH)
             drive_signals(req);
-            req.print();
-            seq_item_port.item_done();
+            seq_item_port.item_done(req);
+
+            // TODO: consider adding several more put() calls here for accurate prediction
+            req_copy.copy(req);
+            req_copy.is_subsequent_transaction = 1;
+            while (req_copy.write_data.size() > 1) begin
+                req_copy.write_data.pop_front();
+                req_copy.address++;
+                req_copy.set_id_info(req);
+                seq_item_port.put(req_copy);
+            end
+            while (req_copy.read_data.size() > 1) begin
+                req_copy.read_data.pop_front();
+                req_copy.address++;
+                req_copy.set_id_info(req);
+                seq_item_port.put(req_copy);
+            end
         end
     endtask
 
@@ -47,6 +65,9 @@ class spi_driver extends uvm_driver #(spi_packet);
     virtual task drive_signals(spi_packet req);
         bit [15:0] mosi = {req.rd_en, req.address};
         bit [15:0] reg_temp;
+
+        `uvm_info("DRV", "Driving SPI packet", UVM_LOW);
+        req.print();
 
         #(clk_period_ns/2);
         vif.csb = 1'b0;
@@ -77,8 +98,8 @@ class spi_driver extends uvm_driver #(spi_packet);
                 req.read_data.push_back(reg_temp);
             end
         end else begin : write_reg
-            for (int i = 0; i < req.write_data.size(); i++) begin
-                mosi = req.write_data.pop_front();
+            for (int j = 0; j < req.write_data.size(); j++) begin
+                mosi = req.write_data[j];
                 for (int i = 15; i >= 0; i--) begin
                     vif.mosi = mosi[i]; // MSB first
                     #(clk_period_ns/2);

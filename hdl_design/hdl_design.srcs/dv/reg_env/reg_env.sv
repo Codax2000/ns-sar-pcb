@@ -15,7 +15,6 @@ class reg_env extends uvm_env;
         super.build_phase(phase);
         ral_model = dut_memory::type_id::create("ral_model", this);
         adapter = reg2spi_adapter::type_id::create("adapter");
-        adapter.provides_responses = 0;
         
         spi_predictor = uvm_reg_predictor #(spi_packet)::type_id::create("spi_predictor", this);
 

@@ -63,9 +63,7 @@ module dig_core #(
         .reg_rd_data(temp_data),
         .reg_addr,
         .reg_rd_en,
-        .reg_wr_en,
-
-        .en_addr_auto_adjust(1'b1) // TODO: add register value
+        .reg_wr_en
     );
 
     clk_gen_xip i_clk_gen (

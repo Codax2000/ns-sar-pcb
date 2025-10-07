@@ -29,13 +29,6 @@ class spi_monitor extends uvm_monitor;
         forever begin
             item = spi_packet::type_id::create("mon_packet", this);
             collect_transaction(item);
-            do begin // send an item for each register read/write observed
-                mon_analysis_port.write(item);
-                if (item.rd_en)
-                    item.read_data.pop_front();
-                else
-                    item.write_data.pop_front();
-            end while (item.read_data.size() > 0 && item.write_data.size() > 0);
         end
     endtask
 
@@ -47,6 +40,8 @@ class spi_monitor extends uvm_monitor;
 
     virtual task collect_signals(spi_packet item);
         bit [15:0] reg_temp;
+        spi_packet copy_pkt = spi_packet::type_id::create("monitor_spi_pkt_copy");
+
         item.read_data.delete();
         item.write_data.delete();
         
@@ -63,6 +58,7 @@ class spi_monitor extends uvm_monitor;
         // receive MISO data if read, MOSI if write
         if (item.rd_en) begin : reg_read
             while (!vif.csb) begin
+                // monitor transaction
                 reg_temp = 16'h0000;
                 for (int j = 15; (j >= 0) && (!vif.csb); j--) begin
                     @(posedge vif.scl or posedge vif.csb);
@@ -71,6 +67,17 @@ class spi_monitor extends uvm_monitor;
                 if (!vif.csb) begin
                     item.n_reads++;
                     item.read_data.push_back(reg_temp);
+                end
+
+                // publish transaction
+                copy_pkt.copy(item);
+                copy_pkt.read_data.delete();
+                copy_pkt.read_data.push_back(reg_temp);
+                copy_pkt.address += (copy_pkt.n_reads - 1);
+                copy_pkt.is_subsequent_transaction = item.n_reads > 1;
+                if (!vif.csb) begin
+                    `uvm_info("MON", "Sending Read Packet", UVM_LOW)
+                    mon_analysis_port.write(copy_pkt);
                 end
             end
         end else begin : reg_write
@@ -82,10 +89,19 @@ class spi_monitor extends uvm_monitor;
                 end
                 if (!vif.csb)
                     item.write_data.push_back(reg_temp);
+
+                // publish transaction
+                copy_pkt.copy(item);
+                copy_pkt.write_data.delete();
+                copy_pkt.write_data.push_back(reg_temp);
+                copy_pkt.address += (item.write_data.size() - 1);
+                copy_pkt.is_subsequent_transaction = copy_pkt.address != item.address;
+                if (!vif.csb) begin
+                    `uvm_info("MON", "Sending Write Packet", UVM_LOW)
+                    mon_analysis_port.write(copy_pkt);
+                end
             end
         end
-
-        `uvm_info("MON", "Sending Packet", UVM_LOW)
 
     endtask
 endclass
