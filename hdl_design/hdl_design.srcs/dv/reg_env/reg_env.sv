@@ -20,6 +20,8 @@ class reg_env extends uvm_env;
 
         ral_model.build();
         ral_model.lock_model();
+        ral_model.reset();
+        ral_model.default_map.set_auto_predict(0);
         uvm_config_db #(dut_memory)::set(null, "uvm_test_top", "ral_model", ral_model);
     endfunction
 

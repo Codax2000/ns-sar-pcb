@@ -303,7 +303,7 @@ class ral_register_10 extends uvm_reg;
             3,
             1,
             "RO",
-            1,
+            0,
             0,
             1,
             0,
@@ -523,27 +523,27 @@ class dut_memory extends uvm_reg_block;
         this.register_10 = ral_register_10::type_id::create("register_10", , get_full_name());
         this.register_10.configure(this, null, "");
         this.register_10.build();
-        this.default_map.add_reg(this.register_10, `UVM_REG_ADDR_WIDTH'h10, "RW");
+        this.default_map.add_reg(this.register_10, `UVM_REG_ADDR_WIDTH'hA, "RW");
 
         this.register_11 = ral_register_11::type_id::create("register_11", , get_full_name());
         this.register_11.configure(this, null, "");
         this.register_11.build();
-        this.default_map.add_reg(this.register_11, `UVM_REG_ADDR_WIDTH'h11, "RW");
+        this.default_map.add_reg(this.register_11, `UVM_REG_ADDR_WIDTH'hB, "RW");
 
         this.register_12 = ral_register_12::type_id::create("register_12", , get_full_name());
         this.register_12.configure(this, null, "");
         this.register_12.build();
-        this.default_map.add_reg(this.register_12, `UVM_REG_ADDR_WIDTH'h12, "RW");
+        this.default_map.add_reg(this.register_12, `UVM_REG_ADDR_WIDTH'hC, "RW");
 
         this.register_13 = ral_register_13::type_id::create("register_13", , get_full_name());
         this.register_13.configure(this, null, "");
         this.register_13.build();
-        this.default_map.add_reg(this.register_13, `UVM_REG_ADDR_WIDTH'h13, "RW");
+        this.default_map.add_reg(this.register_13, `UVM_REG_ADDR_WIDTH'hD, "RW");
 
         this.register_14 = ral_register_14::type_id::create("register_14", , get_full_name());
         this.register_14.configure(this, null, "");
         this.register_14.build();
-        this.default_map.add_reg(this.register_14, `UVM_REG_ADDR_WIDTH'h14, "RW");
+        this.default_map.add_reg(this.register_14, `UVM_REG_ADDR_WIDTH'hE, "RW");
 
         this.adc_mem = new("adc_mem", 16384, 16, "RO");
         this.adc_mem.configure(this);

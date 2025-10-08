@@ -25,7 +25,7 @@ REGISTERS_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/registers/registers.sv'
 MEMORIES_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/registers/memories.sv'
 REG_IF_PATH = './hdl_design/hdl_design.srcs/rtl/registers/reg_if.sv'
 
-RAL_DUT_CONFIG_PATH = './hdl_design/hdl_design.srcs/dv/env/ral_dut_cfg.sv'
+RAL_DUT_CONFIG_PATH = './hdl_design/hdl_design.srcs/dv/reg_env/ral_dut_cfg.sv'
 
 REG_MAP_CSV_PATH = './hdl_design/hdl_design.srcs/registers/reg_map.csv'
 FIELDS_CSV_PATH = './hdl_design/hdl_design.srcs/registers/fields.csv'
@@ -49,10 +49,13 @@ def gen_fields_sheet(data, save_csv=True):
         DataFrame : register fields as entries in a database
     '''
     df = pd.DataFrame.from_dict(data, orient='index')
-
     df['lsb_bit_position'] = df['lsb_bit_position'].fillna(0).astype(int)
     df['reset_value'] = df['reset_value'].fillna(0).astype(int)
-    df['volatile'] = df['volatile'].fillna(0).astype(int)
+
+    if 'volatile' in df.columns:
+        df['volatile'] = df['volatile'].fillna(0).astype(int)
+    else:
+        df['volatile'] = 0
 
     df = df.reset_index(names='field_name')
 
@@ -237,7 +240,7 @@ def generate_ral_config_file(fields, memories):
             print(f'        this.register_{idx} = ral_register_{idx}::type_id::create("register_{idx}", , get_full_name());', file=file)
             print(f'        this.register_{idx}.configure(this, null, "");', file=file)
             print(f'        this.register_{idx}.build();', file=file)
-            print(f'        this.default_map.add_reg(this.register_{idx}, `UVM_REG_ADDR_WIDTH\'h{idx}, "RW");', file=file, end='\n\n')
+            print(f'        this.default_map.add_reg(this.register_{idx}, `UVM_REG_ADDR_WIDTH\'h{hex(idx)[2:].upper()}, "RW");', file=file, end='\n\n')
         for mem_name in memories['mem_name'].unique():
             # pdb.set_trace()
             access = memories.loc[memories['mem_name'] == mem_name, 'access'].iloc[0]

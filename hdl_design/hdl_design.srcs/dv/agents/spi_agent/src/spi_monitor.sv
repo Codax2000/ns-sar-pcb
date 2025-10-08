@@ -76,7 +76,7 @@ class spi_monitor extends uvm_monitor;
                 copy_pkt.address += (copy_pkt.n_reads - 1);
                 copy_pkt.is_subsequent_transaction = item.n_reads > 1;
                 if (!vif.csb) begin
-                    `uvm_info("MON", "Sending Read Packet", UVM_LOW)
+                    `uvm_info("MON", "Sending Read Packet", UVM_HIGH)
                     mon_analysis_port.write(copy_pkt);
                 end
             end
@@ -97,7 +97,7 @@ class spi_monitor extends uvm_monitor;
                 copy_pkt.address += (item.write_data.size() - 1);
                 copy_pkt.is_subsequent_transaction = copy_pkt.address != item.address;
                 if (!vif.csb) begin
-                    `uvm_info("MON", "Sending Write Packet", UVM_LOW)
+                    `uvm_info("MON", "Sending Write Packet", UVM_HIGH)
                     mon_analysis_port.write(copy_pkt);
                 end
             end

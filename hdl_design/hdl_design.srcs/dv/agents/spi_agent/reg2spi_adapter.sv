@@ -42,7 +42,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
         `uvm_info ("ADAPTER",
                    $sformatf ("reg2bus addr=0x%0h data=0x%0h kind=%s",
                               rw.addr, rw.data, rw.kind.name()),
-                   UVM_MEDIUM)
+                   UVM_HIGH)
         return pkt;
     endfunction
 
@@ -60,7 +60,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
         `uvm_info ("ADAPTER", 
                    $sformatf("bus2reg : addr=0x%0h data=0x%0h kind=%s status=%s",
                              rw.addr, rw.data, rw.kind.name(), rw.status.name()),
-                   UVM_MEDIUM)
+                   UVM_HIGH)
         pkt.print();
     endfunction
 
