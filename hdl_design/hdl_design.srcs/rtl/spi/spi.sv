@@ -11,9 +11,7 @@ module spi #(
     input  logic [DATA_WIDTH-1:0] reg_rd_data,
     output logic [ADDR_WIDTH-1:0] reg_addr,
     output logic                  reg_rd_en,
-    output logic                  reg_wr_en,
-
-    input  logic                  en_addr_auto_adjust
+    output logic                  reg_wr_en
 );
 
     typedef enum logic [1:0] {
@@ -78,8 +76,7 @@ module spi #(
                     rx_shift <= {rx_shift[DATA_WIDTH-2:0], mosi};
                     if (bit_cnt == DATA_WIDTH-1) begin
                         bit_cnt <= 0;
-                        if (en_addr_auto_adjust)
-                            addr_shift <= addr_shift + 1;
+                        addr_shift <= addr_shift + 1;
                     end else begin
                         bit_cnt  <= bit_cnt + 1;
                     end
@@ -91,7 +88,7 @@ module spi #(
                     else
                         tx_shift <= {tx_shift[DATA_WIDTH-2:0], 1'b0};
                     bit_cnt  <= bit_cnt + 1;
-                    if ((bit_cnt == (DATA_WIDTH-1)) && en_addr_auto_adjust)
+                    if ((bit_cnt == (DATA_WIDTH-1)))
                         addr_shift <= addr_shift + 1;
                 end
             endcase

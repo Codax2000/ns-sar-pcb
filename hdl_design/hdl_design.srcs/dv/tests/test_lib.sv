@@ -4,6 +4,8 @@ import uvm_pkg         ::*;
 import adc_env_pkg     ::*;
 import clkgen_agent_pkg::*;
 import input_agent_pkg ::*;
+import spi_agent_pkg   ::*;
+import reg_env_pkg     ::*;
 
 class base_test extends uvm_test;
 
@@ -97,26 +99,40 @@ class base_test extends uvm_test;
         set_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
         set_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
         set_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
-        update_reg();
-        
-        ral.print();
+        update_reg_burst();
 
         `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
 
-        // TODO: mirror values back to make sure they are what we just wrote
-        check_field("NFFT_POWER", i_env_cfg.nfft_power);
-        check_field("DWA_EN", i_env_cfg.dwa_en);
-        check_field("OSR_POWER", i_env_cfg.osr_power);
-        check_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
-        check_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
-        check_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
-        check_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
-        check_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
-        check_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
-        check_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
-        check_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
+        // mirror values back to make sure they are what we just wrote
+        // check_field("NFFT_POWER", i_env_cfg.nfft_power);
+        // check_field("DWA_EN", i_env_cfg.dwa_en);
+        // check_field("OSR_POWER", i_env_cfg.osr_power);
+        // check_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
+        // check_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
+        // check_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
+        // check_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
+        // check_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
+        // check_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
+        // check_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
+        // check_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
+
+        predict_field("NFFT_POWER", i_env_cfg.nfft_power);
+        predict_field("DWA_EN", i_env_cfg.dwa_en);
+        predict_field("OSR_POWER", i_env_cfg.osr_power);
+        predict_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
+        predict_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
+        predict_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
+        predict_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
+        predict_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
+        predict_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
+        predict_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
+        predict_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
+        mirror_reg_burst(0, 11, UVM_CHECK);
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
+        
+        ral.print();
+
         phase.drop_objection(this);
     endtask
 
@@ -136,17 +152,128 @@ class base_test extends uvm_test;
         env.ral.ral_model.update(status);
     endtask
 
-    task check_field(string name, uvm_reg_data_t expected_value);
+    task predict_field(string name, uvm_reg_data_t expected_value);
         uvm_reg_field field_to_check;
         field_to_check = env.ral.ral_model.get_field_by_name(name);
         field_to_check.predict(expected_value);
-        field_to_check.mirror(status, UVM_CHECK);
+    endtask
+
+    task mirror_field(string name, uvm_reg_data_t expected_value, uvm_check_e check = UVM_NO_CHECK);
+        uvm_reg_field field_to_check;
+        field_to_check = env.ral.ral_model.get_field_by_name(name);
+        field_to_check.predict(expected_value);
+        field_to_check.mirror(status, check);
     endtask
 
     task read_field(string name, output uvm_reg_data_t reg_value);
         uvm_reg_field field_to_read;
         field_to_read = env.ral.ral_model.get_field_by_name(name);
         field_to_read.read(status, reg_value);
+    endtask
+
+    task write_reg_burst(bit [14:0] address, bit [15:0] write_data [$]);
+        uvm_reg                  initial_register;
+        spi_packet_reg_extension ext;
+        bit [15:0]               address_data;
+        uvm_status_e             status;
+
+        initial_register = env.ral.ral_model.default_map.get_reg_by_offset(address);
+        ext = spi_packet_reg_extension::type_id::create("burst_write_ext");
+        address_data = write_data.pop_front();
+
+        ext.n_additional_reads = 0;
+        ext.additional_write_data = write_data;
+
+        initial_register.write(
+            .status(status), 
+            .value(address_data), 
+            .extension(ext)
+        );
+
+    endtask
+
+    task mirror_reg_burst(bit [14:0] address, int n_reads, uvm_check_e check = UVM_NO_CHECK);
+        uvm_reg                  initial_register;
+        spi_packet_reg_extension ext;
+        bit [15:0]               address_data;
+        uvm_status_e             status;
+        bit                      check_on_read;
+        initial_register = env.ral.ral_model.default_map.get_reg_by_offset(address);
+        ext = spi_packet_reg_extension::type_id::create("burst_write_ext");
+
+        ext.n_additional_reads = n_reads - 1;
+        ext.additional_write_data = {};
+
+        check_on_read = env.ral.ral_model.default_map.get_check_on_read();
+
+        if (check == UVM_CHECK) 
+            env.ral.ral_model.default_map.set_check_on_read(1);
+
+        initial_register.mirror(
+            .status(status),
+            .extension(ext)
+        );
+
+        if (check == UVM_CHECK)
+            env.ral.ral_model.default_map.set_check_on_read(check_on_read);
+
+    endtask
+
+    task update_reg_burst();
+        uvm_reg regs [$];
+        uvm_reg current_reg;
+
+        bit [14:0]     low_address    ;
+        bit [14:0]     high_address   ;
+        bit [15:0]     write_data  [$];
+        bit            update_data [$];
+        uvm_reg_addr_t offset;
+        env.ral.ral_model.default_map.get_registers(regs);
+
+        offset = regs[0].get_address();
+        low_address = offset;
+        high_address = offset;
+
+        for (int i = 1; i < regs.size(); i++) begin
+            offset = regs[i].get_address();
+            if (offset < low_address)
+                low_address = offset;
+            if (offset > high_address)
+                high_address = offset;
+        end
+
+        // starting at low and going to high, get desired value
+        write_data.delete();
+        update_data.delete();
+        for (int i = low_address; i <= high_address; i++) begin
+            current_reg = env.ral.ral_model.default_map.get_reg_by_offset(i);
+            if (current_reg != null) begin
+                if (current_reg.needs_update()) begin
+                    write_data.push_back(current_reg.get());
+                    update_data.push_back(1);
+                end else begin
+                    write_data.push_back(0);
+                    update_data.push_back(0);
+                end
+            end else begin
+                write_data.push_back(0);
+                update_data.push_back(0);
+            end
+        end
+
+        while (update_data[0] == 0) begin
+            update_data.pop_front();
+            write_data.pop_front();
+            low_address++;
+        end
+
+        while (update_data[update_data.size() - 1] == 0) begin
+            update_data.pop_back();
+            write_data.pop_back();
+        end
+
+        write_reg_burst(low_address, write_data);
+
     endtask
 
 endclass

@@ -14,6 +14,8 @@ module dig_core #(
     output logic o_integrator_1,
     output logic o_integrator_2,
     output logic o_sample,
+    // TODO: connect bottom plates
+    // TODO: connect analog boundary pins to status interface for verification in the scoreboard
     
     // SPI IO pins
     input logic i_cs_b,
@@ -63,9 +65,7 @@ module dig_core #(
         .reg_rd_data(temp_data),
         .reg_addr,
         .reg_rd_en,
-        .reg_wr_en,
-
-        .en_addr_auto_adjust(1'b1) // TODO: add register value
+        .reg_wr_en
     );
 
     clk_gen_xip i_clk_gen (
