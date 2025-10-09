@@ -34,7 +34,6 @@ module data_mem #(
         .dina(wr_data_a),
         .clka,
         .wea(wr_enable_a),
-        .ena(we_enable_a),
 
         .addrb(addr_b),
         .clkb,

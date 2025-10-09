@@ -290,24 +290,34 @@ def generate_interface_file(fields):
         for field in fields[is_writeable]['field_name']:
             access = fields.loc[fields['field_name'] == field, 'access'].iloc[0]
             if access == 'RW':
-                print(f'        output {field};', file=file)
+                print(f'        output {field},', file=file)
             elif access == 'W1C':
-                print(f'        output {field}_set;', file=file)
-                print(f'        input  {field};', file=file)
+                print(f'        output {field}_clear,', file=file)
+                print(f'        input  {field},', file=file)
         for field in fields[~is_writeable]['field_name']:
-            print(f'        input {field};', file=file)
+            if field == fields[~is_writeable]['field_name'].to_list()[-1]:
+                print(f'        input {field}', file=file)
+            else:
+                print(f'        input {field},', file=file)
         print('    );', file=file, end='\n\n')
 
         print('    modport RD (', file=file)
         for field in fields['field_name']:
-            print(f'        input {field};', file=file)
+            print(f'        input {field}', file=file, end='')
+            if field != fields['field_name'][len(fields)-1]:
+                print(',', file=file)
+            else:
+                print(file=file)
         print('    );', file=file, end='\n\n')
 
         print('    modport WR_RO (', file=file)
         for field in fields[~is_writeable]['field_name']:
-            print(f'        output {field};', file=file)
+            print(f'        output {field},', file=file)
         for field in fields[is_writeable]['field_name']:
-            print(f'        input {field};', file=file)
+            if field == fields[is_writeable]['field_name'].to_list()[-1]:
+                print(f'        input {field}', file=file)
+            else:
+                print(f'        input {field},', file=file)
         print('    );', file=file, end='\n\n')
 
         for field in fields[~is_writeable]['field_name']:
@@ -358,7 +368,7 @@ def generate_register_rtl(fields_df):
         print(f'    input  logic        bus_if_wr_en,', file=file)
         print(f'    input  logic [{ADDR_WIDTH-1}:0] bus_if_rd_addr,', file=file)
         print(f'    output logic [{FIELD_WIDTH-1}:0] bus_if_rd_data,', file=file)
-        print(f'    input  logic        bus_if_rd_en,', file=file)
+        print(f'    input  logic        bus_if_rd_en', file=file)
         print(');', file=file)
 
         # generate RW registers
@@ -370,14 +380,14 @@ def generate_register_rtl(fields_df):
             field_address = field_row['reg_address'].iloc[0]
             lsb_position = field_row['lsb_bit_position'].iloc[0]
             field_width = field_row['width'].iloc[0]
-            print('    always_ff(@posedge clk) begin', file=file)
+            print('    always_ff @(posedge clk or negedge rst_b) begin', file=file)
             print('        if (!rst_b)', file=file)
             print(f'            i0.{field_name} <= \'d{reset_value};', file=file)
             print(f'        else if (bus_if_wr_en && (bus_if_wr_addr == \'d{field_address}))', file=file)
             if field_width == 1:
-                print(f'            i0.{field_name} <= bus_if_wr_data[{lsb_position}]', file=file)
+                print(f'            i0.{field_name} <= bus_if_wr_data[{lsb_position}];', file=file)
             else:
-                print(f'            i0.{field_name} <= bus_if_wr_data[{lsb_position + field_width - 1}:{lsb_position}]', file=file)
+                print(f'            i0.{field_name} <= bus_if_wr_data[{lsb_position + field_width - 1}:{lsb_position}];', file=file)
             print('    end', file=file, end='\n\n')
 
         print(f'\n    // generated W1C register set/clear logic', file=file)
@@ -388,7 +398,7 @@ def generate_register_rtl(fields_df):
             field_address = field_row['reg_address'].iloc[0]
             lsb_position = field_row['lsb_bit_position'].iloc[0]
             field_width = field_row['width'].iloc[0]
-            print('    always_ff(@posedge clk) begin', file=file)
+            print('    always_ff @(posedge clk or negedge rst_b) begin', file=file)
             print('        if (!rst_b)', file=file)
             print(f'            i0.{field_name} <= \'d{reset_value};', file=file)
             print(f'        else if (bus_if_wr_en && (bus_if_wr_addr == \'d{field_address}))', file=file)
@@ -401,12 +411,12 @@ def generate_register_rtl(fields_df):
             print('    end', file=file, end='\n\n')
 
         print('    // synchronous readback data', file=file)
-        print('    always_ff @(posedge clk) begin', file=file)
+        print('    always_ff @(posedge clk or negedge rst_b) begin', file=file)
         print('        if (!rst_b)', file=file)
         print('            bus_if_rd_data <= \'0;', file=file)
         print('        else if (bus_if_rd_en) begin', file=file)
         print('            case (bus_if_rd_addr)', file=file)
-        print_registers_to_rtl(file)
+        print_registers_to_rtl(file, fields_df)
         print('                default: bus_if_rd_data <= \'d0;', file=file)
         print('            endcase', file=file)
         print('        end else', file=file)
@@ -416,7 +426,11 @@ def generate_register_rtl(fields_df):
         print('endmodule', file=file)
 
 
-def print_registers_to_rtl(file):
+def get_field_width(fields, field_name):
+    return fields.loc[fields['field_name'] == field_name, 'width'].iloc[0]
+
+
+def print_registers_to_rtl(file, fields):
     '''
     Prints the register map to RTL to be able to read it back
 
@@ -425,13 +439,16 @@ def print_registers_to_rtl(file):
     '''
     reg_map = pd.read_csv(REG_MAP_CSV_PATH)
     for idx, row in reg_map.iterrows():
-        print(f'                {row['address']} : bus_if_rd_data <= {FIELD_WIDTH}\'', file=file, end='')
+        print(f'                {row['address']} : bus_if_rd_data <= \'', file=file, end='')
         print('{', file=file, end='')
         # pdb.set_trace()
         for i in range(FIELD_WIDTH - 1, -1, -1):
             field = row[str(i)]
+            field_name = field.split('[')[0]
             if (field == 'reserved'):
                 print(f'1\'b0', end='', file=file)
+            elif (get_field_width(fields, field_name) == 1):
+                print(f'i0.{field_name}', end='', file=file)
             else:
                 print(f'i0.{field}', end='', file=file)
             if i > 0:

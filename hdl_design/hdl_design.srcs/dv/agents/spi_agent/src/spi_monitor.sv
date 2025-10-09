@@ -8,7 +8,7 @@ class spi_monitor extends uvm_monitor;
     bit CPOL;
     bit CPHA;
 
-    bit [15:0] read_data_queue [$];
+    logic [15:0] read_data_queue [$];
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -39,7 +39,7 @@ class spi_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_signals(spi_packet item);
-        bit [15:0] reg_temp;
+        logic [15:0] reg_temp;
         spi_packet copy_pkt = spi_packet::type_id::create("monitor_spi_pkt_copy");
 
         item.read_data.delete();
