@@ -11,9 +11,7 @@ module spi #(
     input  logic [DATA_WIDTH-1:0] reg_rd_data,
     output logic [ADDR_WIDTH-1:0] reg_addr,
     output logic                  reg_rd_en,
-    output logic                  reg_wr_en,
-
-    input logic rst_b
+    output logic                  reg_wr_en
 );
 
     typedef enum logic [1:0] {
@@ -32,8 +30,8 @@ module spi #(
     logic miso_n;
 
     // FSM state transition
-    always_ff @(posedge scl or posedge cs_b or negedge rst_b) begin
-        if (cs_b || (!rst_b))
+    always_ff @(posedge scl or posedge cs_b) begin
+        if (cs_b)
             state <= ADDR_DECODE;
         else
             state <= next_state;
@@ -56,8 +54,8 @@ module spi #(
     end
 
     // Shift logic reset on cs_b deassertion
-    always_ff @(posedge scl or posedge cs_b or negedge rst_b) begin
-        if (cs_b || (!rst_b)) begin
+    always_ff @(posedge scl or posedge cs_b) begin
+        if (cs_b) begin
             addr_count  <= 0;
             addr_shift  <= 0;
             rx_shift    <= 0;
@@ -97,8 +95,8 @@ module spi #(
         end
     end
 
-    always_ff @(negedge scl or posedge cs_b or negedge rst_b) begin
-        if (cs_b || (!rst_b))
+    always_ff @(negedge scl or posedge cs_b) begin
+        if (cs_b)
             miso <= 0;
         else
             miso <= miso_n;

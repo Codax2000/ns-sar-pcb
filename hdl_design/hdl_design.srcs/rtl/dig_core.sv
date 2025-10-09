@@ -42,7 +42,8 @@ module dig_core #(
     logic [DATA_WIDTH-1:0] mem_rd_data;
     logic [DATA_WIDTH-1:0] spi_rd_data;
     
-    reg_if                 i_reg_if ();
+    reg_if                 i_reg_if_spi_clk ();
+    reg_if                 i_reg_if_sys_clk ();
 
     spi #(
         .ADDR_WIDTH(ADDR_WIDTH),
@@ -51,15 +52,13 @@ module dig_core #(
         .scl(i_scl),
         .mosi(i_mosi),
         .miso(o_miso),
-        .cs_b(i_cs_b && sys_rst_b), // hold SPI in reset if the device is in reset
+        .cs_b(i_cs_b || (!sys_rst_b)), // hold SPI in reset if the device is in reset
 
         .reg_wr_data,
         .reg_rd_data,
         .reg_addr,
         .reg_rd_en,
-        .reg_wr_en,
-
-        .rst_b(sys_rst_b)
+        .reg_wr_en
     );
 
     data_mem i_adc_mem (
@@ -69,7 +68,7 @@ module dig_core #(
     );
 
     registers i_registers (
-        .i0(i_reg_if),
+        .i0(i_reg_if_spi_clk),
         .clk(i_scl),
         .rst_b(sys_rst_b), // connect to system reset, not anything from SPI
         .bus_if_wr_addr(reg_addr),
@@ -102,8 +101,8 @@ module dig_core #(
     assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
     // TEMPORARY
-    assign i_reg_if.MAIN_STATE_RB = 3'h0;
-    assign i_reg_if.START_CONVERSION_clear = 1'b0;
-    assign i_reg_if.START_CONVERSION_set = 1'b0;
+    assign i_reg_if_spi_clk.MAIN_STATE_RB = 3'h0;
+    assign i_reg_if_spi_clk.START_CONVERSION_clear = 1'b0;
+    assign i_reg_if_spi_clk.START_CONVERSION_set = 1'b0;
 
 endmodule

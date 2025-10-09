@@ -1,20 +1,11 @@
 module cdc_sync #(
     parameter N_SYNC_STAGES=2
 ) (
-    input  logic i_dwa,
-    output logic o_dwa,
-    input  logic [2:0] i_osr_power,
-    output logic [2:0] o_osr_power,
-    input  logic [3:0] i_nfft_power,
-    output logic [3:0] o_nfft_power,
-    input  logic [3:0] i_clk_div,
-    output logic [3:0] o_clk_div,
+    reg_if.WR_BUS_IF bus_clk_reg,
+    reg_if.WR_RO     sys_clk_reg,
 
-    input  logic [1:0] i_fsm_status,
-    output logic [1:0] o_fsm_status,
-
-    input  logic i_clk_spi,
-    input  logic i_clk_sys
+    input logic sys_clk,
+    input logic bus_clk
 );
 
     `ifdef VIVADO
