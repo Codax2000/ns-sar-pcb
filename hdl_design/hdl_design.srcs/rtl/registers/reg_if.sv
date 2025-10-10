@@ -21,29 +21,6 @@ interface reg_if;
     logic        CLKGEN_DRP_WR_EN;
     logic        CLKGEN_DRP_DEN;
 
-    modport WR_BUS_IF (
-        output NFFT_POWER,
-        output DWA_EN,
-        output OSR_POWER,
-        output N_SH_TOTAL_CYCLES,
-        output N_SH_ACTIVE_CYCLES,
-        output N_BOTTOM_PLATE_ACTIVE_CYCLES,
-        output N_SAR_CYCLES,
-        output N_INT1_TOTAL_CYCLES,
-        output N_INT1_ACTIVE_CYCLES,
-        output N_INT2_TOTAL_CYCLES,
-        output N_INT2_ACTIVE_CYCLES,
-        output START_CONVERSION_clear,
-        input  START_CONVERSION,
-        output CLKGEN_DRP_DADDR,
-        output CLKGEN_DRP_DI,
-        output CLKGEN_DRP_RD_EN,
-        output CLKGEN_DRP_WR_EN,
-        output CLKGEN_DRP_DEN,
-        input MAIN_STATE_RB,
-        input CLKGEN_DRP_DO
-    );
-
     modport RD (
         input NFFT_POWER,
         input DWA_EN,
@@ -66,7 +43,29 @@ interface reg_if;
         input CLKGEN_DRP_DEN
     );
 
-    modport WR_RO (
+    modport WR_SYS_CLK (
+        output NFFT_POWER,
+        output DWA_EN,
+        output OSR_POWER,
+        output N_SH_TOTAL_CYCLES,
+        output N_SH_ACTIVE_CYCLES,
+        output N_BOTTOM_PLATE_ACTIVE_CYCLES,
+        output N_SAR_CYCLES,
+        output N_INT1_TOTAL_CYCLES,
+        output N_INT1_ACTIVE_CYCLES,
+        output N_INT2_TOTAL_CYCLES,
+        output N_INT2_ACTIVE_CYCLES,
+        output START_CONVERSION,
+        output CLKGEN_DRP_DADDR,
+        output CLKGEN_DRP_DI,
+        output CLKGEN_DRP_RD_EN,
+        output CLKGEN_DRP_WR_EN,
+        output CLKGEN_DRP_DEN,
+        input MAIN_STATE_RB,
+        input CLKGEN_DRP_DO
+    );
+
+    modport WR_BUS_CLK (
         output MAIN_STATE_RB,
         output CLKGEN_DRP_DO,
         input NFFT_POWER,

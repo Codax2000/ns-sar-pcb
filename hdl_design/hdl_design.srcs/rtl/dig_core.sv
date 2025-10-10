@@ -79,6 +79,15 @@ module dig_core #(
         .bus_if_rd_en(reg_rd_en)
     );
 
+    cdc_sync #(
+        .N_SYNC_STAGES(3)
+    ) i_cdc_sync (
+        .bus_clk_reg(i_reg_if_spi_clk.WR_BUS_CLK),
+        .sys_clk_reg(i_reg_if_sys_clk.WR_SYS_CLK),
+        .sys_clk(pll_clk),
+        .bus_clk(i_scl)
+    );
+
     assign spi_rd_data = reg_addr[ADDR_WIDTH-1] ? mem_rd_data : reg_rd_data;
 
     clk_gen_xip i_clk_gen (
@@ -101,8 +110,10 @@ module dig_core #(
     assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
     // TEMPORARY
-    assign i_reg_if_spi_clk.MAIN_STATE_RB = 3'h0;
+    assign i_reg_if_sys_clk.MAIN_STATE_RB = 3'h0;
+    assign i_reg_if_sys_clk.CLKGEN_DRP_DO = 16'h0000;
     assign i_reg_if_spi_clk.START_CONVERSION_clear = 1'b0;
+    assign i_reg_if_sys_clk.START_CONVERSION_set = 1'b0;
     assign i_reg_if_spi_clk.START_CONVERSION_set = 1'b0;
 
 endmodule

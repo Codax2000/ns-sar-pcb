@@ -23,6 +23,7 @@ MEMORIES_PATH = './hdl_design/hdl_design.srcs/registers/memories.json'
 
 REGISTERS_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/registers/registers.sv'
 MEMORIES_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/registers/memories.sv'
+CDC_SYNC_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/cdc_sync.sv'
 REG_IF_PATH = './hdl_design/hdl_design.srcs/rtl/registers/reg_if.sv'
 
 RAL_DUT_CONFIG_PATH = './hdl_design/hdl_design.srcs/dv/reg_env/ral_dut_cfg.sv'
@@ -31,9 +32,9 @@ REG_MAP_CSV_PATH = './hdl_design/hdl_design.srcs/registers/reg_map.csv'
 FIELDS_CSV_PATH = './hdl_design/hdl_design.srcs/registers/fields.csv'
 MEMORIES_CSV_PATH = './hdl_design/hdl_design.srcs/registers/memories.csv'
 
-FIELD_WIDTH = 16
-ADDR_WIDTH  = 14  # for this device, register addresses are 2^14-1, above that is memory
-
+FIELD_WIDTH   = 16
+ADDR_WIDTH    = 14  # for this device, register addresses are 2^14-1, above that is memory
+N_SYNC_STAGES = 3
 
 def gen_fields_sheet(data, save_csv=True):
     '''
@@ -283,24 +284,7 @@ def generate_interface_file(fields):
                     print(f'    logic [{width-1}:0] {field}_set;', file=file)
                     print(f'    logic [{width-1}:0] {field}_clear;', file=file)
 
-
         print('', file=file)
-        is_writeable = (fields['access'] == 'W1C') | (fields['access'] == 'RW')
-        print('    modport WR_BUS_IF (', file=file)
-        for field in fields[is_writeable]['field_name']:
-            access = fields.loc[fields['field_name'] == field, 'access'].iloc[0]
-            if access == 'RW':
-                print(f'        output {field},', file=file)
-            elif access == 'W1C':
-                print(f'        output {field}_clear,', file=file)
-                print(f'        input  {field},', file=file)
-        for field in fields[~is_writeable]['field_name']:
-            if field == fields[~is_writeable]['field_name'].to_list()[-1]:
-                print(f'        input {field}', file=file)
-            else:
-                print(f'        input {field},', file=file)
-        print('    );', file=file, end='\n\n')
-
         print('    modport RD (', file=file)
         for field in fields['field_name']:
             print(f'        input {field}', file=file, end='')
@@ -309,8 +293,23 @@ def generate_interface_file(fields):
             else:
                 print(file=file)
         print('    );', file=file, end='\n\n')
+        
+        is_writeable = (fields['access'] == 'W1C') | (fields['access'] == 'RW')
+        print('    modport WR_SYS_CLK (', file=file)
+        for field in fields[is_writeable]['field_name']:
+            access = fields.loc[fields['field_name'] == field, 'access'].iloc[0]
+            if access == 'RW':
+                print(f'        output {field},', file=file)
+            elif access == 'W1C':
+                print(f'        output {field},', file=file)
+        for field in fields[~is_writeable]['field_name']:
+            if field == fields[~is_writeable]['field_name'].to_list()[-1]:
+                print(f'        input {field}', file=file)
+            else:
+                print(f'        input {field},', file=file)
+        print('    );', file=file, end='\n\n')
 
-        print('    modport WR_RO (', file=file)
+        print('    modport WR_BUS_CLK (', file=file)
         for field in fields[~is_writeable]['field_name']:
             print(f'        output {field},', file=file)
         for field in fields[is_writeable]['field_name']:
@@ -456,6 +455,85 @@ def print_registers_to_rtl(file, fields):
         print('};', file=file)
 
 
+def generate_cdc_sync_rtl(path, fields):
+
+    # generate module declaration
+    with open(path, 'w') as file:
+        print('module cdc_sync #(', file=file)
+        print(f'    parameter N_SYNC_STAGES={N_SYNC_STAGES}', file=file)
+        print(') (', file=file)
+        print('    reg_if.WR_BUS_CLK bus_clk_reg,', file=file)
+        print('    reg_if.WR_SYS_CLK sys_clk_reg,', file=file)
+        print('    input logic sys_clk,', file=file)
+        print('    input logic bus_clk', file=file)
+        print(');\n', file=file)
+
+        # for RO fields, send them from SYSCLK to SPICLK
+        print('    // RO registers, sys_clk -> bus_clk', file=file)
+        filt = fields['access'] == 'RO'
+        for field in fields[filt]['field_name']:
+            width = get_field_width(fields, field)
+            # instantiate a synchronizer
+            print('    `ifdef VIVADO', file=file)
+            print('    xpm_cdc_array_single #(', file=file)
+            print('        .DEST_SYNC_FF(N_SYNC_STAGES),', file=file)
+            print(f'        .WIDTH({width}),', file=file)
+            print('        .SRC_INPUT_REG(0)', file=file)
+            print(f'    ) cdc_sync_to_bus_clk_{field} (', file=file)
+            print(f'        .src_in  (sys_clk_reg.{field}),', file=file)
+            print(f'        .dest_out(bus_clk_reg.{field}),', file=file)
+            print('        .dest_clk(bus_clk),', file=file)
+            print('        .src_clk(sys_clk)', file=file)
+            print('    );', file=file)
+            print('    `else', file=file)
+            print(f'    logic [{width-1}:0] sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            print('    genvar i;', file=file)
+            print('    for (i = 0; i < N_SYNC_STAGES; i++) begin', file=file)
+            print('        always_ff @(posedge bus_clk) begin', file=file)
+            print('            if (i == 0)', file=file)
+            print(f'                sync_to_bus_clk_{field}[i] <= sys_clk_reg.{field};', file=file)
+            print('            else', file=file)
+            print(f'                sync_to_bus_clk_{field}[i] <= sync_to_bus_clk_{field}[i - 1];', file=file)
+            print('        end', file=file)
+            print('    end', file=file)
+            print(f'    assign bus_clk_reg.{field} = sync_to_bus_clk_{field}[N_SYNC_STAGES - 1];', file=file)
+            print('    `endif\n', file=file)
+
+        # for RW fields, send them from SPICLK to SYSCLK
+        print('    // RO registers, bus_clk -> sys_clk', file=file)
+        filt = (fields['access'] == 'RW') | (fields['access'] == 'W1C')
+        for field in fields[filt]['field_name']:
+            width = get_field_width(fields, field)
+            # instantiate a synchronizer
+            print('    `ifdef VIVADO', file=file)
+            print('    xpm_cdc_array_single #(', file=file)
+            print('        .DEST_SYNC_FF(N_SYNC_STAGES),', file=file)
+            print(f'        .WIDTH({width}),', file=file)
+            print('        .SRC_INPUT_REG(0)', file=file)
+            print(f'    ) cdc_sync_to_sys_clk_{field} (', file=file)
+            print(f'        .src_in  (bus_clk_reg.{field}),', file=file)
+            print(f'        .dest_out(sys_clk_reg.{field}),', file=file)
+            print('        .dest_clk(sys_clk),', file=file)
+            print('        .src_clk(bus_clk)', file=file)
+            print('    );', file=file)
+            print('    `else', file=file)
+            print(f'    logic [{width-1}:0] sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            print('    genvar i;', file=file)
+            print('    for (i = 0; i < N_SYNC_STAGES; i++) begin', file=file)
+            print('        always_ff @(posedge sys_clk) begin', file=file)
+            print('            if (i == 0)', file=file)
+            print(f'                sync_to_sys_clk_{field}[i] <= bus_clk_reg.{field};', file=file)
+            print('            else', file=file)
+            print(f'                sync_to_sys_clk_{field}[i] <= sync_to_sys_clk_{field}[i - 1];', file=file)
+            print('        end', file=file)
+            print('    end', file=file)
+            print(f'    assign sys_clk_reg.{field} = sync_to_sys_clk_{field}[N_SYNC_STAGES - 1];', file=file)
+            print('    `endif\n', file=file)
+
+        print('endmodule', file=file)
+    pass
+
+
 def main():
     remove_generated_files()
     fields_json = parse_registers_json(FIELDS_PATH)
@@ -465,6 +543,7 @@ def main():
     generate_ral_config_file(fields_df, memories_df)
     generate_interface_file(fields_df)
     generate_register_rtl(fields_df)
+    generate_cdc_sync_rtl(CDC_SYNC_RTL_PATH, fields_df)
 
 
 if __name__ == '__main__':
