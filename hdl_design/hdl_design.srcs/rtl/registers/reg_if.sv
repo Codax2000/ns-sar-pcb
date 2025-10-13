@@ -5,7 +5,7 @@ interface reg_if;
     logic [15:0] N_SH_TOTAL_CYCLES;
     logic [15:0] N_SH_ACTIVE_CYCLES;
     logic [15:0] N_BOTTOM_PLATE_ACTIVE_CYCLES;
-    logic [15:0] N_SAR_CYCLES;
+    logic [13:0] N_SAR_CYCLES;
     logic [15:0] N_INT1_TOTAL_CYCLES;
     logic [15:0] N_INT1_ACTIVE_CYCLES;
     logic [15:0] N_INT2_TOTAL_CYCLES;

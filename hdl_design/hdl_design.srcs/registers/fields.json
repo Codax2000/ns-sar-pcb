@@ -40,7 +40,7 @@
         "description": "Number of clock cycles that the bottom sampling capacitor plates will be connected to the sample net"
     },
     "N_SAR_CYCLES": {
-        "width": 16,
+        "width": 14,
         "access": "RW",
         "reset_value": 1,
         "reg_address": 5,

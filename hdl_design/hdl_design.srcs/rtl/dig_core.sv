@@ -79,6 +79,17 @@ module dig_core #(
         .bus_if_rd_en(reg_rd_en)
     );
 
+    main_state_machine #(
+        .N_SAR_BITS(N_SAR_BITS)
+    ) i_main_state_machine (
+        .rd(i_reg_if_sys_clk),
+        .i_clk(pll_clk),
+        .i_rst_b(sys_rst_b),
+        .i_start(!i_reg_if_sys_clk.START_CONVERSION),
+        .o_main_state(i_reg_if_sys_clk.MAIN_STATE_RB),
+
+    )
+
     cdc_sync #(
         .N_SYNC_STAGES(3)
     ) i_cdc_sync (
@@ -94,7 +105,12 @@ module dig_core #(
         .reset(sys_rst),
         .clk_in1(i_sysclk),
         .clk_out1(pll_clk),
-        .locked(pll_is_locked)
+        .locked(pll_is_locked),
+        .daddr(i_reg_if_sys_clk.CLKGEN_DRP_DADDR),
+        .dwe(i_reg_if_sys_clk.CLKGEN_DRP_WR_EN),
+        .den(i_reg_if_sys_clk.CLKGEN_DRP_DEN),
+        .din(i_reg_if_sys_clk.CLKGEN_DRP_DI),
+        .dout(i_reg_if_sys_clk.CLKGEN_DRP_DO)
     );
 
     reset_gen_xip i_reset_gen (
@@ -110,8 +126,6 @@ module dig_core #(
     assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
     // TEMPORARY
-    assign i_reg_if_sys_clk.MAIN_STATE_RB = 3'h0;
-    assign i_reg_if_sys_clk.CLKGEN_DRP_DO = 16'h0000;
     assign i_reg_if_spi_clk.START_CONVERSION_clear = 1'b0;
     assign i_reg_if_sys_clk.START_CONVERSION_set = 1'b0;
     assign i_reg_if_spi_clk.START_CONVERSION_set = 1'b0;

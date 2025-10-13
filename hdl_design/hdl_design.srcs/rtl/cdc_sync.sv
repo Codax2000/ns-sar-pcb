@@ -96,7 +96,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [0:0] sync_to_sys_clk_DWA_EN [(N_SYNC_STAGES-1):0];
+    logic       sync_to_sys_clk_DWA_EN [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -212,7 +212,7 @@ module cdc_sync #(
     `ifdef VIVADO
     xpm_cdc_array_single #(
         .DEST_SYNC_FF(N_SYNC_STAGES),
-        .WIDTH(16),
+        .WIDTH(14),
         .SRC_INPUT_REG(0)
     ) cdc_sync_to_sys_clk_N_SAR_CYCLES (
         .src_in  (bus_clk_reg.N_SAR_CYCLES),
@@ -221,7 +221,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_SAR_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [13:0] sync_to_sys_clk_N_SAR_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -346,7 +346,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [0:0] sync_to_sys_clk_START_CONVERSION [(N_SYNC_STAGES-1):0];
+    logic       sync_to_sys_clk_START_CONVERSION [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -421,7 +421,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [0:0] sync_to_sys_clk_CLKGEN_DRP_RD_EN [(N_SYNC_STAGES-1):0];
+    logic       sync_to_sys_clk_CLKGEN_DRP_RD_EN [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -446,7 +446,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [0:0] sync_to_sys_clk_CLKGEN_DRP_WR_EN [(N_SYNC_STAGES-1):0];
+    logic       sync_to_sys_clk_CLKGEN_DRP_WR_EN [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -471,7 +471,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [0:0] sync_to_sys_clk_CLKGEN_DRP_DEN [(N_SYNC_STAGES-1):0];
+    logic       sync_to_sys_clk_CLKGEN_DRP_DEN [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin

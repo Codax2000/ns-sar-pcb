@@ -486,7 +486,10 @@ def generate_cdc_sync_rtl(path, fields):
             print('        .src_clk(sys_clk)', file=file)
             print('    );', file=file)
             print('    `else', file=file)
-            print(f'    logic [{width-1}:0] sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            if width > 1:
+                print(f'    logic [{width-1}:0] sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            else:
+                print(f'    logic       sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             print('    genvar i;', file=file)
             print('    for (i = 0; i < N_SYNC_STAGES; i++) begin', file=file)
             print('        always_ff @(posedge bus_clk) begin', file=file)
@@ -517,7 +520,10 @@ def generate_cdc_sync_rtl(path, fields):
             print('        .src_clk(bus_clk)', file=file)
             print('    );', file=file)
             print('    `else', file=file)
-            print(f'    logic [{width-1}:0] sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            if width > 1:
+                print(f'    logic [{width-1}:0] sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+            else:
+                print(f'    logic       sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             print('    genvar i;', file=file)
             print('    for (i = 0; i < N_SYNC_STAGES; i++) begin', file=file)
             print('        always_ff @(posedge sys_clk) begin', file=file)

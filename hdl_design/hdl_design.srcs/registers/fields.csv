@@ -5,7 +5,7 @@ OSR_POWER,8,RW,1,OSR power - configures ADC to have an oversampling ratio of 2^O
 N_SH_TOTAL_CYCLES,16,RW,2,Total number of clock cycles for the sample-and-hold circuit,0,1,0
 N_SH_ACTIVE_CYCLES,16,RW,3,"Number of clock cycles that the sample-and-hold circuit will actually be enabled, to allow non-overlapping clocks",0,1,0
 N_BOTTOM_PLATE_ACTIVE_CYCLES,16,RW,4,Number of clock cycles that the bottom sampling capacitor plates will be connected to the sample net,0,1,0
-N_SAR_CYCLES,16,RW,5,"Number of clock cycles that the SAR logic will take for each segment, both positive and negative phases (so the whole SAR logic will take 8 * N_SAR_CYCLES)",0,1,0
+N_SAR_CYCLES,14,RW,5,"Number of clock cycles that the SAR logic will take for each segment, both positive and negative phases (so the whole SAR logic will take 8 * N_SAR_CYCLES)",0,1,0
 N_INT1_TOTAL_CYCLES,16,RW,6,Total number of clock cycles that the INT1 state will take,0,1,0
 N_INT1_ACTIVE_CYCLES,16,RW,7,Total number of clock cycles in which the INT1 state will be active,0,1,0
 N_INT2_TOTAL_CYCLES,16,RW,8,Total number of clock cycles that the INT2 state will take,0,1,0
