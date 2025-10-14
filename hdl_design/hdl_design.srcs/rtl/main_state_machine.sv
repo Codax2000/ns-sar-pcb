@@ -19,7 +19,8 @@ module main_state_machine #(
         SAMPLE=3'h1,
         QUANTIZE=3'h2,
         INT1=3'h3,
-        INT2=3'h4
+        INT2=3'h4,
+        STOP=3'h5
     } state, next_state;
 
     // next state logic
@@ -45,7 +46,11 @@ module main_state_machine #(
             INT2 : begin
                 o_main_state = 3'h4;
                 next_state = (current_state_counter == (rd.N_INT2_TOTAL_CYCLES - 1)) ? 
-                                 (nfft_counter == ((1 << rd.NFFT_POWER) - 1)) ? READY : SAMPLE : INT2;
+                                 (nfft_counter == ((1 << rd.NFFT_POWER) - 1)) ? STOP : SAMPLE : INT2;
+            end
+            STOP : begin
+                o_main_state = 3'h5;
+                next_state = i_start ? STOP : READY;
             end
             default : begin
                 o_main_state = 3'h0;

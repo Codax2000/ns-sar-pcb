@@ -20,7 +20,7 @@ module cdc_sync #(
         .src_clk(sys_clk)
     );
     `else
-    logic [2:0] sync_to_bus_clk_MAIN_STATE_RB [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_bus_clk_MAIN_STATE_RB [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge bus_clk) begin
@@ -45,7 +45,7 @@ module cdc_sync #(
         .src_clk(sys_clk)
     );
     `else
-    logic [15:0] sync_to_bus_clk_CLKGEN_DRP_DO [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_bus_clk_CLKGEN_DRP_DO [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge bus_clk) begin
@@ -71,7 +71,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [13:0] sync_to_sys_clk_NFFT_POWER [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_NFFT_POWER [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -121,7 +121,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [7:0] sync_to_sys_clk_OSR_POWER [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_OSR_POWER [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -146,7 +146,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_SH_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_SH_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -171,7 +171,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_SH_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_SH_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -196,7 +196,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_BOTTOM_PLATE_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_BOTTOM_PLATE_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -221,7 +221,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [13:0] sync_to_sys_clk_N_SAR_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_SAR_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -246,7 +246,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_INT1_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_INT1_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -271,7 +271,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_INT1_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_INT1_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -296,7 +296,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_INT2_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_INT2_TOTAL_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -321,7 +321,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_N_INT2_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_N_INT2_ACTIVE_CYCLES [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -371,7 +371,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [6:0] sync_to_sys_clk_CLKGEN_DRP_DADDR [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_CLKGEN_DRP_DADDR [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin
@@ -396,7 +396,7 @@ module cdc_sync #(
         .src_clk(bus_clk)
     );
     `else
-    logic [15:0] sync_to_sys_clk_CLKGEN_DRP_DI [(N_SYNC_STAGES-1):0];
+    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_CLKGEN_DRP_DI [(N_SYNC_STAGES-1):0];
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
         always_ff @(posedge sys_clk) begin

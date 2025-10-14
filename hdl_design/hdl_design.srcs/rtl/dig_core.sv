@@ -1,5 +1,6 @@
 module dig_core #(
-    parameter N_SAR_BITS = 3
+    parameter N_SAR_BITS = 3,
+    parameter N_SYNC_STAGES = 3
 ) (
     // clkgen pins
     input logic i_sysclk,
@@ -87,11 +88,13 @@ module dig_core #(
         .i_rst_b(sys_rst_b),
         .i_start(!i_reg_if_sys_clk.START_CONVERSION),
         .o_main_state(i_reg_if_sys_clk.MAIN_STATE_RB),
-
-    )
+        .o_sample(o_sample),
+        .o_int1(o_integrator_1),
+        .o_int2(o_integrator_2)
+    );
 
     cdc_sync #(
-        .N_SYNC_STAGES(3)
+        .N_SYNC_STAGES(N_SYNC_STAGES)
     ) i_cdc_sync (
         .bus_clk_reg(i_reg_if_spi_clk.WR_BUS_CLK),
         .sys_clk_reg(i_reg_if_sys_clk.WR_SYS_CLK),
@@ -123,11 +126,36 @@ module dig_core #(
 
         .peripheral_reset(sys_rst)
     );
+
     assign sys_rst_b = (!sys_rst) && pll_is_locked;
 
-    // TEMPORARY
-    assign i_reg_if_spi_clk.START_CONVERSION_clear = 1'b0;
-    assign i_reg_if_sys_clk.START_CONVERSION_set = 1'b0;
-    assign i_reg_if_spi_clk.START_CONVERSION_set = 1'b0;
+    
+    assign i_reg_if_sys_clk.START_CONVERSION_set = (i_reg_if_sys_clk.MAIN_STATE_RB == 3'h5);
+
+    // RO registers, sys_clk -> bus_clk
+    `ifdef VIVADO
+    xpm_cdc_array_single #(
+        .DEST_SYNC_FF(N_SYNC_STAGES),
+        .WIDTH(1),
+        .SRC_INPUT_REG(0)
+    ) cdc_sync_to_bus_clk_START_CONVERSION_set (
+        .src_in  (i_reg_if_sys_clk.START_CONVERSION_set),
+        .dest_out(i_reg_if_spi_clk.START_CONVERSION_set),
+        .dest_clk(i_scl),
+        .src_clk(pll_clk)
+    );
+    `else
+    logic [N_SYNC_STAGES-1:0] sync_to_bus_clk_START_CONVERSION_set [(N_SYNC_STAGES-1):0];
+    genvar i;
+    for (i = 0; i < N_SYNC_STAGES; i++) begin
+        always_ff @(posedge i_scl) begin
+            if (i == 0)
+                sync_to_bus_clk_START_CONVERSION_set[i] <= sys_clk_reg.START_CONVERSION_set;
+            else
+                sync_to_bus_clk_START_CONVERSION_set[i] <= sync_to_bus_clk_START_CONVERSION_set[i - 1];
+        end
+    end
+    assign bus_clk_reg.START_CONVERSION_set = sync_to_bus_clk_START_CONVERSION_set[N_SYNC_STAGES - 1];
+    `endif
 
 endmodule

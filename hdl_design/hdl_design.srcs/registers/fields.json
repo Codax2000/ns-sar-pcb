@@ -78,7 +78,8 @@
         "width": 1,
         "access": "W1C",
         "reg_address": 10,
-        "description": "When a 1 is written, begins the ADC conversion. Also serves as a flag that means the ADC is ready to convert"
+        "description": "When a 1 is written, begins the ADC conversion. Also serves as a flag that means the ADC is ready to convert",
+        "reset_value": 1
     },
     "MAIN_STATE_RB": {
         "width": 3,

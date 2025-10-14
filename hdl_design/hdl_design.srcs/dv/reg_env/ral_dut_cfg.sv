@@ -292,7 +292,7 @@ class ral_register_10 extends uvm_reg;
             0,
             "W1C",
             0,
-            0,
+            1,
             1,
             0,
             0

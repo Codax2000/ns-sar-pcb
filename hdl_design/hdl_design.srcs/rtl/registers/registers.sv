@@ -127,7 +127,7 @@ module registers(
     // generated W1C register set/clear logic
     always_ff @(posedge clk or negedge rst_b) begin
         if (!rst_b)
-            i0.START_CONVERSION <= 'd0;
+            i0.START_CONVERSION <= 'd1;
         else if (bus_if_wr_en && (bus_if_wr_addr == 'd10))
             i0.START_CONVERSION <= (i0.START_CONVERSION & (~bus_if_wr_data[0])) | (i0.START_CONVERSION_set);
         else

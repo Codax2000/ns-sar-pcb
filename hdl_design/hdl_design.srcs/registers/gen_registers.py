@@ -487,7 +487,7 @@ def generate_cdc_sync_rtl(path, fields):
             print('    );', file=file)
             print('    `else', file=file)
             if width > 1:
-                print(f'    logic [{width-1}:0] sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+                print(f'    logic [N_SYNC_STAGES-1:0] sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             else:
                 print(f'    logic       sync_to_bus_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             print('    genvar i;', file=file)
@@ -521,7 +521,7 @@ def generate_cdc_sync_rtl(path, fields):
             print('    );', file=file)
             print('    `else', file=file)
             if width > 1:
-                print(f'    logic [{width-1}:0] sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
+                print(f'    logic [N_SYNC_STAGES-1:0] sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             else:
                 print(f'    logic       sync_to_sys_clk_{field} [(N_SYNC_STAGES-1):0];', file=file)
             print('    genvar i;', file=file)

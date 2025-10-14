@@ -20,14 +20,14 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0.000000 us"></ZoomStartTime>
-      <ZoomEndTime time="228.857101 us"></ZoomEndTime>
-      <Cursor1Time time="228.857100 us"></Cursor1Time>
+      <ZoomEndTime time="263.067100 us"></ZoomEndTime>
+      <Cursor1Time time="263.067100 us"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="221"></NameColumnWidth>
-      <ValueColumnWidth column_width="163"></ValueColumnWidth>
+      <ValueColumnWidth column_width="159"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="62" />
+   <WVObjectSize size="70" />
    <wvobject type="divider" fp_name="divider54">
       <obj_property name="label">SPI</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -129,8 +129,8 @@
       <obj_property name="ObjectShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_SAR_CYCLES" type="array">
-      <obj_property name="ElementShortName">N_SAR_CYCLES[15:0]</obj_property>
-      <obj_property name="ObjectShortName">N_SAR_CYCLES[15:0]</obj_property>
+      <obj_property name="ElementShortName">N_SAR_CYCLES[13:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SAR_CYCLES[13:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_INT1_TOTAL_CYCLES" type="array">
       <obj_property name="ElementShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
@@ -217,8 +217,8 @@
       <obj_property name="ObjectShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_SAR_CYCLES" type="array">
-      <obj_property name="ElementShortName">N_SAR_CYCLES[15:0]</obj_property>
-      <obj_property name="ObjectShortName">N_SAR_CYCLES[15:0]</obj_property>
+      <obj_property name="ElementShortName">N_SAR_CYCLES[13:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SAR_CYCLES[13:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_INT1_TOTAL_CYCLES" type="array">
       <obj_property name="ElementShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
@@ -275,5 +275,37 @@
    <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_DEN" type="logic">
       <obj_property name="ElementShortName">CLKGEN_DRP_DEN</obj_property>
       <obj_property name="ObjectShortName">CLKGEN_DRP_DEN</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider683">
+      <obj_property name="label">Main State Machine Output</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/state" type="array">
+      <obj_property name="ElementShortName">state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_sample" type="logic">
+      <obj_property name="ElementShortName">o_sample</obj_property>
+      <obj_property name="ObjectShortName">o_sample</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_int1" type="logic">
+      <obj_property name="ElementShortName">o_int1</obj_property>
+      <obj_property name="ObjectShortName">o_int1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_int2" type="logic">
+      <obj_property name="ElementShortName">o_int2</obj_property>
+      <obj_property name="ObjectShortName">o_int2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/pll_clk" type="logic">
+      <obj_property name="ElementShortName">pll_clk</obj_property>
+      <obj_property name="ObjectShortName">pll_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/nfft_counter" type="array">
+      <obj_property name="ElementShortName">nfft_counter[13:0]</obj_property>
+      <obj_property name="ObjectShortName">nfft_counter[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/current_state_counter" type="array">
+      <obj_property name="ElementShortName">current_state_counter[15:0]</obj_property>
+      <obj_property name="ObjectShortName">current_state_counter[15:0]</obj_property>
    </wvobject>
 </wave_config>
