@@ -8,11 +8,13 @@ module main_state_machine #(
     output logic [2:0] o_main_state,
     output logic o_sample,
     output logic o_int1,
-    output logic o_int2
+    output logic o_int2,
+    output logic o_incremental_reset
 );
 
     logic [13:0] nfft_counter;
-    logic [15:0] current_state_counter;
+    logic [16:0] current_state_counter;
+    logic  [7:0] osr_counter;
 
     enum logic [2:0] {
         READY=3'h0,
@@ -37,7 +39,7 @@ module main_state_machine #(
             QUANTIZE : begin
                 o_main_state = 3'h2;
                 // stay in QUANTIZE for 4 * N_SAR_CYCLES - 1 for each SAR bit and 1 for DWA
-                next_state = (current_state_counter == ((rd.N_SAR_CYCLES * (N_SAR_BITS + 1)) - 1)) ? INT1 : QUANTIZE;
+                next_state = (current_state_counter == ((rd.N_SAR_CYCLES * ((N_SAR_BITS * 2) + 1)) - 1)) ? INT1 : QUANTIZE;
             end
             INT1 : begin
                 o_main_state = 3'h3;
@@ -62,22 +64,30 @@ module main_state_machine #(
     assign o_sample = (state == SAMPLE) && (current_state_counter <= (rd.N_SH_ACTIVE_CYCLES - 1));
     assign o_int1   = (state == INT1)   && (current_state_counter <= (rd.N_INT1_ACTIVE_CYCLES - 1));
     assign o_int2   = (state == INT2)   && (current_state_counter <= (rd.N_INT2_ACTIVE_CYCLES - 1));
+    assign o_incremental_reset = (state == INT2) && (next_state == SAMPLE) && (osr_counter == ((1 << rd.OSR_POWER) - 1));
 
     always_ff @(posedge i_clk) begin
         if (!i_rst_b) begin
             state <= READY;
             current_state_counter <= 0;
             nfft_counter <= 0;
+            osr_counter <= 0;
         end else begin
             state <= next_state;
             if ((state == INT2) && (next_state == READY))
                 nfft_counter <= 0;
-            else if ((state == INT2) && (next_state == SAMPLE))
+            else if ((state == INT2) && (next_state == SAMPLE) && (osr_counter == ((1 << rd.OSR_POWER) - 1)))
                 nfft_counter <= nfft_counter + 1;
             if (state != next_state)
                 current_state_counter <= 0;
             else
                 current_state_counter <= (current_state_counter + 1);
+            if ((state == INT2) && (next_state != INT2)) begin
+                if (osr_counter == ((1 << rd.OSR_POWER) - 1))
+                    osr_counter <= 0;
+                else
+                    osr_counter <= osr_counter + 1;
+            end
         end
     end
 
