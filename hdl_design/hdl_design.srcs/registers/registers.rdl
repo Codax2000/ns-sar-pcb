@@ -51,6 +51,9 @@ addrmap adc_regs {
         field {
             desc="SAR asynchronous delay control. Higher values will lead to longer SAR clock periods.";
         } DELAY_LINE_CTRL [8:5];
+        field {
+            desc="Number of bits to quantize, minus one. That is, the SAR will quantize N_QUANTIZER_BITS + 1.";
+        } N_QUANTIZER_BITS [10:9];
     } SAR_CTRL @ 0xA;
 
     reg {
@@ -79,7 +82,7 @@ addrmap adc_regs {
         } NFFT_EN [1:1];
         field {
             desc="Readback of the main state machine.";
-        } MAIN_STATE_RB [4:2];
+        } MAIN_STATE_RB [5:2];
     } ADC_CTRL_rd @ 0xC;
 
     // xilinx CLKGEN DRP registers
