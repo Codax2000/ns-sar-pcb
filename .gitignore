@@ -9,3 +9,6 @@ hdl_design/hdl_design.runs/
 hdl_design/hdl_design.ip_user_files/
 
 adc_regs/
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs_hwif.rpt
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs_pkg.sv
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs.sv

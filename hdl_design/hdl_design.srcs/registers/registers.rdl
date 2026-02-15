@@ -1,6 +1,6 @@
-addrmap top {
+addrmap adc_regs {
     desc = "SAR ADC PCB register map";
-    default regwidth=8; // address = 1 byte to make register communication easier
+    default regwidth=16;
     default sw=rw;
     default hw=r;
     default reset=0x0;
@@ -11,7 +11,6 @@ addrmap top {
     };
 
     reg {
-        regwidth=16;
         field {
             desc="FFT power (8 LSB bits). When taking FFT samples, the ADC will take 2^NFFT_POWER samples.";
         } NFFT_POWER [14:0];
@@ -27,32 +26,19 @@ addrmap top {
     } OSR @ 0x2;
 
     // describe "active" and "passive" cycles of some ADC operation
-    reg active_reg {
+    reg active_passive_reg {
         field {
             desc="Number of ADC clock cycles during which target will be active.";
             reset=0x1;
-        } N_CYCLES [7:0];
-    };
-    reg passive_reg {
+        } N_ACTIVE_CYCLES [7:0];
         field {
             desc="Number of ADC clock cycles during which target will be inactive.";
-        } N_CYCLES [7:0];
+        } N_PASSIVE_CYCLES [15:8];
     };
-
-    active_reg SH_ACTIVE @ 0x3;
-    passive_reg SH_PASSIVE @ 0x4;
     
-    active_reg INT1_ACTIVE @ 0x5;
-    passive_reg INT1_PASSIVE @ 0x6;
-
-    active_reg INT2_ACTIVE @ 0x7;
-    passive_reg INT2_PASSIVE @ 0x8;
-
-    reg {
-        field {
-            desc="SAR asynchronous delay control. Higher values will lead to longer SAR clock periods.";
-        } DELAY_LINE_CTRL [7:0];
-    } SAR_CTRL @ 0x9;
+    active_passive_reg SH_CTRL @ 0x4;
+    active_passive_reg INT1_CTRL @ 0x6;
+    active_passive_reg INT2_CTRL @ 0x8;
 
     reg {
         field {
@@ -62,7 +48,10 @@ addrmap top {
         field {
             desc="VCM selection for single-ended mode. 0 will connect the single-ended value to ground, where all 1s will connect the single-ended value to VDD.";
         } VCM_SINGLE_ENDED [4:1];
-    } ADC_MODE_CTRL @ 0xA;
+        field {
+            desc="SAR asynchronous delay control. Higher values will lead to longer SAR clock periods.";
+        } DELAY_LINE_CTRL [8:5];
+    } SAR_CTRL @ 0xA;
 
     reg {
         default sw=w;
@@ -75,11 +64,11 @@ addrmap top {
         field {
             desc="When a 1 is written, starts an NFFT conversion only. Takes precedence over START_SAR.";
         } NFFT_EN [1:1];
-    } ADC_CTRL_wr @ 0xB;
+    } ADC_CTRL_wr @ 0xC;
 
     reg {
         default sw=r;
-        default hw=rw;
+        default hw=w;
         dontcompare;
 
         field {
@@ -91,18 +80,12 @@ addrmap top {
         field {
             desc="Readback of the main state machine.";
         } MAIN_STATE_RB [4:2];
-    } ADC_CTRL_rd @ 0xB;
+    } ADC_CTRL_rd @ 0xC;
 
     // xilinx CLKGEN DRP registers
     reg {
         donttest;
-        field {
-            desc="Read/Write address for CLKGEN xip";
-        } CLKGEN_DRP_DADDR [6:0];
-    } CLKGEN_DRP_0 @ 0xC;
 
-    reg {
-        donttest;
         field {
             desc="Read enable bit for CLKGEN xip";
         } CLKGEN_DRP_RD_EN [0:0];
@@ -112,7 +95,10 @@ addrmap top {
         field {
             desc="Data enable bit for CLKGEN xip";
         } CLKGEN_DRP_DEN [2:2];
-    } CLKGEN_DRP_1 @ 0xD;
+        field {
+            desc="Read/Write address for CLKGEN xip";
+        } CLKGEN_DRP_DADDR [9:3];
+    } CLKGEN_DRP_0 @ 0x10;
 
     reg {
         donttest;
@@ -120,7 +106,7 @@ addrmap top {
         field {
             desc="Data input for CLKGEN xip";
         } CLKGEN_DRP_DI [15:0];
-    } CLKGEN_DRP_2 @ 0xE;
+    } CLKGEN_DRP_2 @ 0x12;
 
     reg {
         donttest;
@@ -130,11 +116,12 @@ addrmap top {
             hw=w;
             desc="Data output for CLKGEN xip";
         } CLKGEN_DRP_DO [15:0];
-    } CLKGEN_DRP_3 @ 0x10;
+    } CLKGEN_DRP_3 @ 0x14;
 
     mem {
         sw=r;
         memwidth=16;
-        mementries=65536; // 2^16 (maximum NFFT power)
+        
+        mementries=(1 << 15);
     } external adc_output_mem;
 };

@@ -4,12 +4,12 @@ package adc_regs_pkg;
     `include "uvm_macros.svh"
     import uvm_pkg::*;
     
-    // reg - top::NFFT_CTRL
-    class top__NFFT_CTRL extends uvm_reg;
+    // reg - adc_regs::NFFT_CTRL
+    class adc_regs__NFFT_CTRL extends uvm_reg;
         rand uvm_reg_field NFFT_POWER;
         rand uvm_reg_field DWA_EN;
 
-        function new(string name = "top__NFFT_CTRL");
+        function new(string name = "adc_regs__NFFT_CTRL");
             super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
@@ -19,71 +19,47 @@ package adc_regs_pkg;
             this.DWA_EN = new("DWA_EN");
             this.DWA_EN.configure(this, 1, 15, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__NFFT_CTRL
+    endclass : adc_regs__NFFT_CTRL
 
-    // reg - top::OSR
-    class top__OSR extends uvm_reg;
+    // reg - adc_regs::OSR
+    class adc_regs__OSR extends uvm_reg;
         rand uvm_reg_field OSR_POWER;
 
-        function new(string name = "top__OSR");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__OSR");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
             this.OSR_POWER = new("OSR_POWER");
             this.OSR_POWER.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__OSR
+    endclass : adc_regs__OSR
 
-    // reg - top::active_reg
-    class top__active_reg extends uvm_reg;
-        rand uvm_reg_field N_CYCLES;
+    // reg - adc_regs::active_passive_reg
+    class adc_regs__active_passive_reg extends uvm_reg;
+        rand uvm_reg_field N_ACTIVE_CYCLES;
+        rand uvm_reg_field N_PASSIVE_CYCLES;
 
-        function new(string name = "top__active_reg");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__active_passive_reg");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
-            this.N_CYCLES = new("N_CYCLES");
-            this.N_CYCLES.configure(this, 8, 0, "RW", 0, 'h1, 1, 1, 0);
+            this.N_ACTIVE_CYCLES = new("N_ACTIVE_CYCLES");
+            this.N_ACTIVE_CYCLES.configure(this, 8, 0, "RW", 0, 'h1, 1, 1, 0);
+            this.N_PASSIVE_CYCLES = new("N_PASSIVE_CYCLES");
+            this.N_PASSIVE_CYCLES.configure(this, 8, 8, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__active_reg
+    endclass : adc_regs__active_passive_reg
 
-    // reg - top::passive_reg
-    class top__passive_reg extends uvm_reg;
-        rand uvm_reg_field N_CYCLES;
-
-        function new(string name = "top__passive_reg");
-            super.new(name, 8, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.N_CYCLES = new("N_CYCLES");
-            this.N_CYCLES.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : top__passive_reg
-
-    // reg - top::SAR_CTRL
-    class top__SAR_CTRL extends uvm_reg;
-        rand uvm_reg_field DELAY_LINE_CTRL;
-
-        function new(string name = "top__SAR_CTRL");
-            super.new(name, 8, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.DELAY_LINE_CTRL = new("DELAY_LINE_CTRL");
-            this.DELAY_LINE_CTRL.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : top__SAR_CTRL
-
-    // reg - top::ADC_MODE_CTRL
-    class top__ADC_MODE_CTRL extends uvm_reg;
+    // reg - adc_regs::SAR_CTRL
+    class adc_regs__SAR_CTRL extends uvm_reg;
         rand uvm_reg_field INPUT_MODE;
         rand uvm_reg_field VCM_SINGLE_ENDED;
+        rand uvm_reg_field DELAY_LINE_CTRL;
 
-        function new(string name = "top__ADC_MODE_CTRL");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__SAR_CTRL");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
@@ -91,16 +67,18 @@ package adc_regs_pkg;
             this.INPUT_MODE.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
             this.VCM_SINGLE_ENDED = new("VCM_SINGLE_ENDED");
             this.VCM_SINGLE_ENDED.configure(this, 4, 1, "RW", 0, 'h0, 1, 1, 0);
+            this.DELAY_LINE_CTRL = new("DELAY_LINE_CTRL");
+            this.DELAY_LINE_CTRL.configure(this, 4, 5, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__ADC_MODE_CTRL
+    endclass : adc_regs__SAR_CTRL
 
-    // reg - top::ADC_CTRL_wr
-    class top__ADC_CTRL_wr extends uvm_reg;
+    // reg - adc_regs::ADC_CTRL_wr
+    class adc_regs__ADC_CTRL_wr extends uvm_reg;
         rand uvm_reg_field SAR_EN;
         rand uvm_reg_field NFFT_EN;
 
-        function new(string name = "top__ADC_CTRL_wr");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__ADC_CTRL_wr");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
@@ -109,16 +87,16 @@ package adc_regs_pkg;
             this.NFFT_EN = new("NFFT_EN");
             this.NFFT_EN.configure(this, 1, 1, "WO", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__ADC_CTRL_wr
+    endclass : adc_regs__ADC_CTRL_wr
 
-    // reg - top::ADC_CTRL_rd
-    class top__ADC_CTRL_rd extends uvm_reg;
+    // reg - adc_regs::ADC_CTRL_rd
+    class adc_regs__ADC_CTRL_rd extends uvm_reg;
         rand uvm_reg_field SAR_EN;
         rand uvm_reg_field NFFT_EN;
         rand uvm_reg_field MAIN_STATE_RB;
 
-        function new(string name = "top__ADC_CTRL_rd");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__ADC_CTRL_rd");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
@@ -129,30 +107,17 @@ package adc_regs_pkg;
             this.MAIN_STATE_RB = new("MAIN_STATE_RB");
             this.MAIN_STATE_RB.configure(this, 3, 2, "RO", 1, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__ADC_CTRL_rd
+    endclass : adc_regs__ADC_CTRL_rd
 
-    // reg - top::CLKGEN_DRP_0
-    class top__CLKGEN_DRP_0 extends uvm_reg;
-        rand uvm_reg_field CLKGEN_DRP_DADDR;
-
-        function new(string name = "top__CLKGEN_DRP_0");
-            super.new(name, 8, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.CLKGEN_DRP_DADDR = new("CLKGEN_DRP_DADDR");
-            this.CLKGEN_DRP_DADDR.configure(this, 7, 0, "RW", 0, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : top__CLKGEN_DRP_0
-
-    // reg - top::CLKGEN_DRP_1
-    class top__CLKGEN_DRP_1 extends uvm_reg;
+    // reg - adc_regs::CLKGEN_DRP_0
+    class adc_regs__CLKGEN_DRP_0 extends uvm_reg;
         rand uvm_reg_field CLKGEN_DRP_RD_EN;
         rand uvm_reg_field CLKGEN_DRP_WR_EN;
         rand uvm_reg_field CLKGEN_DRP_DEN;
+        rand uvm_reg_field CLKGEN_DRP_DADDR;
 
-        function new(string name = "top__CLKGEN_DRP_1");
-            super.new(name, 8, UVM_NO_COVERAGE);
+        function new(string name = "adc_regs__CLKGEN_DRP_0");
+            super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
@@ -162,14 +127,16 @@ package adc_regs_pkg;
             this.CLKGEN_DRP_WR_EN.configure(this, 1, 1, "RW", 0, 'h0, 1, 1, 0);
             this.CLKGEN_DRP_DEN = new("CLKGEN_DRP_DEN");
             this.CLKGEN_DRP_DEN.configure(this, 1, 2, "RW", 0, 'h0, 1, 1, 0);
+            this.CLKGEN_DRP_DADDR = new("CLKGEN_DRP_DADDR");
+            this.CLKGEN_DRP_DADDR.configure(this, 7, 3, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__CLKGEN_DRP_1
+    endclass : adc_regs__CLKGEN_DRP_0
 
-    // reg - top::CLKGEN_DRP_2
-    class top__CLKGEN_DRP_2 extends uvm_reg;
+    // reg - adc_regs::CLKGEN_DRP_2
+    class adc_regs__CLKGEN_DRP_2 extends uvm_reg;
         rand uvm_reg_field CLKGEN_DRP_DI;
 
-        function new(string name = "top__CLKGEN_DRP_2");
+        function new(string name = "adc_regs__CLKGEN_DRP_2");
             super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
@@ -177,13 +144,13 @@ package adc_regs_pkg;
             this.CLKGEN_DRP_DI = new("CLKGEN_DRP_DI");
             this.CLKGEN_DRP_DI.configure(this, 16, 0, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__CLKGEN_DRP_2
+    endclass : adc_regs__CLKGEN_DRP_2
 
-    // reg - top::CLKGEN_DRP_3
-    class top__CLKGEN_DRP_3 extends uvm_reg;
+    // reg - adc_regs::CLKGEN_DRP_3
+    class adc_regs__CLKGEN_DRP_3 extends uvm_reg;
         rand uvm_reg_field CLKGEN_DRP_DO;
 
-        function new(string name = "top__CLKGEN_DRP_3");
+        function new(string name = "adc_regs__CLKGEN_DRP_3");
             super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
@@ -191,45 +158,40 @@ package adc_regs_pkg;
             this.CLKGEN_DRP_DO = new("CLKGEN_DRP_DO");
             this.CLKGEN_DRP_DO.configure(this, 16, 0, "RO", 1, 'h0, 1, 1, 0);
         endfunction : build
-    endclass : top__CLKGEN_DRP_3
+    endclass : adc_regs__CLKGEN_DRP_3
 
-    // mem - top::adc_output_mem
-    class top__adc_output_mem extends uvm_reg_block;
+    // mem - adc_regs::adc_output_mem
+    class adc_regs__adc_output_mem extends uvm_reg_block;
         rand uvm_mem m_mem;
         
-        function new(string name = "top__adc_output_mem");
+        function new(string name = "adc_regs__adc_output_mem");
             super.new(name);
         endfunction : new
 
         virtual function void build();
             this.default_map = create_map("reg_map", 0, 2.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 65536, 16, "RO");
+            this.m_mem = new("m_mem", 32768, 16, "RO");
             this.m_mem.configure(this);
             this.default_map.add_mem(this.m_mem, 0);
         endfunction : build
-    endclass : top__adc_output_mem
+    endclass : adc_regs__adc_output_mem
 
-    // addrmap - top
-    class top extends uvm_reg_block;
-        rand top__NFFT_CTRL NFFT_CTRL;
-        rand top__OSR OSR;
-        rand top__active_reg SH_ACTIVE;
-        rand top__passive_reg SH_PASSIVE;
-        rand top__active_reg INT1_ACTIVE;
-        rand top__passive_reg INT1_PASSIVE;
-        rand top__active_reg INT2_ACTIVE;
-        rand top__passive_reg INT2_PASSIVE;
-        rand top__SAR_CTRL SAR_CTRL;
-        rand top__ADC_MODE_CTRL ADC_MODE_CTRL;
-        rand top__ADC_CTRL_wr ADC_CTRL_wr;
-        rand top__ADC_CTRL_rd ADC_CTRL_rd;
-        rand top__CLKGEN_DRP_0 CLKGEN_DRP_0;
-        rand top__CLKGEN_DRP_1 CLKGEN_DRP_1;
-        rand top__CLKGEN_DRP_2 CLKGEN_DRP_2;
-        rand top__CLKGEN_DRP_3 CLKGEN_DRP_3;
-        rand top__adc_output_mem adc_output_mem;
+    // addrmap - adc_regs
+    class adc_regs extends uvm_reg_block;
+        rand adc_regs__NFFT_CTRL NFFT_CTRL;
+        rand adc_regs__OSR OSR;
+        rand adc_regs__active_passive_reg SH_CTRL;
+        rand adc_regs__active_passive_reg INT1_CTRL;
+        rand adc_regs__active_passive_reg INT2_CTRL;
+        rand adc_regs__SAR_CTRL SAR_CTRL;
+        rand adc_regs__ADC_CTRL_wr ADC_CTRL_wr;
+        rand adc_regs__ADC_CTRL_rd ADC_CTRL_rd;
+        rand adc_regs__CLKGEN_DRP_0 CLKGEN_DRP_0;
+        rand adc_regs__CLKGEN_DRP_2 CLKGEN_DRP_2;
+        rand adc_regs__CLKGEN_DRP_3 CLKGEN_DRP_3;
+        rand adc_regs__adc_output_mem adc_output_mem;
 
-        function new(string name = "top");
+        function new(string name = "adc_regs");
             super.new(name);
         endfunction : new
 
@@ -245,81 +207,56 @@ package adc_regs_pkg;
 
             this.OSR.build();
             this.default_map.add_reg(this.OSR, 'h2);
-            this.SH_ACTIVE = new("SH_ACTIVE");
-            this.SH_ACTIVE.configure(this);
+            this.SH_CTRL = new("SH_CTRL");
+            this.SH_CTRL.configure(this);
 
-            this.SH_ACTIVE.build();
-            this.default_map.add_reg(this.SH_ACTIVE, 'h3);
-            this.SH_PASSIVE = new("SH_PASSIVE");
-            this.SH_PASSIVE.configure(this);
+            this.SH_CTRL.build();
+            this.default_map.add_reg(this.SH_CTRL, 'h4);
+            this.INT1_CTRL = new("INT1_CTRL");
+            this.INT1_CTRL.configure(this);
 
-            this.SH_PASSIVE.build();
-            this.default_map.add_reg(this.SH_PASSIVE, 'h4);
-            this.INT1_ACTIVE = new("INT1_ACTIVE");
-            this.INT1_ACTIVE.configure(this);
+            this.INT1_CTRL.build();
+            this.default_map.add_reg(this.INT1_CTRL, 'h6);
+            this.INT2_CTRL = new("INT2_CTRL");
+            this.INT2_CTRL.configure(this);
 
-            this.INT1_ACTIVE.build();
-            this.default_map.add_reg(this.INT1_ACTIVE, 'h5);
-            this.INT1_PASSIVE = new("INT1_PASSIVE");
-            this.INT1_PASSIVE.configure(this);
-
-            this.INT1_PASSIVE.build();
-            this.default_map.add_reg(this.INT1_PASSIVE, 'h6);
-            this.INT2_ACTIVE = new("INT2_ACTIVE");
-            this.INT2_ACTIVE.configure(this);
-
-            this.INT2_ACTIVE.build();
-            this.default_map.add_reg(this.INT2_ACTIVE, 'h7);
-            this.INT2_PASSIVE = new("INT2_PASSIVE");
-            this.INT2_PASSIVE.configure(this);
-
-            this.INT2_PASSIVE.build();
-            this.default_map.add_reg(this.INT2_PASSIVE, 'h8);
+            this.INT2_CTRL.build();
+            this.default_map.add_reg(this.INT2_CTRL, 'h8);
             this.SAR_CTRL = new("SAR_CTRL");
             this.SAR_CTRL.configure(this);
 
             this.SAR_CTRL.build();
-            this.default_map.add_reg(this.SAR_CTRL, 'h9);
-            this.ADC_MODE_CTRL = new("ADC_MODE_CTRL");
-            this.ADC_MODE_CTRL.configure(this);
-
-            this.ADC_MODE_CTRL.build();
-            this.default_map.add_reg(this.ADC_MODE_CTRL, 'ha);
+            this.default_map.add_reg(this.SAR_CTRL, 'ha);
             this.ADC_CTRL_wr = new("ADC_CTRL_wr");
             this.ADC_CTRL_wr.configure(this);
 
             this.ADC_CTRL_wr.build();
-            this.default_map.add_reg(this.ADC_CTRL_wr, 'hb);
+            this.default_map.add_reg(this.ADC_CTRL_wr, 'hc);
             this.ADC_CTRL_rd = new("ADC_CTRL_rd");
             this.ADC_CTRL_rd.configure(this);
 
             this.ADC_CTRL_rd.build();
-            this.default_map.add_reg(this.ADC_CTRL_rd, 'hb);
+            this.default_map.add_reg(this.ADC_CTRL_rd, 'hc);
             this.CLKGEN_DRP_0 = new("CLKGEN_DRP_0");
             this.CLKGEN_DRP_0.configure(this);
 
             this.CLKGEN_DRP_0.build();
-            this.default_map.add_reg(this.CLKGEN_DRP_0, 'hc);
-            this.CLKGEN_DRP_1 = new("CLKGEN_DRP_1");
-            this.CLKGEN_DRP_1.configure(this);
-
-            this.CLKGEN_DRP_1.build();
-            this.default_map.add_reg(this.CLKGEN_DRP_1, 'hd);
+            this.default_map.add_reg(this.CLKGEN_DRP_0, 'h10);
             this.CLKGEN_DRP_2 = new("CLKGEN_DRP_2");
             this.CLKGEN_DRP_2.configure(this);
 
             this.CLKGEN_DRP_2.build();
-            this.default_map.add_reg(this.CLKGEN_DRP_2, 'he);
+            this.default_map.add_reg(this.CLKGEN_DRP_2, 'h12);
             this.CLKGEN_DRP_3 = new("CLKGEN_DRP_3");
             this.CLKGEN_DRP_3.configure(this);
 
             this.CLKGEN_DRP_3.build();
-            this.default_map.add_reg(this.CLKGEN_DRP_3, 'h10);
+            this.default_map.add_reg(this.CLKGEN_DRP_3, 'h14);
             this.adc_output_mem = new("adc_output_mem");
             this.adc_output_mem.configure(this);
             this.adc_output_mem.build();
-            this.default_map.add_submap(this.adc_output_mem.default_map, 'h20000);
+            this.default_map.add_submap(this.adc_output_mem.default_map, 'h10000);
         endfunction : build
-    endclass : top
+    endclass : adc_regs
 
 endpackage: adc_regs_pkg
