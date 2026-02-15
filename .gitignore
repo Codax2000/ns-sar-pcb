@@ -7,3 +7,5 @@ hdl_design/hdl_design.sim/
 hdl_design/hdl_design.gen/
 hdl_design/hdl_design.runs/
 hdl_design/hdl_design.ip_user_files/
+
+adc_regs/

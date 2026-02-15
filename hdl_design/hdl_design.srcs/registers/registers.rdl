@@ -1,7 +1,6 @@
 addrmap top {
     desc = "SAR ADC PCB register map";
     default regwidth=8; // address = 1 byte to make register communication easier
-    default addresswidth=8;
     default sw=rw;
     default hw=r;
     default reset=0x0;
