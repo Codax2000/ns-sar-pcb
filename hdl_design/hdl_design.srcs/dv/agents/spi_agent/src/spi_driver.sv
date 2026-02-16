@@ -50,7 +50,7 @@ class spi_driver extends uvm_driver #(spi_packet);
         bit [15:0] mosi = {req.rd_en, req.address};
         bit [15:0] reg_temp;
 
-        `uvm_info("DRV", "Driving SPI packet", UVM_LOW);
+        `uvm_info("DRV", "Driving SPI packet", UVM_HIGH);
         req.print();
 
         #(clk_period_ns/2);

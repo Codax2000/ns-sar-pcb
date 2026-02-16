@@ -157,7 +157,7 @@ class ral_register_5 extends uvm_reg;
         this.N_SAR_CYCLES = uvm_reg_field::type_id::create("N_SAR_CYCLES", , get_full_name());
         this.N_SAR_CYCLES.configure(
             this,
-            16,
+            14,
             0,
             "RW",
             0,
@@ -292,7 +292,7 @@ class ral_register_10 extends uvm_reg;
             0,
             "W1C",
             0,
-            0,
+            1,
             1,
             0,
             0

@@ -108,6 +108,7 @@ module spi #(
     assign reg_wr_data = {rx_shift[DATA_WIDTH-2:0], mosi};
     assign miso_n      = (state == REG_SEND) && (bit_cnt == 0) ? reg_rd_data[DATA_WIDTH-1] : 
                          (state == REG_SEND)                   ? tx_shift[DATA_WIDTH-1]    : 0;
-    assign reg_addr    = (state == ADDR_DECODE) ? {addr_shift[ADDR_WIDTH-1:0], mosi} : addr_shift + 1;
+    assign reg_addr    = (state == ADDR_DECODE) ? {addr_shift[ADDR_WIDTH-1:0], mosi} : 
+                         (state == REG_RECEIVE) ? addr_shift                         : addr_shift + 1;
 
 endmodule

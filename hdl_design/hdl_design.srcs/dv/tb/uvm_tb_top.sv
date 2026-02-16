@@ -36,7 +36,8 @@ module uvm_tb_top ();
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test("base_test");
+        // run_test("base_test");
+        run_test("main_sm_test");
     end
 
 endmodule

@@ -99,35 +99,11 @@ class base_test extends uvm_test;
         set_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
         set_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
         set_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
-        update_reg_burst();
-
-        `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
+        update_all_reg_burst();
 
         // mirror values back to make sure they are what we just wrote
-        // check_field("NFFT_POWER", i_env_cfg.nfft_power);
-        // check_field("DWA_EN", i_env_cfg.dwa_en);
-        // check_field("OSR_POWER", i_env_cfg.osr_power);
-        // check_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
-        // check_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
-        // check_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
-        // check_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
-        // check_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
-        // check_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
-        // check_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
-        // check_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
-
-        predict_field("NFFT_POWER", i_env_cfg.nfft_power);
-        predict_field("DWA_EN", i_env_cfg.dwa_en);
-        predict_field("OSR_POWER", i_env_cfg.osr_power);
-        predict_field("N_SH_TOTAL_CYCLES", i_env_cfg.n_sh_total_cycles);
-        predict_field("N_SH_ACTIVE_CYCLES", i_env_cfg.n_sh_active_cycles);
-        predict_field("N_BOTTOM_PLATE_ACTIVE_CYCLES", i_env_cfg.n_bottom_plate_active_cycles);
-        predict_field("N_SAR_CYCLES", i_env_cfg.n_sar_cycles);
-        predict_field("N_INT1_TOTAL_CYCLES", i_env_cfg.n_int1_total_cycles);
-        predict_field("N_INT1_ACTIVE_CYCLES", i_env_cfg.n_int1_active_cycles);
-        predict_field("N_INT2_TOTAL_CYCLES", i_env_cfg.n_int2_total_cycles);
-        predict_field("N_INT2_ACTIVE_CYCLES", i_env_cfg.n_int2_active_cycles);
-        mirror_reg_burst(0, 11, UVM_CHECK);
+        `uvm_info("CONFIG_PHASE", "Reading back registers to make sure write data worked", UVM_MEDIUM);
+        mirror_all_reg_burst(UVM_CHECK);
 
         `uvm_info("CONFIG_PHASE", "Finished Configuring DUT", UVM_MEDIUM)
         
@@ -148,7 +124,7 @@ class base_test extends uvm_test;
         field_to_set.set(value);
     endtask
 
-    task update_reg();
+    task update_all_reg();
         env.ral.ral_model.update(status);
     endtask
 
@@ -161,7 +137,10 @@ class base_test extends uvm_test;
     task mirror_field(string name, uvm_reg_data_t expected_value, uvm_check_e check = UVM_NO_CHECK);
         uvm_reg_field field_to_check;
         field_to_check = env.ral.ral_model.get_field_by_name(name);
-        field_to_check.predict(expected_value);
+
+        if (check == UVM_CHECK)
+            field_to_check.predict(expected_value);
+    
         field_to_check.mirror(status, check);
     endtask
 
@@ -197,14 +176,14 @@ class base_test extends uvm_test;
         spi_packet_reg_extension ext;
         bit [15:0]               address_data;
         uvm_status_e             status;
-        bit                      check_on_read;
+        bit                      original_check_on_read;
         initial_register = env.ral.ral_model.default_map.get_reg_by_offset(address);
         ext = spi_packet_reg_extension::type_id::create("burst_write_ext");
 
         ext.n_additional_reads = n_reads - 1;
         ext.additional_write_data = {};
 
-        check_on_read = env.ral.ral_model.default_map.get_check_on_read();
+        original_check_on_read = env.ral.ral_model.default_map.get_check_on_read();
 
         if (check == UVM_CHECK) 
             env.ral.ral_model.default_map.set_check_on_read(1);
@@ -215,11 +194,29 @@ class base_test extends uvm_test;
         );
 
         if (check == UVM_CHECK)
-            env.ral.ral_model.default_map.set_check_on_read(check_on_read);
+            env.ral.ral_model.default_map.set_check_on_read(original_check_on_read);
 
     endtask
 
-    task update_reg_burst();
+    task mirror_all_reg_burst(uvm_check_e check = UVM_NO_CHECK);
+        uvm_reg regs [$];
+        int     top_address;
+        int     bottom_address;
+
+        env.ral.ral_model.default_map.get_registers(regs);
+        bottom_address = regs[0].get_address();
+        top_address = bottom_address;
+
+        for (int i = 1; i < regs.size(); i++) begin
+            if (regs[i].get_address() > top_address)
+                top_address = regs[i].get_address();
+        end
+
+        mirror_reg_burst(bottom_address, top_address - bottom_address + 1, check);
+
+    endtask
+
+    task update_all_reg_burst();
         uvm_reg regs [$];
         uvm_reg current_reg;
 
@@ -228,6 +225,7 @@ class base_test extends uvm_test;
         bit [15:0]     write_data  [$];
         bit            update_data [$];
         uvm_reg_addr_t offset;
+
         env.ral.ral_model.default_map.get_registers(regs);
 
         offset = regs[0].get_address();
@@ -252,7 +250,7 @@ class base_test extends uvm_test;
                     write_data.push_back(current_reg.get());
                     update_data.push_back(1);
                 end else begin
-                    write_data.push_back(0);
+                    write_data.push_back(current_reg.get_mirrored_value());
                     update_data.push_back(0);
                 end
             end else begin
@@ -261,6 +259,7 @@ class base_test extends uvm_test;
             end
         end
 
+        // trim values that do not need to be updated
         while (update_data[0] == 0) begin
             update_data.pop_front();
             write_data.pop_front();
@@ -274,6 +273,47 @@ class base_test extends uvm_test;
 
         write_reg_burst(low_address, write_data);
 
+    endtask
+
+endclass
+
+class main_sm_test extends base_test;
+
+    `uvm_component_utils(main_sm_test)
+
+    function new (string name = "main_sm_test", uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    virtual function int randomize_config();
+        i_env_cfg.randomize() with {
+            nfft_power == 4; // NFFT == 16
+            osr_power  == 3; // OSR  == 8
+            n_sh_total_cycles == 6;
+            n_sh_active_cycles == 5;
+            n_bottom_plate_active_cycles == 4;
+            n_sar_cycles == 1;
+            n_int1_total_cycles == 6;
+            n_int1_active_cycles == 5;
+            n_int2_total_cycles == 6;
+            n_int2_active_cycles == 5;
+        };
+    endfunction
+
+    virtual task main_phase(uvm_phase phase);
+        logic readback_status;
+        
+        phase.raise_objection(this);
+        `uvm_info("TEST", "Starting main phase", UVM_MEDIUM)
+
+        write_field("START_CONVERSION", 1);
+
+        do begin
+            read_field("START_CONVERSION", readback_status);
+        end while (readback_status == 0);
+
+        phase.drop_objection(this);
+        `uvm_info("TEST", "Ending main phase", UVM_MEDIUM)
     endtask
 
 endclass
