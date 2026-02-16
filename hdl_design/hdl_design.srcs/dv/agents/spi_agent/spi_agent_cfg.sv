@@ -7,7 +7,6 @@ class spi_agent_cfg extends uvm_object;
     endfunction
 
     virtual if_spi vif;
-    int nfft;
     int speed;
 
     uvm_active_passive_enum is_active;

@@ -5,7 +5,7 @@ import uvm_pkg::*;
 
 import test_pkg::*;
 
-module tb_top ();
+module uvm_tb_top ();
 
     if_clkgen i_if_clkgen();
     if_input i_if_input();
@@ -22,6 +22,7 @@ module tb_top ();
     // TODO: connect status interface signals
     // assign i_if_status.fsm_convert_status = DUT.
     assign i_if_status.fsm_convert_status = 2'b00;
+    assign i_if_status.rst_b = DUT.DIGTOP.sys_rst_b;
 
     tb_top_cfg cfg;
     assign i_if_spi.miso = 1'b0;
@@ -35,7 +36,8 @@ module tb_top ();
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test("base_test");
+        // run_test("base_test");
+        run_test("main_sm_test");
     end
 
 endmodule

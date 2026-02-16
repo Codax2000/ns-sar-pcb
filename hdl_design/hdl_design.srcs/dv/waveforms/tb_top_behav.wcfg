@@ -3,124 +3,309 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="tb_top_behav.wdb" id="1">
+      <db_ref path="uvm_tb_top_behav.wdb" id="1">
          <top_modules>
             <top_module name="adc_env_pkg" />
             <top_module name="clkgen_agent_pkg" />
             <top_module name="glbl" />
             <top_module name="input_agent_pkg" />
+            <top_module name="reg_env_pkg" />
             <top_module name="spi_agent_pkg" />
             <top_module name="std" />
-            <top_module name="tb_top" />
             <top_module name="test_pkg" />
             <top_module name="uvm_pkg" />
+            <top_module name="uvm_tb_top" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0.000000 us"></ZoomStartTime>
-      <ZoomEndTime time="45.860001 us"></ZoomEndTime>
-      <Cursor1Time time="45.860000 us"></Cursor1Time>
+      <ZoomEndTime time="263.067100 us"></ZoomEndTime>
+      <Cursor1Time time="263.067100 us"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="162"></NameColumnWidth>
-      <ValueColumnWidth column_width="230"></ValueColumnWidth>
+      <NameColumnWidth column_width="221"></NameColumnWidth>
+      <ValueColumnWidth column_width="159"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="24" />
-   <wvobject fp_name="/tb_top/i_if_clkgen/clk_period_in_ns" type="array">
-      <obj_property name="ElementShortName">clk_period_in_ns[31:0]</obj_property>
-      <obj_property name="ObjectShortName">clk_period_in_ns[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_clkgen/reset_duration_in_ns" type="array">
-      <obj_property name="ElementShortName">reset_duration_in_ns[31:0]</obj_property>
-      <obj_property name="ObjectShortName">reset_duration_in_ns[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_clkgen/reset_delay_in_ns" type="array">
-      <obj_property name="ElementShortName">reset_delay_in_ns[31:0]</obj_property>
-      <obj_property name="ObjectShortName">reset_delay_in_ns[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_clkgen/clk_is_running" type="logic">
-      <obj_property name="ElementShortName">clk_is_running</obj_property>
-      <obj_property name="ObjectShortName">clk_is_running</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_clkgen/clk" type="logic">
-      <obj_property name="ElementShortName">clk</obj_property>
-      <obj_property name="ObjectShortName">clk</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_clkgen/rst_b" type="logic">
-      <obj_property name="ElementShortName">rst_b</obj_property>
-      <obj_property name="ObjectShortName">rst_b</obj_property>
-   </wvobject>
-   <wvobject type="divider" fp_name="divider7">
-      <obj_property name="label">Input</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/vip" type="other">
-      <obj_property name="ElementShortName">vip</obj_property>
-      <obj_property name="ObjectShortName">vip</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/vin" type="other">
-      <obj_property name="ElementShortName">vin</obj_property>
-      <obj_property name="ObjectShortName">vin</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/phase" type="other">
-      <obj_property name="ElementShortName">phase</obj_property>
-      <obj_property name="ObjectShortName">phase</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/frequency" type="other">
-      <obj_property name="ElementShortName">frequency</obj_property>
-      <obj_property name="ObjectShortName">frequency</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/amplitude" type="other">
-      <obj_property name="ElementShortName">amplitude</obj_property>
-      <obj_property name="ObjectShortName">amplitude</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/vcm" type="other">
-      <obj_property name="ElementShortName">vcm</obj_property>
-      <obj_property name="ObjectShortName">vcm</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_top/i_if_input/values_changed" type="logic">
-      <obj_property name="ElementShortName">values_changed</obj_property>
-      <obj_property name="ObjectShortName">values_changed</obj_property>
-   </wvobject>
-   <wvobject type="divider" fp_name="divider15">
+   <WVObjectSize size="70" />
+   <wvobject type="divider" fp_name="divider54">
       <obj_property name="label">SPI</obj_property>
       <obj_property name="DisplayName">label</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/i_if_spi/scl" type="logic">
+   <wvobject fp_name="/uvm_tb_top/DUT/spi/scl" type="logic">
       <obj_property name="ElementShortName">scl</obj_property>
       <obj_property name="ObjectShortName">scl</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/i_if_spi/mosi" type="logic">
+   <wvobject fp_name="/uvm_tb_top/DUT/spi/mosi" type="logic">
       <obj_property name="ElementShortName">mosi</obj_property>
       <obj_property name="ObjectShortName">mosi</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/i_if_spi/csb" type="logic">
+   <wvobject fp_name="/uvm_tb_top/DUT/spi/csb" type="logic">
       <obj_property name="ElementShortName">csb</obj_property>
       <obj_property name="ObjectShortName">csb</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/i_if_spi/miso" type="logic">
+   <wvobject fp_name="/uvm_tb_top/DUT/spi/miso" type="logic">
       <obj_property name="ElementShortName">miso</obj_property>
       <obj_property name="ObjectShortName">miso</obj_property>
    </wvobject>
-   <wvobject type="divider" fp_name="divider24">
-      <obj_property name="label">Registers</obj_property>
+   <wvobject type="divider" fp_name="divider53">
+      <obj_property name="label">Register Read/Write</obj_property>
       <obj_property name="DisplayName">label</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/nfft_power" type="array">
-      <obj_property name="ElementShortName">nfft_power[3:0]</obj_property>
-      <obj_property name="ObjectShortName">nfft_power[3:0]</obj_property>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/scl" type="logic">
+      <obj_property name="ElementShortName">scl</obj_property>
+      <obj_property name="ObjectShortName">scl</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/osr_power" type="array">
-      <obj_property name="ElementShortName">osr_power[2:0]</obj_property>
-      <obj_property name="ObjectShortName">osr_power[2:0]</obj_property>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/state" type="array">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/dwa" type="logic">
-      <obj_property name="ElementShortName">dwa</obj_property>
-      <obj_property name="ObjectShortName">dwa</obj_property>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_addr" type="array">
+      <obj_property name="ElementShortName">reg_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">reg_addr[14:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_top/DUT/DIGTOP/i_if_reg/clk_div" type="array">
-      <obj_property name="ElementShortName">clk_div[3:0]</obj_property>
-      <obj_property name="ObjectShortName">clk_div[3:0]</obj_property>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_wr_data" type="array">
+      <obj_property name="ElementShortName">reg_wr_data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">reg_wr_data[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_wr_en" type="logic">
+      <obj_property name="ElementShortName">reg_wr_en</obj_property>
+      <obj_property name="ObjectShortName">reg_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_addr" type="array">
+      <obj_property name="ElementShortName">reg_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">reg_addr[14:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_rd_data" type="array">
+      <obj_property name="ElementShortName">reg_rd_data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">reg_rd_data[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_spi/reg_rd_en" type="logic">
+      <obj_property name="ElementShortName">reg_rd_en</obj_property>
+      <obj_property name="ObjectShortName">reg_rd_en</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider84">
+      <obj_property name="label">System Values</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_sysclk" type="logic">
+      <obj_property name="ElementShortName">i_sysclk</obj_property>
+      <obj_property name="ObjectShortName">i_sysclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/pll_clk" type="logic">
+      <obj_property name="ElementShortName">pll_clk</obj_property>
+      <obj_property name="ObjectShortName">pll_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/sys_rst_b" type="logic">
+      <obj_property name="ElementShortName">sys_rst_b</obj_property>
+      <obj_property name="ObjectShortName">sys_rst_b</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider19">
+      <obj_property name="label">SPICLK Interface</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/NFFT_POWER" type="array">
+      <obj_property name="ElementShortName">NFFT_POWER[13:0]</obj_property>
+      <obj_property name="ObjectShortName">NFFT_POWER[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/DWA_EN" type="logic">
+      <obj_property name="ElementShortName">DWA_EN</obj_property>
+      <obj_property name="ObjectShortName">DWA_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/OSR_POWER" type="array">
+      <obj_property name="ElementShortName">OSR_POWER[7:0]</obj_property>
+      <obj_property name="ObjectShortName">OSR_POWER[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_SH_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SH_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SH_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_SH_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SH_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SH_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_BOTTOM_PLATE_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_SAR_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SAR_CYCLES[13:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SAR_CYCLES[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_INT1_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_INT1_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT1_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT1_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_INT2_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT2_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT2_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/N_INT2_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT2_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT2_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/START_CONVERSION" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/START_CONVERSION_set" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION_set</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION_set</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/START_CONVERSION_clear" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION_clear</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION_clear</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/MAIN_STATE_RB" type="array">
+      <obj_property name="ElementShortName">MAIN_STATE_RB[2:0]</obj_property>
+      <obj_property name="ObjectShortName">MAIN_STATE_RB[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_DADDR" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DADDR[6:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DADDR[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_DI" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DI[15:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DI[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_DO" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DO[15:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DO[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_RD_EN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_RD_EN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_RD_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_WR_EN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_WR_EN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_WR_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_spi_clk/CLKGEN_DRP_DEN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DEN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DEN</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider83">
+      <obj_property name="label">SYSCLK Interface</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/NFFT_POWER" type="array">
+      <obj_property name="ElementShortName">NFFT_POWER[13:0]</obj_property>
+      <obj_property name="ObjectShortName">NFFT_POWER[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/DWA_EN" type="logic">
+      <obj_property name="ElementShortName">DWA_EN</obj_property>
+      <obj_property name="ObjectShortName">DWA_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/OSR_POWER" type="array">
+      <obj_property name="ElementShortName">OSR_POWER[7:0]</obj_property>
+      <obj_property name="ObjectShortName">OSR_POWER[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_SH_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SH_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SH_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_SH_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SH_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SH_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_BOTTOM_PLATE_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_BOTTOM_PLATE_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_SAR_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_SAR_CYCLES[13:0]</obj_property>
+      <obj_property name="ObjectShortName">N_SAR_CYCLES[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_INT1_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT1_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_INT1_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT1_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT1_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_INT2_TOTAL_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT2_TOTAL_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT2_TOTAL_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/N_INT2_ACTIVE_CYCLES" type="array">
+      <obj_property name="ElementShortName">N_INT2_ACTIVE_CYCLES[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N_INT2_ACTIVE_CYCLES[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/START_CONVERSION" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/START_CONVERSION_set" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION_set</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION_set</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/START_CONVERSION_clear" type="logic">
+      <obj_property name="ElementShortName">START_CONVERSION_clear</obj_property>
+      <obj_property name="ObjectShortName">START_CONVERSION_clear</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/MAIN_STATE_RB" type="array">
+      <obj_property name="ElementShortName">MAIN_STATE_RB[2:0]</obj_property>
+      <obj_property name="ObjectShortName">MAIN_STATE_RB[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_DADDR" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DADDR[6:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DADDR[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_DI" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DI[15:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DI[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_DO" type="array">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DO[15:0]</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DO[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_RD_EN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_RD_EN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_RD_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_WR_EN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_WR_EN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_WR_EN</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_reg_if_sys_clk/CLKGEN_DRP_DEN" type="logic">
+      <obj_property name="ElementShortName">CLKGEN_DRP_DEN</obj_property>
+      <obj_property name="ObjectShortName">CLKGEN_DRP_DEN</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider683">
+      <obj_property name="label">Main State Machine Output</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/state" type="array">
+      <obj_property name="ElementShortName">state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_sample" type="logic">
+      <obj_property name="ElementShortName">o_sample</obj_property>
+      <obj_property name="ObjectShortName">o_sample</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_int1" type="logic">
+      <obj_property name="ElementShortName">o_int1</obj_property>
+      <obj_property name="ObjectShortName">o_int1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/o_int2" type="logic">
+      <obj_property name="ElementShortName">o_int2</obj_property>
+      <obj_property name="ObjectShortName">o_int2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/pll_clk" type="logic">
+      <obj_property name="ElementShortName">pll_clk</obj_property>
+      <obj_property name="ObjectShortName">pll_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/nfft_counter" type="array">
+      <obj_property name="ElementShortName">nfft_counter[13:0]</obj_property>
+      <obj_property name="ObjectShortName">nfft_counter[13:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/uvm_tb_top/DUT/DIGTOP/i_main_state_machine/current_state_counter" type="array">
+      <obj_property name="ElementShortName">current_state_counter[15:0]</obj_property>
+      <obj_property name="ObjectShortName">current_state_counter[15:0]</obj_property>
    </wvobject>
 </wave_config>

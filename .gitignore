@@ -4,4 +4,13 @@ hdl_design/hdl_design.cache/
 hdl_design/hdl_design.hw/
 hdl_design/hdl_design.cache/
 hdl_design/hdl_design.sim/
+hdl_design/hdl_design.gen/
+hdl_design/hdl_design.runs/
 hdl_design/hdl_design.ip_user_files/
+
+adc_regs/
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs_hwif.rpt
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs_pkg.sv
+hdl_design/hdl_design.srcs/rtl/registers/adc_regs.sv
+hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv
+hdl_design/hdl_design.srcs/dv/reg_env/adc_regs_pkg.svh

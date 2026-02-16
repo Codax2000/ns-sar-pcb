@@ -12,9 +12,7 @@ package adc_env_pkg;
     import clkgen_agent_pkg::*;
 
     // include RAL
-    `include "reg2spi_adapter.sv"
-    `include "ral_cfg.sv"
-    `include "reg_env.sv"
+    import reg_env_pkg::*;
 
     // eventually, include scoreboard package
 

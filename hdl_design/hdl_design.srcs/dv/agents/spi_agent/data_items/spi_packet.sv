@@ -3,26 +3,38 @@ import uvm_pkg::*;
 
 class spi_packet extends uvm_sequence_item;
 
-    rand bit [1:0] command;
-    rand bit [1:0] reg_index;
-    rand bit [3:0] mosi_data;
+    // relevant data for DUT
+    rand logic        rd_en;
+    rand logic [14:0] address;
+    rand logic [15:0] write_data [$];
+         logic [15:0] read_data [$]; // data out - monitor publishes multiple transactions
+    
+    // data for driver/monitor
+    rand int        n_reads;
+         bit        is_subsequent_transaction;
 
-    bit  [3:0] reg_response;
-    bit  [15:0] mem_response [$]; // data queue
-
-    constraint reg_is_legal { reg_index <= 2; reg_index >= 0; }
-    constraint mosi_data_legal { 
-        (reg_index == 0) -> mosi_data >= 6;
-        (reg_index == 1) -> ((mosi_data <= 11) && (mosi_data >= 2));
+    constraint no_write_data_if_read {
+        rd_en -> (write_data.size() == 0);
     }
-    constraint order { solve reg_index before mosi_data; }
+
+    constraint short_reads {
+        n_reads < 10;
+        n_reads >= 0;
+        if (rd_en) {
+            n_reads > 0;
+        }
+        else {
+            n_reads == 0;
+        }
+    }
 
     `uvm_object_utils_begin(spi_packet)
-        `uvm_field_int(command, UVM_ALL_ON)
-        `uvm_field_int(reg_index, UVM_ALL_ON)
-        `uvm_field_int(mosi_data, UVM_ALL_ON)
-        `uvm_field_int(reg_response, UVM_ALL_ON)
-        `uvm_field_queue_int(mem_response, UVM_ALL_ON)
+        `uvm_field_int(rd_en, UVM_ALL_ON)
+        `uvm_field_int(address, UVM_ALL_ON)
+        `uvm_field_queue_int(write_data, UVM_ALL_ON)
+        `uvm_field_int(n_reads, UVM_ALL_ON)
+        `uvm_field_queue_int(read_data, UVM_ALL_ON)
+        `uvm_field_int(is_subsequent_transaction, UVM_ALL_ON)
     `uvm_object_utils_end
 
     function new (string name = "spi_packet");

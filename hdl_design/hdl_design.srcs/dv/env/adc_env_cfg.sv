@@ -7,10 +7,19 @@ class adc_env_cfg extends uvm_object;
         `uvm_field_real(vdd, UVM_DEFAULT)
         `uvm_field_int(sys_clk, UVM_DEFAULT)
         `uvm_field_int(spi_clk, UVM_DEFAULT)
-        `uvm_field_int(nfft, UVM_DEFAULT)
-        `uvm_field_int(osr, UVM_DEFAULT)
-        `uvm_field_int(is_dwa, UVM_DEFAULT)
-        `uvm_field_int(clk_div, UVM_DEFAULT)
+        `uvm_field_int(nfft_power, UVM_DEFAULT)
+        `uvm_field_int(osr_power, UVM_DEFAULT)
+        `uvm_field_int(dwa_en, UVM_DEFAULT)
+        `uvm_field_int(n_sh_total_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_sh_active_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_bottom_plate_active_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_sar_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_int1_total_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_int1_active_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_int2_total_cycles, UVM_DEFAULT)
+        `uvm_field_int(n_int2_active_cycles, UVM_DEFAULT)
+        `uvm_field_int(checks_enable, UVM_DEFAULT)
+        `uvm_field_int(coverage_enable, UVM_DEFAULT)
     `uvm_object_utils_end
 
     // agent virtual interfaces
@@ -28,9 +37,18 @@ class adc_env_cfg extends uvm_object;
     // randomized register fields
     rand int nfft_power;
     rand int osr_power;
-    rand int clk_div;
-    rand bit is_dwa;
-    
+    rand bit dwa_en;
+
+    // timing information
+    rand int n_sh_total_cycles;
+    rand int n_sh_active_cycles;
+    rand int n_bottom_plate_active_cycles;
+    rand int n_sar_cycles;
+    rand int n_int1_total_cycles;
+    rand int n_int1_active_cycles;
+    rand int n_int2_total_cycles;
+    rand int n_int2_active_cycles;
+
     // post-randomization fields
     int osr;
     int nfft;
@@ -41,40 +59,46 @@ class adc_env_cfg extends uvm_object;
 
     // constraints literally match HW/RTL constraints
     constraint clk_matches_syn {
-        sys_clk == 100000000;
-        spi_clk ==   2000000;
+        sys_clk ==  24000000; // 24 MHz crystal oscillator
+        spi_clk ==   2000000; // 2 MHz SPI clock
     }
 
     constraint legal_vdd {
-        vdd_index <  3;
-        vdd_index >= 0;
+        vdd_index inside {[1:3]};
     }
 
-    constraint legal_osr {
-        osr_power <= 7;
-        osr_power >= 1;
+    constraint legal_osr_power {
+        osr_power inside {[0:((2**8)-1)]};
     }
 
-    constraint legal_nfft {
-        nfft_power < 16;
-        nfft_power > 0;
+    constraint legal_nfft_power {
+        nfft_power inside {[0:((2**14)-1)]};
     }
 
-    constraint legal_clk_div {
-        clk_div >= 0;
-        clk_div < 16;
+    constraint active_lte_total {
+        n_sh_total_cycles            inside {[1:((2**16)-1)]};
+        n_sh_active_cycles           inside {[1:((2**16)-1)]};
+        n_bottom_plate_active_cycles inside {[1:((2**16)-1)]};
+        n_sar_cycles                 inside {[1:((2**16)-1)]};
+        n_int1_total_cycles          inside {[1:((2**16)-1)]};
+        n_int1_active_cycles         inside {[1:((2**16)-1)]};
+        n_int2_total_cycles          inside {[1:((2**16)-1)]};
+        n_int2_active_cycles         inside {[1:((2**16)-1)]};
+
+        n_sh_active_cycles <= n_sh_total_cycles;
+        n_bottom_plate_active_cycles <= n_sh_active_cycles;
+        n_int1_active_cycles <= n_int1_total_cycles;
+        n_int2_active_cycles <= n_int2_total_cycles;
     }
 
     function void post_randomize();
-        nfft = 1 << nfft_power;
         osr = 1 << osr_power;
+        nfft = 1 << nfft_power;
         vdd = vdd_options[vdd_index];
     endfunction
 
     function new(name = "adc_env_cfg");
         super.new(name);
-        vdd_options[0] = 1.8;
-        vdd_options[1] = 2.5;
-        vdd_options[2] = 3.3;
+        vdd_options = {1.8, 2.5, 3.3};
     endfunction
 endclass

@@ -23,8 +23,6 @@ class spi_agent extends uvm_agent;
         uvm_config_db #(uvm_active_passive_enum)::set(this, "", "is_active", cfg.is_active);
         uvm_config_db #(virtual if_spi)::set(this, "driver", "vif", cfg.vif);
         uvm_config_db #(virtual if_spi)::set(this, "monitor", "vif", cfg.vif);
-        uvm_config_db #(int)::set(this, "driver", "nfft", cfg.nfft);
-        uvm_config_db #(int)::set(this, "monitor", "nfft", cfg.nfft);
         uvm_config_db #(bit)::set(this, "driver", "CPOL", cfg.CPOL);
         uvm_config_db #(bit)::set(this, "driver", "CPHA", cfg.CPHA);
         uvm_config_db #(int)::set(this, "driver", "speed", cfg.speed);

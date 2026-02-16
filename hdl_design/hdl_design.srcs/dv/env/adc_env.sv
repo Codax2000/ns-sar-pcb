@@ -51,7 +51,6 @@ class adc_env extends uvm_env;
     virtual function void create_configs();
         spi_cfg = new("spi_cfg");
         spi_cfg.vif = i_env_cfg.vif_spi;
-        spi_cfg.nfft = i_env_cfg.nfft;
         spi_cfg.speed = i_env_cfg.spi_clk;
         spi_cfg.is_active = UVM_ACTIVE;
         spi_cfg.checks_enable = i_env_cfg.checks_enable;
@@ -61,7 +60,9 @@ class adc_env extends uvm_env;
         signal_gen_cfg = new("signal_gen_cfg");
         signal_gen_cfg.is_active = UVM_ACTIVE;
         signal_gen_cfg.nfft = i_env_cfg.nfft;
-        signal_gen_cfg.fs = i_env_cfg.sys_clk / (4 * i_env_cfg.clk_div);
+
+        // INFO : this is not necessarily valid, but the number of active cycles should all be constrained for FFT tests, so this should be fine
+        signal_gen_cfg.fs = i_env_cfg.sys_clk / 4; 
         signal_gen_cfg.osr = i_env_cfg.osr;
         signal_gen_cfg.vdd = i_env_cfg.vdd;
         signal_gen_cfg.vif = i_env_cfg.vif_input;
