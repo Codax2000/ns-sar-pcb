@@ -19,6 +19,7 @@ from peakrdl_html import HTMLExporter
 from peakrdl_regblock import RegblockExporter
 from peakrdl_regblock.cpuif.obi import OBI_Cpuif
 from peakrdl_regblock.udps import ALL_UDPS
+from synchronizer_exporter import RTLSyncExporter
 
 
 # Variable: DEFAULT_RDL_SPEC
@@ -49,7 +50,7 @@ DEFAULT_REG_SYNC_PATH = \
 '''
 Function: parse_input_arguments
 
-Parse the given keyword arguments using argparse. Use 
+Parse the given keyword arguments using argparse. Use
 
 --- Code
 python registers.py --help
@@ -118,6 +119,7 @@ def gen_uvm_pkg(root, filename, **kwargs):
     exporter = UVMExporter(**kwargs)
     exporter.export(root, filename)
 
+
 '''
 Function: gen_html
 
@@ -146,6 +148,21 @@ def gen_rtl(root, filename, **kwargs):
     exporter.export(root, filename, cpuif_cls=OBI_Cpuif,
                     default_reset_activelow=True, generate_hwif_report=True)
 
+
+'''
+Function: gen_sync
+
+Generate SystemVerilog RTL for synchronizers to the interface clock
+
+Parameters:
+    root - the RDL compiler elaborated object used for export
+    filename - the path to the desired RTL directory. Must end in .sv
+'''
+def gen_sync(root, filename, **kwargs):
+    exporter = RTLSyncExporter(**kwargs)
+    exporter.export(root, filename)
+
+
 '''
 Function: main
 
@@ -157,6 +174,7 @@ def main():
     gen_uvm_pkg(root, args.uvmpkg)
     gen_html(root, args.html)
     gen_rtl(root, args.rtl)
+    gen_sync(root, args.sync)
 
 
 if __name__ == '__main__':

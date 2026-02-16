@@ -125,6 +125,6 @@ addrmap adc_regs {
         sw=r;
         memwidth=16;
         
-        mementries=(1 << 15);
-    } external adc_output_mem;
+        mementries=0x8000;
+    } external adc_output_mem @ 0x10000;
 };

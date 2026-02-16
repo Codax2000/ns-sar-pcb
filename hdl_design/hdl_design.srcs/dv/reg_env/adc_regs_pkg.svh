@@ -57,6 +57,7 @@ package adc_regs_pkg;
         rand uvm_reg_field INPUT_MODE;
         rand uvm_reg_field VCM_SINGLE_ENDED;
         rand uvm_reg_field DELAY_LINE_CTRL;
+        rand uvm_reg_field N_QUANTIZER_BITS;
 
         function new(string name = "adc_regs__SAR_CTRL");
             super.new(name, 16, UVM_NO_COVERAGE);
@@ -69,6 +70,8 @@ package adc_regs_pkg;
             this.VCM_SINGLE_ENDED.configure(this, 4, 1, "RW", 0, 'h0, 1, 1, 0);
             this.DELAY_LINE_CTRL = new("DELAY_LINE_CTRL");
             this.DELAY_LINE_CTRL.configure(this, 4, 5, "RW", 0, 'h0, 1, 1, 0);
+            this.N_QUANTIZER_BITS = new("N_QUANTIZER_BITS");
+            this.N_QUANTIZER_BITS.configure(this, 2, 9, "RW", 0, 'h0, 1, 1, 0);
         endfunction : build
     endclass : adc_regs__SAR_CTRL
 
@@ -105,7 +108,7 @@ package adc_regs_pkg;
             this.NFFT_EN = new("NFFT_EN");
             this.NFFT_EN.configure(this, 1, 1, "RO", 1, 'h0, 1, 1, 0);
             this.MAIN_STATE_RB = new("MAIN_STATE_RB");
-            this.MAIN_STATE_RB.configure(this, 3, 2, "RO", 1, 'h0, 1, 1, 0);
+            this.MAIN_STATE_RB.configure(this, 4, 2, "RO", 1, 'h0, 1, 1, 0);
         endfunction : build
     endclass : adc_regs__ADC_CTRL_rd
 
