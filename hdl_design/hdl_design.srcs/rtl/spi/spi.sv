@@ -1,5 +1,5 @@
 module spi #(
-    parameter ADDR_WIDTH = 15,
+    parameter ADDR_WIDTH = 16,
     parameter DATA_WIDTH = 16
 )(
     input  logic        scl,        // SPI clock
@@ -7,11 +7,7 @@ module spi #(
     output logic        miso,       // Master In Slave Out
     input  logic        cs_b,       // Chip Select (active low)
 
-    output logic [DATA_WIDTH-1:0] reg_wr_data,
-    input  logic [DATA_WIDTH-1:0] reg_rd_data,
-    output logic [ADDR_WIDTH-1:0] reg_addr,
-    output logic                  reg_rd_en,
-    output logic                  reg_wr_en
+    obi_intf.manager if_reg
 );
 
     typedef enum logic [1:0] {

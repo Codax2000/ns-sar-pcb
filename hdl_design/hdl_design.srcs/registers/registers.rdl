@@ -60,33 +60,25 @@ addrmap adc_regs {
     } SAR_CTRL @ 0xA;
 
     reg {
-        default sw=w;
-        default hw=r;
+        default sw=w1s;
+        default hw=w1c;
         donttest;
         
         field {
-            desc="When a 1 is written, starts a single SAR conversion only, with no noise shaping. Writing a 0 has no effect.";
+            desc="When a 1 is written, starts a single SAR conversion only, with no noise shaping. Writing a 0 has no effect. Reading back a 1 means that the SAR conversion is running.";
         } SAR_EN [0:0];
         field {
-            desc="When a 1 is written, starts an NFFT conversion only. Takes precedence over START_SAR.";
-        } NFFT_EN [1:1];
-    } ADC_CTRL_wr @ 0xC;
-
-    reg {
-        default sw=r;
-        default hw=w;
-        dontcompare;
-
-        field {
-            desc="If 1, means that the SAR conversion is running.";
-        } SAR_EN [0:0];
-        field {
-            desc="If 1, means that the NFFT conversion is running.";
+            desc="When a 1 is written, starts an NFFT conversion only. Takes precedence over START_SAR. Reading back a 1 means that the NFFT conversion is running.";
         } NFFT_EN [1:1];
         field {
-            desc="Readback of the main state machine.";
-        } MAIN_STATE_RB [5:2];
-    } ADC_CTRL_rd @ 0xC;
+            desc="When a 1 is written, starts sending back the conversion data, with NFFT total samples, as long as the SPI clock is running. Writing 0 has no effect."
+        } MEM_RB_START [2:2];
+        field {
+            sw=r;
+            hw=w;
+            desc="Readback of the current status of the main state machine.";
+        }
+    } ADC_CTRL @ 0xC;
 
     // xilinx CLKGEN DRP registers
     reg {
