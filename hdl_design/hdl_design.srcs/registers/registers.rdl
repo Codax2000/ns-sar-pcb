@@ -55,30 +55,29 @@ addrmap adc_regs {
             desc="Number of bits to quantize, minus one. That is, the SAR will quantize N_QUANTIZER_BITS + 1.";
         } N_QUANTIZER_BITS [10:9];
         field {
-            desc="If 1, runs the ADC in incremental mode, meaning that the reset will be applied and the output will be filtered (up-counted). Else, runs in delta-sigma mode, and there will be no filtering at the output."
-        }
-    } SAR_CTRL @ 0xA;
-
-    reg {
-        default sw=w1s;
-        default hw=w1c;
-        donttest;
+            desc="If 1, runs the ADC in incremental mode, meaning that the reset will be applied and the output will be filtered (up-counted). Else, runs in delta-sigma mode, and there will be no filtering at the output.";
+        } INCREMENTAL_MODE_EN [11:11];
         
         field {
-            desc="When a 1 is written, starts a single SAR conversion only, with no noise shaping. Writing a 0 has no effect. Reading back a 1 means that the SAR conversion is running.";
-        } SAR_EN [0:0];
+            desc="If 0, run an NFFT conversion with SAR quantizer only. If 1, run with noise-shaping.";
+        } NOISE_SHAPING_EN [12:12];
+    } ADC_CTRL @ 0xA;
+
+    reg {
+        default sw=rw;
+        default hw=r;
+        donttest;
+
         field {
-            desc="When a 1 is written, starts an NFFT conversion only. Takes precedence over START_SAR. Reading back a 1 means that the NFFT conversion is running.";
+            hwclr;
+            desc="When a 1 is written, starts an NFFT conversion. When read, a 1 means the NFFT conversion is running, and a 0 means it is not. If a 0 is written while the conversion is running, terminates the conversion early and sets state machine back to ready state.";
         } NFFT_EN [1:1];
-        field {
-            desc="When a 1 is written, starts sending back the conversion data, with NFFT total samples, as long as the SPI clock is running. Writing 0 has no effect."
-        } MEM_RB_START [2:2];
         field {
             sw=r;
             hw=w;
             desc="Readback of the current status of the main state machine.";
-        }
-    } ADC_CTRL @ 0xC;
+        } MAIN_STATE_RB [5:2];
+    } RUN_CTRL @ 0xC;
 
     // xilinx CLKGEN DRP registers
     reg {

@@ -27,7 +27,7 @@ class spi_monitor extends uvm_monitor;
     virtual task run_phase(uvm_phase phase);
         spi_packet item;
         forever begin
-            item = spi_packet::type_id::create("mon_packet", this);
+            item = spi_packet::type_id::create("mon_packet");
             collect_transaction(item);
         end
     endtask
