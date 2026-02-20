@@ -15,7 +15,7 @@ class sine_agent extends oscillator_agent;
     sine_coverage_collector m_sine_coverage_collector;
 
     virtual function void build_phase(uvm_phase phase);
-        // TODO: set type override to make sine collector instead of oscillator collector
+        uvm_config_db #(int)::set(this, "driver", "")
     endfunction
 
 endclass
