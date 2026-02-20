@@ -27,15 +27,18 @@ class oscillator_monitor extends uvm_monitor;
             `uvm_fatal(get_full_name(), "Virtual interface not found")
         if (!uvm_config_db #(real)::get(this, "", "frequency_threshold", frequency_threshold))
             `uvm_fatal(get_full_name(), "Could not find frequency threshold")
+        if (!uvm_config_db #(real)::get(this, "", "timeout_time_ns", vif.timeout_time_ns))
+            `uvm_fatal(get_full_name(), "Could not find timeout time")
     endfunction
 
     virtual task run_phase (uvm_phase phase);
         current_enable = 0;
         current_frequency = 0.0;
         current_disabled_state = 0;
+        
+        item = oscillator_packet::type_id::create("mon_packet", this);
 
         forever begin
-            item = oscillator_packet::type_id::create("mon_packet", this);
             collect_transaction(item);
             publish_transaction_if_needed(item);
         end
@@ -48,17 +51,21 @@ class oscillator_monitor extends uvm_monitor;
         item.disabled_state = vif.disabled_state_observed;
     endtask
 
-    virtual task publish_transaction_if_needed (ref oscillator_packet item);
+    virtual task publish_transaction_if_needed (ref oscillator_packet item, output bit did_publish);
         real frequency_difference;
+        
+        did_publish = 0;
 
         if (item.enabled != current_enable) begin
             `uvm_info(get_full_name(), $sformatf("New oscillator packet based on enable: %s",
                                                  item.sprint()), UVM_HIGH)
             publish_item(item);
+            did_publish = 1;
         end else if ((!item.enabled) && (item.disabled_state != current_disabled_state)) begin // both disabled, report new disabled state
             `uvm_info(get_full_name(), $sformatf("New oscillator packet based on disabled state: %s",
                                                  item.sprint()), UVM_HIGH)
             publish_item(item);
+            did_publish = 1;
         end else if (item.enabled) begin
             frequency_difference = current_frequency - item.frequency;
             frequency_difference = frequency_difference < 0 ? -frequency_difference : frequency_difference;
@@ -66,6 +73,7 @@ class oscillator_monitor extends uvm_monitor;
                 `uvm_info(get_full_name(), $sformatf("New oscillator packet based on frequency with large delta: %s",
                                                  item.sprint()), UVM_HIGH)
                 publish_item(item);
+                did_publish = 1;
             end else
                 `uvm_info(get_full_name(), $sformatf("No new oscillator packet because frequency delta is too small: %s",
                                                      item.sprint()), UVM_HIGH)
@@ -77,7 +85,10 @@ class oscillator_monitor extends uvm_monitor;
         current_frequency = item.frequency;
         current_enable = item.enabled;
         current_disabled_state = item.disabled_state;
+
         mon_analysis_port.publish(item);
+
+        item = oscillator_packet::type_id::create("mon_packet", this);
     endtask
 
 endclass

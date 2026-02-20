@@ -35,6 +35,7 @@ class oscillator_agent extends uvm_agent;
         uvm_config_db #(virtual oscillator_if)::set(this, "driver", "vif", cfg.vif);
         uvm_config_db #(virtual oscillator_if)::set(this, "monitor", "vif", cfg.vif);
         uvm_config_db #(real)::set(this, "monitor", "frequency_threshold", cfg.frequency_threshold);
+        uvm_config_db #(real)::set(this, "monitor", "timeout_time_ns", cfg.timeout_time_ns);
         uvm_config_db #(uvm_active_passive_enum)::set(this, "", "is_active", cfg.is_active);
 
         monitor = oscillator_monitor::type_id::create("monitor", this);

@@ -29,6 +29,10 @@ class oscillator_agent_cfg extends uvm_object;
     // frequency will not be reported, i.e. allowable frequency mismatch.
     real frequency_threshold;
 
+    // Variable: timeout_time_ns
+    // The time in ns before which the monitor will not report a disabled clock
+    int timeout_time_ns;
+
     `uvm_object_utils_begin(oscillator_agent_cfg)
         `uvm_field_int(checks_enable)
         `uvm_field_int(coverage_enable)

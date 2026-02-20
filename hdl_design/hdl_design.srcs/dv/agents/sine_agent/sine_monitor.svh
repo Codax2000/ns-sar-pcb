@@ -14,8 +14,6 @@ class sine_monitor extends oscillator_monitor;
     real amplitude_threshold;
     real current_amplitude;
 
-    bit item_was_published;
-
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -37,7 +35,7 @@ class sine_monitor extends oscillator_monitor;
         if (! $cast(ms_pkt, item))
             `uvm_ms_fatal(get_full_name(), "Could not cast item to mixed-signal equivalent")
 
-        @(vif.clk_enable_observed or vif.frequency_observed or vif.disabled_state_observed or vproxy.update_available);
+        @(vif.clk_enable_observed or vif.frequency_observed or vif.disabled_state_observed or vproxy.amplitude);
         ms_pkt.enabled = vif.clk_enable_observed;
         ms_pkt.frequency = vif.frequency_observed;
         ms_pkt.disabled_state = vif.disabled_state_observed;
@@ -47,11 +45,11 @@ class sine_monitor extends oscillator_monitor;
         item = ms_pkt;
     endtask
 
-    virtual task publish_transaction_if_needed(ref oscillator_packet item);
+    virtual task publish_transaction_if_needed(ref oscillator_packet item, item_was_published);
         real amplitude_difference;
         
         item_was_published = 0;
-        super.publish_transaction_if_needed(item);
+        super.publish_transaction_if_needed(item, item_was_published);
 
         if (! $cast(ms_pkt, item))
             `uvm_ms_fatal(get_full_name(), "Could not cast item to mixed-signal equivalent")
@@ -63,11 +61,6 @@ class sine_monitor extends oscillator_monitor;
             this.current_amplitude = ms_pkt.amplitude;
             publish_item(item);
         end
-    endtask
-
-    virtual task publish_item(oscillator_packet item);
-        super.publish_item(item);
-        item_was_published = 1;
     endtask
 
 endclass

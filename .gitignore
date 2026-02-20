@@ -14,3 +14,5 @@ hdl_design/hdl_design.srcs/rtl/registers/adc_regs_pkg.sv
 hdl_design/hdl_design.srcs/rtl/registers/adc_regs.sv
 hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv
 hdl_design/hdl_design.srcs/dv/reg_env/adc_regs_pkg.svh
+
+freq_adapter/

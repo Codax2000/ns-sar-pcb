@@ -14,8 +14,15 @@ class sine_agent_cfg extends oscillator_agent_cfg;
     // Like frequency detection threshold, but with amplitude
     real amplitude_threshold;
 
+    // Variable: points_per_period
+    // The number of points driven per oscillation period, like FFT sampling.
+    // Also like FFT, more points -> more precise but also longer sim time.
+    // Recommend to use multiples of 4 to get a precise min and max.
+    int points_per_period;
+
     `uvm_object_utils_begin(sine_agent_cfg)
-        `uvm_field_real(amplitude_threshold)
+        `uvm_field_real(amplitude_threshold, UVM_ALL_ON)
+        `uvm_field_int(points_per_period, UVM_ALL_ON)
     `uvm_object_utils_end
 
     function new(string name = "sine_agent_cfg");

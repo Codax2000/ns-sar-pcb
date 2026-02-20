@@ -1,4 +1,4 @@
-interface if_spi ();
+interface spi_if ();
 
     logic scl;
     logic mosi;

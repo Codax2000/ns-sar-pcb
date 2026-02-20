@@ -64,7 +64,12 @@ interface oscillator_if;
     // Variable: frequency_observed
     // The observed frequency from the DUT
     real frequency_observed;
-
+    
+    // Variable: timeout_time_ns
+    // The amount of time in ns before which a timeout shall be registered
+    int timeout_time_ns;
+    int timeout_count;
+    
     // Variable: clk_enable_observed
     // Whether the observed clock is believed to be enabled or disabled
     bit clk_enable_observed;
@@ -74,9 +79,6 @@ interface oscillator_if;
     bit disabled_state_observed;
     assign disabled_state_observed = enabled_state_observed ? 0 : clk_observed;
     
-    // TODO: update this with some kind of intelligent sensing mechanism for disabled clocks
-    assign enabled_state_observed = clk_enable_driven;
-    
     real time_0;
     real time_1;
 
@@ -85,8 +87,24 @@ interface oscillator_if;
 
     always @(clk_observed) begin : calc_observed_frequency
         time_1 = $realtime() * 1e-9; // convert time to seconds from ns
-        frequency_observed = 1 / (time_1 - time_0);
-        time_0 = time_1;
+        frequency_observed <= 1 / (2 * (time_1 - time_0));
+        if ((time_1 - time_0) < timeout_time_ns) begin
+            timeout_count <= 0;
+            enabled_state_observed <= 1;
+        end
+        time_0 <= time_1;
+    end
+
+    initial begin
+        timeout_count <= 0;
+        forever begin
+            #1ns;
+            if (timeout_count < timeout_time_ns) begin
+                timeout_count++;
+                if (timeout_count == timeout_time_ns)
+                    enabled_state_observed <= 0;
+            end
+        end
     end
 
 endinterface

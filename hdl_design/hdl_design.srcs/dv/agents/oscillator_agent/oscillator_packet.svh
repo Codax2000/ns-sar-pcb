@@ -34,4 +34,31 @@ class oscillator_packet extends uvm_sequence_item;
         frequency >= 100.0;
     }
 
+    virtual function bit do_compare (uvm_object rhs, uvm_comparer comparer);
+        oscillator_packet rhs_;
+            
+        if (!$cast(rhs_, rhs)) begin
+            `uvm_error("COMPARE", "rhs is not an oscillator_packet")
+            return 0;
+        end
+
+        if (rhs_.enable) begin
+            // Compare frequency when enabled
+            if (!comparer.uvm_compare_field_real("frequency",
+                                    this.frequency,
+                                    rhs_.frequency))
+                return 0;
+        end
+        else begin
+            // Compare disabled_state when disabled
+            if (!comparer.uvm_compare_field_int("disabled_state",
+                                    this.disabled_state,
+                                    rhs_.disabled_state))
+                return 0;
+        end
+
+        return 1;
+    endfunction : do_compare
+
+
 endclass
