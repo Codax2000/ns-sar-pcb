@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>HDL - Noise-Shaping SAR PCB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "HDL";
+        var mkdocs_page_input_path = "hdl.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../theory/">ADC Theory</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">HDL</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#rtl">RTL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pcb/">PCB</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ndocs/">Code</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../adc_regs/">Register Map</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Noise-Shaping SAR PCB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">HDL</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="digital-logic">Digital Logic</h1>
+<p>ADCs need digital logic. This means a register interface for CSRs (control and status registers) and
+a main state machine to control the conversion. It therefore means closing timing and rigorous
+verification.</p>
+<h2 id="rtl">RTL</h2>
+<h2 id="verification">Verification</h2>
+<h1 id="noise-shaping-sar-adc-verification-regression-test-plan">Noise-Shaping SAR ADC – Verification Regression Test Plan</h1>
+<h2 id="1-smoke-sanity-tests-per-commit">1. Smoke / Sanity Tests (Per-Commit)</h2>
+<ul>
+<li>smoke_reset</li>
+<li>Assert reset during idle and mid-conversion</li>
+<li>Verify registers return to defaults</li>
+<li>
+<p>Ensure no X/Z propagation</p>
+</li>
+<li>
+<p>smoke_reg_access</p>
+</li>
+<li>Write/read all control registers</li>
+<li>Check illegal accesses</li>
+<li>
+<p>Boundary value testing</p>
+</li>
+<li>
+<p>smoke_clock_div</p>
+</li>
+<li>Sweep clock divider</li>
+<li>Verify timing scales correctly</li>
+</ul>
+<h2 id="2-functional-correctness-tests">2. Functional Correctness Tests</h2>
+<ul>
+<li>ramp_monotonicity</li>
+<li>Slow ramp input</li>
+<li>No missing codes</li>
+<li>Monotonic output</li>
+<li>
+<p>Correct SAR latency</p>
+</li>
+<li>
+<p>dc_levels</p>
+</li>
+<li>Multiple DC inputs</li>
+<li>
+<p>Check gain and offset error</p>
+</li>
+<li>
+<p>step_response</p>
+</li>
+<li>Large step input</li>
+<li>Verify settling and transient response</li>
+</ul>
+<h2 id="3-spectral-performance-tests">3. Spectral / Performance Tests</h2>
+<ul>
+<li>snr_nominal</li>
+<li>Full-scale sine input</li>
+<li>Measure SNR and ENOB</li>
+<li>
+<p>Assert SNR &gt; spec</p>
+</li>
+<li>
+<p>thd_nominal</p>
+</li>
+<li>Near full-scale sine</li>
+<li>Measure THD and SFDR</li>
+<li>
+<p>Assert harmonics &lt; spec</p>
+</li>
+<li>
+<p>osr_sweep</p>
+</li>
+<li>Sweep OSR</li>
+<li>
+<p>Verify 2nd-order noise shaping slope (~15 dB/octave)</p>
+</li>
+<li>
+<p>dem_on_off_compare</p>
+</li>
+<li>Compare spectra with DEM on vs off</li>
+<li>Verify harmonic reduction</li>
+</ul>
+<h2 id="4-mode-coverage-tests">4. Mode Coverage Tests</h2>
+<ul>
+<li>incremental_vs_continuous</li>
+<li>Compare both operating modes</li>
+<li>
+<p>Validate behavior vs theory</p>
+</li>
+<li>
+<p>filter_coeff_sweep</p>
+</li>
+<li>Sweep 2nd-order filter coefficients</li>
+<li>Check stability and overflow</li>
+</ul>
+<h2 id="5-boundary-stress-tests">5. Boundary &amp; Stress Tests</h2>
+<ul>
+<li>analog_digital_boundary_stress</li>
+<li>Inject jitter / metastability modeling</li>
+<li>
+<p>Verify no lockup or corruption</p>
+</li>
+<li>
+<p>spi_mid_conversion</p>
+</li>
+<li>Modify registers mid-conversion</li>
+<li>
+<p>Verify graceful handling</p>
+</li>
+<li>
+<p>warmup_behavior</p>
+</li>
+<li>Ensure warmup samples are discarded properly</li>
+</ul>
+<h2 id="6-randomized-tests">6. Randomized Tests</h2>
+<ul>
+<li>random_reg_sequence</li>
+<li>Randomized mode and OSR switching</li>
+<li>
+<p>Constrained random register access</p>
+</li>
+<li>
+<p>random_input_waveform</p>
+</li>
+<li>Random sine amplitude/frequency/phase</li>
+<li>Verify stability</li>
+</ul>
+<h2 id="7-long-run-stability">7. Long-Run Stability</h2>
+<ul>
+<li>long_run_stability</li>
+<li>Extended simulation duration</li>
+<li>Verify no drift or state corruption</li>
+</ul>
+<hr />
+<h1 id="regression-tiers">Regression Tiers</h1>
+<p>Per-Commit (Fast):
+- smoke_reset
+- smoke_reg_access
+- ramp_monotonicity
+- dc_levels</p>
+<p>Nightly:
+- snr_nominal
+- thd_nominal
+- osr_sweep
+- dem_on_off_compare
+- filter_coeff_sweep</p>
+<p>Weekly / Extended:
+- analog_digital_boundary_stress
+- random_reg_sequence
+- long_run_stability</p>
+<h2 id="fpga-implementation">FPGA Implementation</h2>
+<h3 id="timing">Timing</h3>
+<h3 id="fpga-resources">FPGA Resources</h3>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../theory/" class="btn btn-neutral float-left" title="ADC Theory"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../pcb/" class="btn btn-neutral float-right" title="PCB">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../theory/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../pcb/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
