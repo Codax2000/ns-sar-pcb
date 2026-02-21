@@ -119,6 +119,9 @@ class adc_env extends uvm_env;
         uvm_status_e                      status;
         uvm_reg_data_t                    value;
 
+        real time_start;
+        real time_reset;
+
         phase.raise_objection(this);
         
         clk_seq   = oscillator_single_packet_seq      ::type_id::create("clk_seq");
@@ -149,9 +152,14 @@ class adc_env extends uvm_env;
         };
         reset_seq.start(m_reset.sequencer);
 
+        // add a timeout with UVM_FATAL if it times out (100 * reset duration should be fine)
+        time_start = $realtime();
         do begin
             m_ral.RUN_CTRL.SYNC_RESET_RB.read(status, value);
-        end while ((value == 0) || (status != UVM_IS_OK));
+        end while (((value == 0) || (status != UVM_IS_OK)) && (($realtime() - time_start) <= (100 * (reset_duration / 1e9))));
+        
+        if ((value == 0) || (status != UVM_IS_OK))
+            `uvm_fatal(get_full_name(), "Reset request timed out, reset did not deassert cleanly. Value is 0 or status is not OK.")
 
         phase.drop_objection(this);
     endtask
