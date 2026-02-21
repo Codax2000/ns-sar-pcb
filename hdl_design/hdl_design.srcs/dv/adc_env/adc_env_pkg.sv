@@ -4,21 +4,15 @@ package adc_env_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
-    // include agent packages
-    import spi_agent_pkg::*;
+    // TODO: include UVM-MS
 
-    import input_agent_pkg::*;
-
-    import clkgen_agent_pkg::*;
-
-    // include RAL
-    import reg_env_pkg::*;
+    // TODO: include agent packages and RAL
 
     // eventually, include scoreboard package
 
     // include multichannel sequencer
-    `include "adc_mc_sequencer.sv"
-    `include "adc_mc_seq_lib.sv"
+    `include "adc_mc_sequencer.svh"
+    `include "adc_mc_seq_lib.svh"
 
     // finally, include environment
     `include "adc_env_cfg.sv"

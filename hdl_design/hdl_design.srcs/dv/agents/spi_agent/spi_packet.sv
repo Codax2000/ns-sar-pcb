@@ -6,8 +6,8 @@ class spi_packet extends uvm_sequence_item;
     // relevant data for DUT
     rand logic        rd_en;
     rand logic [14:0] address;
-    rand logic [15:0] write_data [$];
-         logic [15:0] read_data [$]; // data out - monitor publishes multiple transactions
+    rand logic [7:0]  write_data [$];
+         logic [7:0]  read_data  [$]; // data out - monitor publishes multiple transactions
     
     // data for driver/monitor
     rand int        n_reads;

@@ -14,7 +14,8 @@ hdl_design/hdl_design.srcs/rtl/registers/adc_regs_hwif.rpt
 hdl_design/hdl_design.srcs/rtl/registers/adc_regs_pkg.sv
 hdl_design/hdl_design.srcs/rtl/registers/adc_regs.sv
 hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv
-hdl_design/hdl_design.srcs/dv/reg_env/adc_regs_pkg.svh
+hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_pkg.svh
+hdl_design/hdl_design.srcs/dv/waveforms
 
 freq_adapter/
 docs/docs/adc_regs/

@@ -25,8 +25,9 @@ class oscillator_agent_cfg extends uvm_object;
     bit coverage_enable;
 
     // Variable: frequency_threshold
-    // Threshold below which frequency differences from the current observed
-    // frequency will not be reported, i.e. allowable frequency mismatch.
+    // Threshold as a fraction of current frequency below which frequency differences 
+    // from the current observed frequency will not be reported, i.e. allowable
+    // frequency mismatch.
     real frequency_threshold;
 
     // Variable: timeout_time_ns

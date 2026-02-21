@@ -13,7 +13,7 @@ addrmap adc_regs {
     reg {
         field {
             desc="FFT power (8 LSB bits). When taking FFT samples, the ADC will take 2^NFFT_POWER samples.";
-        } NFFT_POWER [14:0];
+        } NFFT_POWER [13:0];
         field {
             desc="If 1, enables DWA during FFT conversion. Else, there will be no DEM whatsoever.";
         } DWA_EN [15:15];
@@ -77,6 +77,11 @@ addrmap adc_regs {
             hw=w;
             desc="Readback of the current status of the main state machine.";
         } MAIN_STATE_RB [5:2];
+        field {
+            sw=r;
+            hw=w;
+            desc="Readback of the internal synchronous reset.";
+        } SYNC_RESET_RB [6:6];
     } RUN_CTRL @ 0xC;
 
     // xilinx CLKGEN DRP registers
@@ -119,6 +124,6 @@ addrmap adc_regs {
         sw=r;
         memwidth=16;
         
-        mementries=0x8000;
-    } external adc_output_mem @ 0x10000;
+        mementries=0x4000;
+    } external adc_output_mem @ 0x8000;
 };

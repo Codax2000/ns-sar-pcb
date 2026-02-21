@@ -39,11 +39,10 @@ class spi_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_signals(spi_packet item);
-        logic [15:0] reg_temp;
-        spi_packet copy_pkt = spi_packet::type_id::create("monitor_spi_pkt_copy");
+        logic [7:0] reg_temp;
 
-        item.read_data.delete();
-        item.write_data.delete();
+        item = spi_packet::type_id::create("monitor_spi_pkt_copy");
+        item.is_subsequent_transaction = 0;
         
         // collect transaction type
         @(posedge vif.scl);
@@ -59,48 +58,29 @@ class spi_monitor extends uvm_monitor;
         if (item.rd_en) begin : reg_read
             while (!vif.csb) begin
                 // monitor transaction
-                reg_temp = 16'h0000;
-                for (int j = 15; (j >= 0) && (!vif.csb); j--) begin
+                reg_temp = 8'bxxxx_xxxx;
+                for (int j = 7; (j >= 0) && (!vif.csb); j--) begin
                     @(posedge vif.scl or posedge vif.csb);
                     reg_temp[j] = vif.miso;
                 end
-                if (!vif.csb) begin
-                    item.n_reads++;
-                    item.read_data.push_back(reg_temp);
-                end
-
-                // publish transaction
-                copy_pkt.copy(item);
-                copy_pkt.read_data.delete();
-                copy_pkt.read_data.push_back(reg_temp);
-                copy_pkt.address += (copy_pkt.n_reads - 1);
-                copy_pkt.is_subsequent_transaction = item.n_reads > 1;
-                if (!vif.csb) begin
-                    `uvm_info("MON", "Sending Read Packet", UVM_HIGH)
-                    mon_analysis_port.write(copy_pkt);
-                end
+                item.n_reads++;
+                item.read_data.push_back(reg_temp);
             end
+            
+            `uvm_info("MON", $sformatf("Sending Read Packet", item.sprint()), UVM_HIGH)
+            mon_analysis_port.write(item);
         end else begin : reg_write
             while (!vif.csb) begin
-                reg_temp = 16'h0000;
-                for (int j = 15; (j >= 0) && (!vif.csb); j--) begin
+                reg_temp = 8'bxxxx_xxxx;
+                for (int j = 7; (j >= 0) && (!vif.csb); j--) begin
                     @(posedge vif.scl or posedge vif.csb);
                     reg_temp[j] = vif.mosi;
                 end
-                if (!vif.csb)
-                    item.write_data.push_back(reg_temp);
-
-                // publish transaction
-                copy_pkt.copy(item);
-                copy_pkt.write_data.delete();
-                copy_pkt.write_data.push_back(reg_temp);
-                copy_pkt.address += (item.write_data.size() - 1);
-                copy_pkt.is_subsequent_transaction = copy_pkt.address != item.address;
-                if (!vif.csb) begin
-                    `uvm_info("MON", "Sending Write Packet", UVM_HIGH)
-                    mon_analysis_port.write(copy_pkt);
-                end
+                item.write_data.push_back(reg_temp);
             end
+
+            `uvm_info("MON", $sformatf("Sending Write Packet", item.sprint()), UVM_HIGH)
+            mon_analysis_port.write(item);
         end
 
     endtask
