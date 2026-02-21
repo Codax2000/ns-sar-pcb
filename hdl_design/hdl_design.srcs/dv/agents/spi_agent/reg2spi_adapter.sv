@@ -6,7 +6,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
 
     function new (string name = "reg2spi_adapter");
         super.new(name);
-        supports_byte_enable = 0;
+        supports_byte_enable = 1;
         provides_responses = 0;
     endfunction
 
