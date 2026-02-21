@@ -1,3 +1,12 @@
+# Digital Logic
+
+ADCs need digital logic. This means a register interface for CSRs (control and status registers) and
+a main state machine to control the conversion. It therefore means closing timing and rigorous
+verification.
+
+## RTL
+
+## Verification
 # Noise-Shaping SAR ADC – Verification Regression Test Plan
 
 ## 1. Smoke / Sanity Tests (Per-Commit)
@@ -119,3 +128,9 @@ Weekly / Extended:
 - analog_digital_boundary_stress
 - random_reg_sequence
 - long_run_stability
+
+## FPGA Implementation
+
+### Timing
+
+### FPGA Resources

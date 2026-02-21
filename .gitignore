@@ -1,4 +1,5 @@
 __pycache__/
+scripts/__pycache__/
 
 hdl_design/hdl_design.cache/
 hdl_design/hdl_design.hw/
@@ -16,3 +17,5 @@ hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv
 hdl_design/hdl_design.srcs/dv/reg_env/adc_regs_pkg.svh
 
 freq_adapter/
+docs/docs/adc_regs/
+docs/site
