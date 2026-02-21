@@ -16,14 +16,14 @@ addrmap adc_regs {
         } NFFT_POWER [13:0];
         field {
             desc="If 1, enables DWA during FFT conversion. Else, there will be no DEM whatsoever.";
-        } DWA_EN [15:15];
-    } NFFT_CTRL @ 0x0;
+        } DWA_EN [14:14];
+    } NFFT_CTRL;
 
     reg {
         field {
             desc="OSR power - configures ADC to have an oversampling ratio of 2^OSR_POWER. This allows an OSR of up to 256.";
         } OSR_POWER [7:0];
-    } OSR @ 0x2;
+    } OSR;
 
     // describe "active" and "passive" cycles of some ADC operation
     reg active_passive_reg {
@@ -36,54 +36,58 @@ addrmap adc_regs {
         } N_PASSIVE_CYCLES [15:8];
     };
     
-    active_passive_reg SH_CTRL @ 0x4;
-    active_passive_reg INT1_CTRL @ 0x6;
-    active_passive_reg INT2_CTRL @ 0x8;
+    active_passive_reg SH_CTRL;
+    active_passive_reg INT1_CTRL;
+    active_passive_reg INT2_CTRL;
 
     reg {
-        field {
-            desc="Single-ended will only take inputs at the single-ended input of the PCB, which will compare to the programmed VCM value. Differential will read from the differential inputs.";
-            encode=input_mode_e;
-        } INPUT_MODE [0:0];
-        field {
-            desc="VCM selection for single-ended mode. 0 will connect the single-ended value to ground, where all 1s will connect the single-ended value to VDD.";
-        } VCM_SINGLE_ENDED [4:1];
         field {
             desc="SAR asynchronous delay control. Higher values will lead to longer SAR clock periods.";
-        } DELAY_LINE_CTRL [8:5];
+        } DELAY_LINE_CTRL [3:0];
         field {
             desc="Number of bits to quantize, minus one. That is, the SAR will quantize N_QUANTIZER_BITS + 1.";
-        } N_QUANTIZER_BITS [10:9];
+        } N_QUANTIZER_BITS [5:4];
         field {
-            desc="If 1, runs the ADC in incremental mode, meaning that the reset will be applied and the output will be filtered (up-counted). Else, runs in delta-sigma mode, and there will be no filtering at the output.";
-        } INCREMENTAL_MODE_EN [11:11];
-        
-        field {
-            desc="If 0, run an NFFT conversion with SAR quantizer only. If 1, run with noise-shaping.";
-        } NOISE_SHAPING_EN [12:12];
-    } ADC_CTRL @ 0xA;
-
-    reg {
-        default sw=rw;
-        default hw=r;
-        donttest;
 
         field {
             hwclr;
             desc="When a 1 is written, starts an NFFT conversion. When read, a 1 means the NFFT conversion is running, and a 0 means it is not. If a 0 is written while the conversion is running, terminates the conversion early and sets state machine back to ready state.";
-        } NFFT_EN [1:1];
+        } START_CONVERSION [8:8];
+            desc="If 1, runs the ADC in incremental mode, meaning that the reset will be applied and the output will be filtered (up-counted). Else, runs in delta-sigma mode, and there will be no filtering at the output.";
+        } INCREMENTAL_MODE_EN [9:9];
+        
+        field {
+            desc="If 0, run an NFFT conversion with SAR quantizer only. If 1, run with noise-shaping.";
+        } NOISE_SHAPING_EN [10:10];
+    } ADC_CTRL;
+
+    reg {
+        default sw=r;
+        default hw=w;
+        donttest;
         field {
             sw=r;
             hw=w;
             desc="Readback of the current status of the main state machine.";
-        } MAIN_STATE_RB [5:2];
+        } MAIN_STATE_RB [3:0];
         field {
             sw=r;
             hw=w;
             desc="Readback of the internal synchronous reset.";
-        } SYNC_RESET_RB [6:6];
-    } RUN_CTRL @ 0xC;
+        } SYNC_RESET_RB [4:4];
+    } STATUS_RB_1;
 
+    reg {
+        default sw=r;
+        default hw=w;
+        donttest;
+
+        field {
+            desc="The number of valid entries in ADC memory, from the last conversion.";
+        } N_VALID_SAMPLES [14:0];
+    } STATUS_RB_2;
+
+    `ifdef XILINX
     // xilinx CLKGEN DRP registers
     reg {
         donttest;
@@ -100,15 +104,15 @@ addrmap adc_regs {
         field {
             desc="Read/Write address for CLKGEN xip";
         } CLKGEN_DRP_DADDR [9:3];
-    } CLKGEN_DRP_0 @ 0x10;
+    } CLKGEN_DRP_CONFIG;
 
     reg {
         donttest;
         regwidth=16;
         field {
             desc="Data input for CLKGEN xip";
-        } CLKGEN_DRP_DI [15:0];
-    } CLKGEN_DRP_2 @ 0x12;
+        } data [15:0];
+    } CLKGEN_DI;
 
     reg {
         donttest;
@@ -117,8 +121,9 @@ addrmap adc_regs {
             sw=r;
             hw=w;
             desc="Data output for CLKGEN xip";
-        } CLKGEN_DRP_DO [15:0];
-    } CLKGEN_DRP_3 @ 0x14;
+        } data [15:0];
+    } CLKGEN_DO;
+    `endif
 
     mem {
         sw=r;
