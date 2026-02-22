@@ -1,3 +1,14 @@
+/**
+Class: spi_monitor
+
+Monitors the SPI bus for transactions and publishes them. Note: this monitor
+publishes entire transactions. That means if a transaction is a burst, it publishes a single
+burst transaction, which will not be RAL-compatible and so should be interdicted by an
+instance of <spi_packet_splitter> before being sent to the RAL predictor.
+
+Additionally, if a transaction terminates before having 8 bits in a read/write packet,
+that packet is published anyway with Xs.
+*/
 class spi_monitor extends uvm_monitor;
 
     `uvm_component_utils(spi_monitor)

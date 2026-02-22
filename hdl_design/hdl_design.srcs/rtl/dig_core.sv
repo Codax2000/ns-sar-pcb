@@ -1,6 +1,9 @@
 module dig_core #(
     parameter N_SAR_BITS = 3,
-    parameter N_SYNC_STAGES = 3
+    parameter N_SYNC_STAGES = 3,
+
+    parameter DATA_WIDTH = 8,
+    parameter ADDR_WIDTH = 15
 ) (
     // clkgen pins
     input logic i_sysclk,
@@ -8,16 +11,7 @@ module dig_core #(
     
     // analog boundary pins
     input logic i_sar_compare,
-    output logic [(2<<N_SAR_BITS)-1:0] o_caps_to_vin,
-    output logic [(2<<N_SAR_BITS)-1:0] o_caps_to_vcm,
-    output logic [(2<<N_SAR_BITS)-1:0] o_caps_to_vdd,
-    output logic [(2<<N_SAR_BITS)-1:0] o_caps_to_vss,
-    output logic o_integrator_1,
-    output logic o_integrator_2,
-    output logic o_sample,
-    // TODO: connect bottom plates
-    // TODO: connect analog boundary pins to status interface for verification in the scoreboard
-    
+
     // SPI IO pins
     input logic i_cs_b,
     input logic i_scl,
@@ -25,27 +19,12 @@ module dig_core #(
     output logic o_miso
 );
 
-    localparam DATA_WIDTH = 16;
-    localparam ADDR_WIDTH = 15;
-
     // system signals from clock gen and reset IP
     logic pll_clk;
     logic pll_is_locked;
     logic sys_rst_b;
     logic sys_rst;
-
-    // bus interface registers
-    logic [DATA_WIDTH-1:0] reg_wr_data;
-    logic [DATA_WIDTH-1:0] reg_rd_data;
-    logic [ADDR_WIDTH-1:0] reg_addr;
-    logic                  reg_rd_en;
-    logic                  reg_wr_en;
-    logic [DATA_WIDTH-1:0] mem_rd_data;
-    logic [DATA_WIDTH-1:0] spi_rd_data;
     
-    reg_if                 i_reg_if_spi_clk ();
-    reg_if                 i_reg_if_sys_clk ();
-
     spi #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH)
@@ -62,47 +41,7 @@ module dig_core #(
         .reg_wr_en
     );
 
-    data_mem i_adc_mem (
-        .clkb(i_scl),
-        .addr_b(reg_addr),
-        .rd_data_b(mem_rd_data)
-    );
-
-    registers i_registers (
-        .i0(i_reg_if_spi_clk),
-        .clk(i_scl),
-        .rst_b(sys_rst_b), // connect to system reset, not anything from SPI
-        .bus_if_wr_addr(reg_addr),
-        .bus_if_wr_data(reg_wr_data),
-        .bus_if_wr_en(reg_wr_en),
-        .bus_if_rd_addr(reg_addr),
-        .bus_if_rd_data(reg_rd_data),
-        .bus_if_rd_en(reg_rd_en)
-    );
-
-    main_state_machine #(
-        .N_SAR_BITS(N_SAR_BITS)
-    ) i_main_state_machine (
-        .rd(i_reg_if_sys_clk),
-        .i_clk(pll_clk),
-        .i_rst_b(sys_rst_b),
-        .i_start(!i_reg_if_sys_clk.START_CONVERSION),
-        .o_main_state(i_reg_if_sys_clk.MAIN_STATE_RB),
-        .o_sample(o_sample),
-        .o_int1(o_integrator_1),
-        .o_int2(o_integrator_2)
-    );
-
-    cdc_sync #(
-        .N_SYNC_STAGES(N_SYNC_STAGES)
-    ) i_cdc_sync (
-        .bus_clk_reg(i_reg_if_spi_clk.WR_BUS_CLK),
-        .sys_clk_reg(i_reg_if_sys_clk.WR_SYS_CLK),
-        .sys_clk(pll_clk),
-        .bus_clk(i_scl)
-    );
-
-    assign spi_rd_data = reg_addr[ADDR_WIDTH-1] ? mem_rd_data : reg_rd_data;
+    assign spi_rd_data = 0;
 
     clk_gen_xip i_clk_gen (
         .reset(sys_rst),
@@ -128,34 +67,5 @@ module dig_core #(
     );
 
     assign sys_rst_b = (!sys_rst) && pll_is_locked;
-
-    
-    assign i_reg_if_sys_clk.START_CONVERSION_set = (i_reg_if_sys_clk.MAIN_STATE_RB == 3'h5);
-
-    // RO registers, sys_clk -> bus_clk
-    `ifdef VIVADO
-    xpm_cdc_array_single #(
-        .DEST_SYNC_FF(N_SYNC_STAGES),
-        .WIDTH(1),
-        .SRC_INPUT_REG(0)
-    ) cdc_sync_to_bus_clk_START_CONVERSION_set (
-        .src_in  (i_reg_if_sys_clk.START_CONVERSION_set),
-        .dest_out(i_reg_if_spi_clk.START_CONVERSION_set),
-        .dest_clk(i_scl),
-        .src_clk(pll_clk)
-    );
-    `else
-    logic [N_SYNC_STAGES-1:0] sync_to_bus_clk_START_CONVERSION_set [(N_SYNC_STAGES-1):0];
-    genvar i;
-    for (i = 0; i < N_SYNC_STAGES; i++) begin
-        always_ff @(posedge i_scl) begin
-            if (i == 0)
-                sync_to_bus_clk_START_CONVERSION_set[i] <= sys_clk_reg.START_CONVERSION_set;
-            else
-                sync_to_bus_clk_START_CONVERSION_set[i] <= sync_to_bus_clk_START_CONVERSION_set[i - 1];
-        end
-    end
-    assign bus_clk_reg.START_CONVERSION_set = sync_to_bus_clk_START_CONVERSION_set[N_SYNC_STAGES - 1];
-    `endif
 
 endmodule

@@ -1,3 +1,10 @@
+/**
+Class: base_test
+
+Instantiates ADC environment and builds up environment config. Child classes
+of this test should by default extend main_phase instead of run_phase, since <adc_env> deals with
+reset behavior.
+*/
 class base_test extends uvm_test;
 
     `uvm_component_utils(base_test)

@@ -1,17 +1,20 @@
-module board_top (
-    if_input.hardware_port vin,
+module board_top #(
+    parameter N_QUANTIZER_BITS = 3
+) (
+    input real vdd,
 
-    if_clkgen.module_clkgen clkgen,
+    input logic clk,
+    input logic arst_n,
 
-    if_spi spi
+    input real vinp,
+    input real vinn,
+
+    spi_if spi_signals
 );
 
-    parameter real VDD=3.3;
-    parameter N_QUANTIZER_BITS=3;
-
-    if_analog_to_fpga #(
-        .N_QUANTIZER_BITS(N_QUANTIZER_BITS)
-    ) if_digital ();
+    // if_analog_to_fpga #(
+    //     .N_QUANTIZER_BITS(N_QUANTIZER_BITS)
+    // ) if_digital ();
 
     // analog_core #(
     //     .VDD(VDD),
@@ -24,10 +27,12 @@ module board_top (
     dig_core #(
         .N_SAR_BITS(N_QUANTIZER_BITS)
     ) DIGTOP (
-        .i_sar_compare(if_digital.compare),
-        .i_sysclk(clkgen.clk),
-        .i_sysrst_b(clkgen.rst_b),
         //TODO: deal with analog/digital boundary later
+        .i_sar_compare(0),
+
+        .i_sysclk(clk),
+        .i_sysrst_b(arst_n),
+
         .i_cs_b(spi.csb),
         .i_scl(spi.scl),
         .i_mosi(spi.mosi),

@@ -21,3 +21,6 @@ freq_adapter/
 docs/docs/adc_regs/
 docs/site
 img/
+scripts.txt
+hdl.txt
+docs.txt

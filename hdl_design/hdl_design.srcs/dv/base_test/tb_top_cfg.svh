@@ -1,3 +1,8 @@
+/**
+Class: tb_top_cfg
+
+Contains virtual interfaces and proxies from the test module.
+*/
 class tb_top_cfg extends uvm_object;
 
     `uvm_object_utils(tb_top_cfg)

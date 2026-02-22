@@ -1,6 +1,9 @@
-import uvm_pkg::*;
-`include "uvm_macros.svh"
+/**
+Class: spi_packet
 
+Sequence item defining a SPI transaction. Transactions can be either a single-byte
+read/write or a burst read/write.
+*/
 class spi_packet extends uvm_sequence_item;
 
     // relevant data for DUT

@@ -1,3 +1,8 @@
+/**
+Interface: spi_if
+
+interface for the SPI agent. Also contains SVA if enabled.
+*/
 interface spi_if ();
 
     logic scl;
@@ -10,5 +15,14 @@ interface spi_if ();
         mosi = 1'b0;
         csb = 1'b1;
     end
+
+    modport dut_input (
+        input csb,
+        input scl,
+        input mosi,
+        output miso
+    );
+
+    logic enable_sva;
 
 endinterface

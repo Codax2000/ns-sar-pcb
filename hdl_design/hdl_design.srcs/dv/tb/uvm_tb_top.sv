@@ -3,41 +3,66 @@
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 
-import test_pkg::*;
+import base_test_pkg::*;
 
+/**
+Module: uvm_tb_top
+
+Toplevel static module. Instantiates the board as the DUT instead of the digital only,
+with the board as a wrapper around digital.
+
+Instantiates bridge and interfaces and runs the current test.
+*/
 module uvm_tb_top ();
 
-    if_clkgen i_if_clkgen();
-    if_input i_if_input();
-    if_spi i_if_spi();
+    bit_bus_if #(.WIDTH(1)) i_reset_if ();
+    oscillator_if           i_clk_if   ();
+    spi_if                  i_spi_if   ();
 
-    if_status i_if_status();
+    // Variable: VDD
+    // Parametrized supply voltage of the design
+    localparam VDD = 1.2;
+    real       vinp;
+    real       vinn;
 
-    board_top DUT (
-        .vin(i_if_input.hardware_port),
-        .clkgen(i_if_clkgen.module_clkgen),
-        .spi(i_if_spi)
+    sine_ms_bridge m_bridge (
+        .vdd(VDD),
+        .vss(0.0),
+
+        .voutp(vinp),
+        .voutn(vinp),
+
+        .vinp(vinp),
+        .vinn(vinn)
     );
 
-    // TODO: connect status interface signals
-    // assign i_if_status.fsm_convert_status = DUT.
-    assign i_if_status.fsm_convert_status = 2'b00;
-    assign i_if_status.rst_b = DUT.DIGTOP.sys_rst_b;
+    board_top #(
+        .N_QUANTIZER_BITS(4)
+    ) DUT (
+        .vdd(1.VDD),
+
+        .clk(i_clk_if.clk_driven),
+        .arst_n(i_reset_if.value),
+
+        .vinp(vinp),
+        .vinn(vinn),
+
+        .spi_signals(i_spi_if)
+    );
 
     tb_top_cfg cfg;
-    assign i_if_spi.miso = 1'b0;
 
     initial begin
         cfg = new("tb_top_cfg");
-        cfg.vif_spi = i_if_spi;
-        cfg.vif_clkgen = i_if_clkgen;
-        cfg.vif_input = i_if_input;
-        cfg.vif_status = i_if_status;
+        cfg.vif_spi = i_spi_if;
+        cfg.vif_reset = i_reset_if;
+        cfg.vif_clk = i_clk_if;
+        cfg.vif_adc = m_bridge.bridge_if;
+        cfg.vproxy_adc = m_bridge.proxy;
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        // run_test("base_test");
-        run_test("main_sm_test");
+        run_test();
     end
 
 endmodule

@@ -1,5 +1,10 @@
 `timescale 1ns / 1ns
+/**
+Class: spi_driver
 
+Drives SPI packets onto the virtual interface. Could be configured to provide
+responses, but not necessarily.
+*/
 class spi_driver extends uvm_driver #(spi_packet);
 
     `uvm_component_utils(spi_driver)

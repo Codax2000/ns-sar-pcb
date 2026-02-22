@@ -54,7 +54,7 @@ module sine_ms_bridge (
     always @(bridge_core.amplitude_observed)
         proxy.amplitude = bridge_core.amplitude_observed;
 
-    sine_ms_bridge_core_real bridge_core (
+    sine_ms_bridge_core bridge_core (
         .vdd,
         .vss,
 

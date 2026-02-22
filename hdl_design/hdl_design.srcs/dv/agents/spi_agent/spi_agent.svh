@@ -1,8 +1,13 @@
+/**
+Class: spi_agent
+
+Instantiates driver, monitor, sequencer. Also instantiates coverage and enables
+or disables SPI SVA based on configuration.
+*/
 class spi_agent extends uvm_agent;
 
     `uvm_component_utils(spi_agent)
 
-    // agent components
     spi_driver driver;
     spi_monitor monitor;
     uvm_sequencer #(spi_packet) sequencer;

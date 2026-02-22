@@ -1,7 +1,7 @@
 /**
 Class: adc_env_cfg
 
-Configuration class for the ADC 
+Configuration class for the ADC environment.
 */
 import uvm_pkg::*;
 `include "uvm_macros.svh"

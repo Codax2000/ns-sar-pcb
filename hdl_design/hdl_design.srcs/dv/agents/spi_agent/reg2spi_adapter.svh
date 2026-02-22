@@ -1,5 +1,9 @@
-import spi_agent_pkg::*;
+/**
+Class: reg2spi_adapter
 
+SPI-specific adapter that translates SPI packets into generic uvm_reg_bus_op
+items. Supports byte lane enables.
+*/
 class reg2spi_adapter extends uvm_reg_adapter;
 
     `uvm_object_utils(reg2spi_adapter)
