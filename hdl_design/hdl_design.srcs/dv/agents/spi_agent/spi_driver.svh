@@ -11,7 +11,7 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     spi_packet req;
 
-    virtual if_spi vif;
+    virtual spi_if vif;
 
     real speed;
     real clk_period_ns;
@@ -21,7 +21,7 @@ class spi_driver extends uvm_driver #(spi_packet);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db #(virtual if_spi)::get(this, "", "vif", vif))
+        if (!uvm_config_db #(virtual spi_if)::get(this, "", "vif", vif))
             `uvm_fatal("DRV", "Could not attach driver virtual interface")
         if (!uvm_config_db #(int)::get(this, "", "clk_speed_hz", speed))
             `uvm_fatal("DRV", "Could not attach driver speed")

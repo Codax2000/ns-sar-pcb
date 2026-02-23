@@ -22,7 +22,7 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
     function new(string name = "spi_packet_splitter",
                  uvm_component parent = null);
         super.new(name, parent);
-        analysis_export = new("analysis_export", this);
+        ap = new("ap", this);
     endfunction : new
 
     /**
@@ -38,11 +38,14 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
     virtual function void write(spi_packet t);
         spi_packet current;
         bit        is_subsequent_transaction = 0;
-        bit [14:0] address = t.address;
+        bit [14:0] address;
+
+        address = t.address;
         
         // if the incoming packet is read, copy the address and leave write data
         // alone. Set the is_subsequent_transaction flag to 1 after the first one.
         do begin
+            current = spi_packet::type_id::create("current_pkt");
             current.rd_en = t.rd_en;
             current.address = address;
             if (t.rd_en) begin
@@ -57,7 +60,7 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
 
             address++;
             is_subsequent_transaction = 1;
-        end while ((rd_en && (read_data.size() > 0)) || ((!rd_en) && (write_data.size() > 0)));
+        end while ((t.rd_en && (t.read_data.size() > 0)) || ((!t.rd_en) && (t.write_data.size() > 0)));
     endfunction : write
 
 endclass : spi_packet_splitter

@@ -13,7 +13,7 @@ class spi_monitor extends uvm_monitor;
 
     `uvm_component_utils(spi_monitor)
 
-    virtual if_spi vif;
+    virtual spi_if vif;
     uvm_analysis_port #(spi_packet) mon_analysis_port;
 
     bit CPOL;
@@ -27,12 +27,8 @@ class spi_monitor extends uvm_monitor;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db#(virtual if_spi)::get(this, "", "vif", vif))
+        if (!uvm_config_db#(virtual spi_if)::get(this, "", "vif", vif))
             `uvm_fatal("MON", "Virtual interface not found for SPI Monitor")
-        if (!uvm_config_db #(bit)::get(this, "", "CPOL", CPOL))
-            `uvm_fatal("MON", "Could not attach monitor CPOL")
-        if (!uvm_config_db #(bit)::get(this, "", "CPHA", CPHA))
-            `uvm_fatal("MON", "Could not attach monitor CPHA")
     endfunction
 
     virtual task run_phase(uvm_phase phase);

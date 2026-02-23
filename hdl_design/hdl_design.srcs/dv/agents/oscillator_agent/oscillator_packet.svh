@@ -49,18 +49,25 @@ class oscillator_packet extends uvm_sequence_item;
             return 0;
         end
 
-        if (rhs_.enable) begin
+        
+        if (!comparer.compare_field_int("frequency",
+                                        this.enabled,
+                                        rhs_.enabled,
+                                        .size(36)))
+            return 0;
+        if (rhs_.enabled) begin
             // Compare frequency when enabled
-            if (!comparer.uvm_compare_field_real("frequency",
+            if (!comparer.compare_field_real("frequency",
                                     this.frequency,
                                     rhs_.frequency))
                 return 0;
         end
         else begin
             // Compare disabled_state when disabled
-            if (!comparer.uvm_compare_field_int("disabled_state",
+            if (!comparer.compare_field_int("disabled_state",
                                     this.disabled_state,
-                                    rhs_.disabled_state))
+                                    rhs_.disabled_state,
+                                    .size(64)))
                 return 0;
         end
 

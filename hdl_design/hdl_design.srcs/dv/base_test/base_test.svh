@@ -57,10 +57,11 @@ class base_test extends uvm_test;
         m_env_cfg.spi_clk_frequency    = m_base_test_cfg.spi_clk_frequency;
         m_env_cfg.system_clk_frequency = m_base_test_cfg.system_clk_frequency;
         m_env_cfg.reset_duration       = m_base_test_cfg.reset_duration;
+        m_env_cfg.reset_reg_rb_name    = "SYNC_RESET_RB"; // from RDL
 
-        uvm_config_db #(adc_env_cfg)::set(this, "env", "cfg", m_env_cfg);
+        uvm_config_db #(adc_env_cfg)::set(this, "m_env", "cfg", m_env_cfg);
 
-        m_env = adc_env::type_id::create("env", this);
+        m_env = adc_env::type_id::create("m_env", this);
     endfunction
 
     // Function: create_configs
@@ -73,7 +74,7 @@ class base_test extends uvm_test;
         m_base_test_cfg.checks_enable = 1;
         m_base_test_cfg.coverage_enable = 1;
         m_base_test_cfg.spi_clk_frequency = 2e6; // 2 MHz for now
-        m_base_test_cfg.system_clk_frequency = 10e6; // 10 MHz crystal oscillator
+        m_base_test_cfg.system_clk_frequency = int'(10e6); // 10 MHz crystal oscillator
         m_base_test_cfg.reset_duration = 500e-9; // 500ns reset pulse
     endfunction
 

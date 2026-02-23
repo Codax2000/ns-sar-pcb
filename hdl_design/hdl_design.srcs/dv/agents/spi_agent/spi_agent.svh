@@ -12,7 +12,7 @@ class spi_agent extends uvm_agent;
     spi_monitor monitor;
     uvm_sequencer #(spi_packet) sequencer;
 
-    virtual if_spi vif;
+    virtual spi_if vif;
     spi_agent_cfg cfg;
 
     function new(string name, uvm_component parent);
@@ -26,8 +26,8 @@ class spi_agent extends uvm_agent;
             `uvm_fatal("SPI_AGENT", "Could not attach SPI config");
 
         uvm_config_db #(uvm_active_passive_enum)::set(this, "", "is_active", cfg.is_active);
-        uvm_config_db #(virtual if_spi)::set(this, "driver", "vif", cfg.vif);
-        uvm_config_db #(virtual if_spi)::set(this, "monitor", "vif", cfg.vif);
+        uvm_config_db #(virtual spi_if)::set(this, "driver", "vif", cfg.vif);
+        uvm_config_db #(virtual spi_if)::set(this, "monitor", "vif", cfg.vif);
         uvm_config_db #(int)::set(this, "driver", "clk_speed_hz", cfg.clk_speed_hz);
 
         monitor = spi_monitor::type_id::create("monitor", this);

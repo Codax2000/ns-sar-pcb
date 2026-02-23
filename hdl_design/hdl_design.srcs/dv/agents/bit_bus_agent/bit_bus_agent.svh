@@ -25,8 +25,8 @@ class bit_bus_agent #(int WIDTH = 1) extends uvm_agent;
             `uvm_fatal("BIT_BUS_AGENT", "Could not attach bit_bus_agent_cfg")
 
         // Pass config fields down via config_db, following existing conventions
-        uvm_config_db #(virtual if_bit_bus #(WIDTH))::set(this, "driver",  "vif", cfg.vif);
-        uvm_config_db #(virtual if_bit_bus #(WIDTH))::set(this, "monitor", "vif", cfg.vif);
+        uvm_config_db #(virtual bit_bus_if #(WIDTH))::set(this, "driver",  "vif", cfg.vif);
+        uvm_config_db #(virtual bit_bus_if #(WIDTH))::set(this, "monitor", "vif", cfg.vif);
 
         monitor = bit_bus_monitor #(WIDTH)::type_id::create("monitor", this);
 

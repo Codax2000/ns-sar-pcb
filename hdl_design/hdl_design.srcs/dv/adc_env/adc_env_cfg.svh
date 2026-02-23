@@ -51,7 +51,11 @@ class adc_env_cfg extends uvm_object;
     // Variable: system_clk_frequency
     // The frequency in *Hz* that the system clock must run at. Eventually, set to be the same
     // speed as they PCB oscillator and assume an internal PLL, so maybe 5-12 MHz is good.
-    real system_clk_frequency;
+    int system_clk_frequency;
+
+    // Variable: reset_reg_rb_name
+    // The name of the field used to readback reset. Used for the ADC reset_phase, so important.
+    string reset_reg_rb_name;
 
     // Variable: reset_duration
     // The duration in seconds that the reset pulse will last at the start of simulation.

@@ -33,10 +33,10 @@ module board_top #(
         .i_sysclk(clk),
         .i_sysrst_b(arst_n),
 
-        .i_cs_b(spi.csb),
-        .i_scl(spi.scl),
-        .i_mosi(spi.mosi),
-        .o_miso(spi.miso)
+        .i_cs_b(spi_signals.csb),
+        .i_scl(spi_signals.scl),
+        .i_mosi(spi_signals.mosi),
+        .o_miso(spi_signals.miso)
     );
 
 endmodule

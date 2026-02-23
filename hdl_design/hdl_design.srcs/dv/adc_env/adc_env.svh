@@ -66,7 +66,7 @@ class adc_env extends uvm_env;
 
     // Variable: system_clk_frequency
     // The speed in Hz at which the system clock is running
-    real system_clk_frequency;
+    int system_clk_frequency;
 
     function new(string name = "adc_env", uvm_component parent);
         super.new(name, parent);
@@ -74,7 +74,7 @@ class adc_env extends uvm_env;
 
     virtual function void build_phase (uvm_phase phase);
         super.build_phase(phase);
-        if (!uvm_config_db #(adc_env_cfg)::get(this, "", "m_env_cfg", m_env_cfg))
+        if (!uvm_config_db #(adc_env_cfg)::get(this, "", "cfg", m_env_cfg))
             `uvm_fatal(get_full_name(), "Could not attach environment config")
         
         create_configs();
@@ -82,7 +82,7 @@ class adc_env extends uvm_env;
         uvm_config_db #(spi_agent_cfg)::set(this, "m_spi", "cfg", m_spi_cfg);
         uvm_config_db #(oscillator_agent_cfg)::set(this, "m_clk", "cfg", m_clk_cfg);
         uvm_config_db #(bit_bus_agent_cfg #(.WIDTH(1)))::set(this, "m_reset", "cfg", m_reset_cfg);
-        uvm_config_db #(sine_agent_cfg)::set(this, "m_adc_in", "cfg", m_adc_in_cfg);
+        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_adc_in", "cfg", m_adc_in_cfg);
         
         m_spi    = spi_agent::type_id::create("m_spi", this);
         m_clk    = oscillator_agent::type_id::create("m_clk", this);
@@ -97,10 +97,10 @@ class adc_env extends uvm_env;
     virtual function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
         m_ral = m_reg_env.ral;
-        ral.default_map.set_sequencer(spi.sequencer, m_reg_env.adapter);
+        m_ral.default_map.set_sequencer(m_spi.sequencer, m_reg_env.adapter);
 
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
-        spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
+        m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
     endfunction
 
@@ -116,6 +116,7 @@ class adc_env extends uvm_env;
         oscillator_single_packet_seq  clk_seq;
         single_value_seq #(.WIDTH(1)) reset_seq;
         oscillator_single_packet_seq  adc_seq;
+        uvm_reg_field                 reset_field;
         uvm_status_e                  status;
         uvm_reg_data_t                value;
 
@@ -130,7 +131,7 @@ class adc_env extends uvm_env;
 
         clk_seq.randomize() with {
             pkt_enabled == 1;
-            pkt_frequency_int == int'(this.system_clk_frequency);
+            pkt_frequency == system_clk_frequency;
         };
         reset_seq.randomize() with {
             seq_value == 1;
@@ -155,7 +156,11 @@ class adc_env extends uvm_env;
         // add a timeout with UVM_FATAL if it times out (100 * reset duration should be fine)
         time_start = $realtime();
         do begin
-            m_ral.RUN_CTRL.SYNC_RESET_RB.read(status, value);
+            reset_field = m_ral.get_field_by_name(m_env_cfg.reset_reg_rb_name);
+            if (reset_field == null)
+                `uvm_fatal(get_full_name(), $sformatf("Reset phase error: ADC env could not find field named %s",
+                                                      m_env_cfg.reset_reg_rb_name))
+            reset_field.read(status, value);
         end while (((value == 0) || (status != UVM_IS_OK)) && (($realtime() - time_start) <= (100 * (reset_duration / 1e9))));
         
         if ((value == 0) || (status != UVM_IS_OK))
@@ -202,13 +207,16 @@ class adc_env extends uvm_env;
         m_reset_cfg.checks_enable = m_env_cfg.checks_enable;
         m_reset_cfg.coverage_enable = m_env_cfg.coverage_enable;
 
-        m_clk_cfg = oscillator_agent_cfg::type_id::create("m_clk_cfg");
-        m_clk_cfg.vif = m_env_cfg.vif_clk;
-        m_clk_cfg.is_active = UVM_ACTIVE;
-        m_clk_cfg.checks_enable = m_env_cfg.checks_enable;
-        m_clk_cfg.coverage_enable = m_env_cfg.coverage_enable;
-        m_clk_cfg.frequency_threshold = 0.005; // 0.5% should cause a change
-        m_clk_cfg.timeout_time_ns = 1e6; // minimum input speed of 1 kHz, may have to change
+        m_adc_in_cfg = sine_agent_cfg::type_id::create("m_adc_in_cfg");
+        m_adc_in_cfg.vif = m_env_cfg.vif_adc;
+        m_adc_in_cfg.is_active = UVM_ACTIVE;
+        m_adc_in_cfg.checks_enable = m_env_cfg.checks_enable;
+        m_adc_in_cfg.coverage_enable = m_env_cfg.coverage_enable;
+        m_adc_in_cfg.frequency_threshold = 0.005; // 0.5% should cause a change
+        m_adc_in_cfg.timeout_time_ns = 1e6; // minimum input speed of 1 kHz, may have to change
+        m_adc_in_cfg.vproxy = m_env_cfg.vproxy_adc;
+        m_adc_in_cfg.amplitude_threshold = 0.005;
+        m_adc_in_cfg.points_per_period = 24; // reasonable value to start, no reason to go higher atm
 
         this.reset_duration = m_env_cfg.reset_duration;
         this.system_clk_frequency = m_env_cfg.system_clk_frequency;

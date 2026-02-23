@@ -30,11 +30,11 @@ class sine_driver extends oscillator_driver;
         super.run_phase(phase);
     endtask
 
-    virtual task drive_signals(oscillator_packet pkt);
+    virtual task drive_signals(oscillator_packet req);
 
-        super.drive_signals(pkt);
+        super.drive_signals(req);
 
-        if ($cast(ms_req, pkt))
+        if ($cast(ms_req, req))
             vproxy.push(ms_req.amplitude);
 
     endtask

@@ -117,7 +117,7 @@ Parameters:
 '''
 def gen_uvm_pkg(root, filename, **kwargs):
     exporter = UVMExporter(**kwargs)
-    exporter.export(root, filename)
+    exporter.export(root, filename, use_uvm_factory=True)
 
 
 '''

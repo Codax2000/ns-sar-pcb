@@ -31,7 +31,7 @@ class sine_packet extends oscillator_packet;
 
     function void post_randomize();
         super.post_randomize();
-        this.amplitude = amplitude_int / 1024.0;
+        this.amplitude = amplitude_int / 2048.0;
     endfunction
 
 endclass

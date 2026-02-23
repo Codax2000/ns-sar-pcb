@@ -9,18 +9,18 @@ class oscillator_coverage_collector extends uvm_subscriber #(oscillator_packet);
     `uvm_component_utils(oscillator_coverage_collector)
 
     bit enable;
-    real frequency;
+    int frequency;
     bit disabled_state;
 
     covergroup oscillator_cov;
 
         cp_frequency : coverpoint frequency iff (enable) {
-            bins low_freq    = {[100.0 : 1e3]};
-            bins mid_freq    = {[1e3   : 1e6]};
-            bins high_freq   = {[1e6   : 1e9]};
+            bins low_freq    = {[100 : 999]};
+            bins mid_freq    = {[1000   : 999999]};
+            bins high_freq   = {[1000000   : 1000000000]};
         }
 
-        // cp_disabled_state : coverpoint disabled_state iff (!enable);
+        cp_disabled_state : coverpoint disabled_state iff (!enable);
 
     endgroup
 
@@ -32,7 +32,7 @@ class oscillator_coverage_collector extends uvm_subscriber #(oscillator_packet);
 
     virtual function void write (oscillator_packet t);
         enable = t.enabled;
-        frequency = t.frequency;
+        frequency = int'(t.frequency);
         disabled_state = t.disabled_state;
         oscillator_cov.sample();
     endfunction

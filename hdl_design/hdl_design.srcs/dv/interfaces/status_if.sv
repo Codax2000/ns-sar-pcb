@@ -7,7 +7,8 @@ synthesis/apr simulations.
 */
 interface status_if;
 
-    logic rst_b;
+    logic sys_clk;
     logic spi_clk;
+    
 
 endinterface

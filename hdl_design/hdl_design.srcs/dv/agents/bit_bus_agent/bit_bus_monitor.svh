@@ -7,7 +7,7 @@ class bit_bus_monitor #(int WIDTH = 1) extends uvm_monitor;
 
     `uvm_component_param_utils(bit_bus_monitor #(WIDTH))
 
-    virtual if_bit_bus #(WIDTH) vif;
+    virtual bit_bus_if #(WIDTH) vif;
     uvm_analysis_port #(bit_bus_packet #(WIDTH)) mon_ap;
 
     function new(string name, uvm_component parent);
@@ -16,7 +16,7 @@ class bit_bus_monitor #(int WIDTH = 1) extends uvm_monitor;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db #(virtual if_bit_bus #(WIDTH))::get(this, "", "vif", vif))
+        if (!uvm_config_db #(virtual bit_bus_if #(WIDTH))::get(this, "", "vif", vif))
             `uvm_fatal("BIT_BUS_MON", "Could not attach virtual interface")
     endfunction
 

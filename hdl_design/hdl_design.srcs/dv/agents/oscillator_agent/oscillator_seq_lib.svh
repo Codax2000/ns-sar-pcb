@@ -12,32 +12,26 @@ class oscillator_single_packet_seq extends uvm_sequence #(oscillator_packet);
     rand bit pkt_enabled;
 
     // Variable: pkt_frequency
-    // Determines the frequency of an active clock
-    real pkt_frequency;
-    rand int pkt_frequency_int;
+    // Determines the frequency of an active clock. Note: this is an integer.
+    rand int pkt_frequency;
 
     // Variable: pkt_disabled_state
     // Determines the disabled state of an inactive clock
     rand bit pkt_disabled_state;
 
     `uvm_object_utils_begin(oscillator_single_packet_seq)
-        `uvm_field_int(pkt_enable, UVM_ALL_ON)
+        `uvm_field_int(pkt_enabled, UVM_ALL_ON)
         `uvm_field_int(pkt_frequency, UVM_ALL_ON)
         `uvm_field_int(pkt_disabled_state, UVM_ALL_ON)
     `uvm_object_utils_end
 
     constraint default_frequency_range {
-        pkt_frequency_int <= 1e9;
-        pkt_frequency_int >= 100;
+        pkt_frequency <= 1000000000;
+        pkt_frequency >= 100;
     }
 
     function new (string name = "single_packet_seq");
         super.new(name);
-    endfunction
-
-    function void post_randomize();
-        super.post_randomize();
-        pkt_frequency = real'(pkt_frequency_int);
     endfunction
 
     virtual task body();
@@ -47,7 +41,7 @@ class oscillator_single_packet_seq extends uvm_sequence #(oscillator_packet);
 
         pkt.randomize() with {
             enabled == pkt_enabled;
-            frequency == pkt_frequency;
+            frequency_int == pkt_frequency;
             disabled_state == pkt_disabled_state;
         };
 

@@ -12,7 +12,7 @@ class bit_bus_agent_cfg #(int WIDTH = 1) extends uvm_object;
     endfunction
 
     // Virtual interface for this agent
-    virtual if_bit_bus #(WIDTH) vif;
+    virtual bit_bus_if #(WIDTH) vif;
 
     // Agent activity
     uvm_active_passive_enum is_active;

@@ -1,21 +1,21 @@
 /**
  * Class: bit_bus_driver
  *
- * Drives an N‑bit value onto the DUT using <if_bit_bus>.
+ * Drives an N‑bit value onto the DUT using <bit_bus_if>.
  */
 class bit_bus_driver #(int WIDTH = 1)
     extends uvm_driver #(bit_bus_packet #(WIDTH));
 
     `uvm_component_param_utils(bit_bus_driver #(WIDTH))
 
-    virtual if_bit_bus #(WIDTH) vif;
+    virtual bit_bus_if #(WIDTH) vif;
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db #(virtual if_bit_bus #(WIDTH))::get(this, "", "vif", vif))
+        if (!uvm_config_db #(virtual bit_bus_if #(WIDTH))::get(this, "", "vif", vif))
             `uvm_fatal("BIT_BUS_DRV", "Could not attach virtual interface")
     endfunction
 
@@ -30,8 +30,8 @@ class bit_bus_driver #(int WIDTH = 1)
     endtask
 
     virtual task drive_value(bit_bus_packet req);
-        `uvm_info("BIT_BUS_DRV",
-                  $sformatf("Driving bus value 0x%0h", val),
+        `uvm_info(get_full_name(),
+                  $sformatf("Driving bus value 0x%0h", req.value),
                   UVM_HIGH)
         vif.bit_driven = req.value;
     endtask

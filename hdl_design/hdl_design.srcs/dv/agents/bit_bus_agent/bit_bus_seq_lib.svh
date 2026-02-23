@@ -20,7 +20,7 @@ class single_value_seq #(int WIDTH = 1) extends uvm_sequence #(bit_bus_packet #(
     virtual task body();
         pkt = bit_bus_packet #(.WIDTH(WIDTH))::type_id::create("pkt");
 
-        `uvm_info(get_full_name(), $sformatf("Single-value sequence: %b", value), UVM_HIGH)
+        `uvm_info(get_full_name(), $sformatf("Single-value sequence: %b", seq_value), UVM_HIGH)
 
         `uvm_do_with(pkt, { value == seq_value; })
 

@@ -19,6 +19,8 @@ module uvm_tb_top ();
     oscillator_if           i_clk_if   ();
     spi_if                  i_spi_if   ();
 
+    status_if i_status_if ();
+
     // Variable: VDD
     // Parametrized supply voltage of the design
     localparam VDD = 1.2;
@@ -42,7 +44,7 @@ module uvm_tb_top ();
         .vdd(VDD),
 
         .clk(i_clk_if.clk_driven),
-        .arst_n(i_reset_if.value),
+        .arst_n(i_reset_if.bit_driven),
 
         .vinp(vinp),
         .vinn(vinn),
@@ -50,19 +52,19 @@ module uvm_tb_top ();
         .spi_signals(i_spi_if)
     );
 
-    // tb_top_cfg cfg;
+    tb_top_cfg cfg;
 
-    // initial begin
-        // cfg = new("tb_top_cfg");
-        // cfg.vif_spi = i_spi_if;
-        // cfg.vif_reset = i_reset_if;
-        // cfg.vif_clk = i_clk_if;
-        // cfg.vif_adc = m_bridge.bridge_if;
-        // cfg.vproxy_adc = m_bridge.proxy;
+    initial begin
+        cfg = new("tb_top_cfg");
+        cfg.vif_spi = i_spi_if;
+        cfg.vif_reset = i_reset_if;
+        cfg.vif_clk = i_clk_if;
+        cfg.vif_adc = m_bridge.bridge_if;
+        cfg.vproxy_adc = m_bridge.proxy;
 
-        // uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
+        uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        // run_test();
-    // end
+        run_test("base_test");
+    end
 
 endmodule

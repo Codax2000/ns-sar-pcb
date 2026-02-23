@@ -88,7 +88,7 @@ class oscillator_monitor extends uvm_monitor;
         current_enable = item.enabled;
         current_disabled_state = item.disabled_state;
 
-        mon_analysis_port.publish(item);
+        mon_analysis_port.write(item);
 
         item = oscillator_packet::type_id::create("mon_packet", this);
     endtask

@@ -7,24 +7,27 @@ class sine_coverage_collector extends oscillator_coverage_collector;
 
     `uvm_component_utils(sine_coverage_collector)
 
-    real amplitude;
+    int amplitude;
+    
     sine_packet pkt;
 
     covergroup sine_cov;
 
         cp_frequency : coverpoint frequency iff (enable) {
-            bins low_freq    = {[100.0 : 1e3]};
-            bins mid_freq    = {[1e3   : 1e6]};
-            bins high_freq   = {[1e6   : 1e9]};
+            bins low_freq    = {[100 : 999]};
+            bins mid_freq    = {[1000   : 999999]};
+            bins high_freq   = {[1000000   : 1000000000]};
         }
 
-        cp_amplitude : coverpoint amplitude iff (enable) {
-            bins small_amp  = {[0.0 : 0.1]};
-            bins medium_amp = {[0.1 : 0.25]};
-            bins large_amp  = {[0.25: 0.5]};
+        cp_amplitude : coverpoint amplitude {
+            bins small_amp  = {[0 : 100]};
+            bins medium_amp = {[101 : 512]};
+            bins large_amp  = {[513 : 1024]};
         }
 
-        amp_x_freq : cross cp_frequency, cp_amplitude;
+        amp_x_freq : cross cp_frequency, cp_amplitude iff (enable);
+
+        amx_x_disable : cross cp_amplitude, disabled_state iff (!enable);
 
     endgroup
 
@@ -37,7 +40,7 @@ class sine_coverage_collector extends oscillator_coverage_collector;
         super.write(t);
 
         if ($cast(pkt, t)) begin
-            amplitude = pkt.amplitude;
+            amplitude = int'(2048 * pkt.amplitude);
             sine_cov.sample();
         end else
             `uvm_warning(get_full_name(), "Incoming packet is not sine-packet but subscriber is a sine coverage collector. Coverage will not be sampled.")
