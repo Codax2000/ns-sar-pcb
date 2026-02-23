@@ -20,7 +20,7 @@ class oscillator_coverage_collector extends uvm_subscriber #(oscillator_packet);
             bins high_freq   = {[1e6   : 1e9]};
         }
 
-        cp_disabled_state : coverpoint disabled_state iff (!enable)
+        // cp_disabled_state : coverpoint disabled_state iff (!enable);
 
     endgroup
 

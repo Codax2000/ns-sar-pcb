@@ -77,7 +77,7 @@ interface oscillator_if;
     // Variable: disabled_state_observed
     // The observed disabled state of the disabled clock
     bit disabled_state_observed;
-    assign disabled_state_observed = enabled_state_observed ? 0 : clk_observed;
+    assign disabled_state_observed = clk_enable_observed ? 0 : clk_observed;
     
     real time_0;
     real time_1;
@@ -90,7 +90,7 @@ interface oscillator_if;
         frequency_observed <= 1 / (2 * (time_1 - time_0));
         if ((time_1 - time_0) < timeout_time_ns) begin
             timeout_count <= 0;
-            enabled_state_observed <= 1;
+            clk_enable_observed <= 1;
         end
         time_0 <= time_1;
     end
@@ -102,7 +102,7 @@ interface oscillator_if;
             if (timeout_count < timeout_time_ns) begin
                 timeout_count++;
                 if (timeout_count == timeout_time_ns)
-                    enabled_state_observed <= 0;
+                    clk_enable_observed <= 0;
             end
         end
     end

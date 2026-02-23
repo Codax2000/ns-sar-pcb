@@ -3,7 +3,7 @@ Package: sine_agent_pkg
 
 Contains all the *classes* necessary for using the sine agent package, which
 is built using UVM-MS. Users should first have UVM installed and UVM-MS as well.
-The <osc_agent_pkg> should also be compiled, since it is imported here.
+The <oscillator_agent_pkg> should also be compiled, since it is imported here.
 
 Contains classes:
 
@@ -35,6 +35,8 @@ package sine_agent_pkg;
 
     import uvm_ms_pkg::*;
     `include "uvm_ms.svh"
+
+    import oscillator_agent_pkg::*;
 
     `include "sine_packet.svh"
     `include "max_amp_packet.svh"

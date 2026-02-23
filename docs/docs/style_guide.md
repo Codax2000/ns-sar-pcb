@@ -21,11 +21,12 @@ All SystemVerilog files must utilize **NaturalDocs** headers. Comments should ex
 * **Partitioning:** Models should mimic the physical PCB floorplan. If an integrator is discrete on the board, it should be a standalone module in the simulation. This also helps with block-level validation in SPICE, since we can't do co-simulation without some kind of sim engine.
 
 ### 1.3 Design Verification (DV)
+* **File Names** * Package files should end with `_pkg.sv`. All other UVM class files should be defined as header files, using `.svh`. Modules should always end in `.sv`.
 * **Naming:** * Classes: `snake_case` (e.g., `adc_scoreboard`, `spi_monitor`).
     * Member Variables: `m_` prefix if an instance of an object that extends a UVM type (e.g., `m_env_cfg`) Exceptions for an agent, in which case the driver, monitor, sequencer should be called `driver`, `monitor`, `sequencer`.
 * **Virtual Interfaces:** No direct RTL hierarchy references. Use `uvm_config_db` to pass virtual interfaces (`vif`).
 * **Reporting:** Use `uvm_ms_info`, `uvm_ms_warning`, and `uvm_ms_error` macros to ensure analog-bridge signals are logged correctly within the UVM environment.
-
+* **Variables:** * If something is Vivado-incompliant (e.g. real-type coverpoints), use a workaround and add `ifdef`s using the `VIVADO` define.
 ---
 
 ## 2. Python Style Guide

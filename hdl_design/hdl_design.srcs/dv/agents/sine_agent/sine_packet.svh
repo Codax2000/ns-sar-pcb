@@ -8,11 +8,17 @@ class sine_packet extends oscillator_packet;
     // Variable: amplitude
     // Represents the amplitude of the sine wave as a fraction of VDD. Must
     // not be greater than 0.5, and must be greater than 0.0.
-    rand real amplitude;
+    real amplitude;
+
+    rand int amplitude_int;
 
     constraint legal_amplitude {
-        amplitude <= 0.5;
-        amplitude > 0.0;
+        amplitude_int <= 1024;
+
+        if (enabled)
+            amplitude_int >= 1;
+        else
+            amplitude_int >= 0; // disabled clock can have 0 amplitude
     }
 
     `uvm_object_utils_begin(sine_packet)
@@ -21,6 +27,11 @@ class sine_packet extends oscillator_packet;
 
     function new (string name = "sine_packet");
         super.new(name);
+    endfunction
+
+    function void post_randomize();
+        super.post_randomize();
+        this.amplitude = amplitude_int / 1024.0;
     endfunction
 
 endclass

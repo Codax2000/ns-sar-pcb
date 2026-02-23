@@ -57,7 +57,7 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
 
             address++;
             is_subsequent_transaction = 1;
-        end while ((rd_en && (read_data.size() > 0)) || ((!rd_en) && (write_data.size() > 0)))
+        end while ((rd_en && (read_data.size() > 0)) || ((!rd_en) && (write_data.size() > 0)));
     endfunction : write
 
 endclass : spi_packet_splitter

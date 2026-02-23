@@ -20,10 +20,11 @@ package bit_bus_agent_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
-    `include "bit_bus_packet.sv"
-    `include "src/bit_bus_agent_cfg.sv"
-    `include "src/bit_bus_driver.sv"
-    `include "src/bit_bus_monitor.sv"
-    `include "src/bit_bus_agent.sv"
+    `include "bit_bus_packet.svh"
+    `include "bit_bus_seq_lib.svh"
+    `include "bit_bus_agent_cfg.svh"
+    `include "bit_bus_driver.svh"
+    `include "bit_bus_monitor.svh"
+    `include "bit_bus_agent.svh"
 
 endpackage

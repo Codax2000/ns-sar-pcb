@@ -1,3 +1,10 @@
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
+import uvm_ms_pkg::*;
+`include "uvm_ms.svh"
+
+import sine_agent_pkg::*;
 /**
 Module: sine_ms_bridge
 
@@ -9,6 +16,8 @@ Works with an *internal* oscillator interface, so UVM testbenches will not have
 to instantiate them.
 */
 module sine_ms_bridge (
+    // If Vivado is not used, then follow UVM-MS policy on using generic interconnect.
+    `ifndef VIVADO 
     // supply values, used to scale amplitude correctly
     input interconnect vdd,
     input interconnect vss,
@@ -20,6 +29,19 @@ module sine_ms_bridge (
     // observed clock
     input interconnect vinp,
     input interconnect vinn
+    `else // because Vivado is dumb, we have to use reals. bah.
+    // supply values, used to scale amplitude correctly
+    input real vdd,
+    input real vss,
+
+    // driven clock, differential with Vcm = vdd / 2
+    output real voutp,
+    output real voutn,
+
+    // observed clock
+    input real vinp,
+    input real vinn
+    `endif
 );
 
     oscillator_if bridge_if ();
@@ -30,11 +52,11 @@ module sine_ms_bridge (
             bridge_core.points_per_period = points_per_period;
         endfunction
 
-        virtual function void push(real amplitude);
+        virtual task push(real amplitude);
             if (bridge_if.clk_enable_driven)
                 @(bridge_if.clk_driven);
             bridge_core.amplitude_driven = amplitude;
-        endfunction
+        endtask
 
         // Function: sample
         // Blocking sample that makes sure frequency changes if it's going to change

@@ -23,7 +23,7 @@ class oscillator_monitor extends uvm_monitor;
     endfunction
 
     virtual function void build_phase(uvm_phase phase);
-        if (!uvm_config_db #(virtual if_spi)::get(this, "", "vif", vif))
+        if (!uvm_config_db #(virtual oscillator_if)::get(this, "", "vif", vif))
             `uvm_fatal(get_full_name(), "Virtual interface not found")
         if (!uvm_config_db #(real)::get(this, "", "frequency_threshold", frequency_threshold))
             `uvm_fatal(get_full_name(), "Could not find frequency threshold")
@@ -32,15 +32,17 @@ class oscillator_monitor extends uvm_monitor;
     endfunction
 
     virtual task run_phase (uvm_phase phase);
+        bit did_publish;
+
         current_enable = 0;
         current_frequency = 0.0;
         current_disabled_state = 0;
         
-        item = oscillator_packet::type_id::create("mon_packet", this);
+        pkt = oscillator_packet::type_id::create("mon_packet", this);
 
         forever begin
-            collect_transaction(item);
-            publish_transaction_if_needed(item);
+            collect_transaction(pkt);
+            publish_transaction_if_needed(pkt, did_publish);
         end
     endtask
 

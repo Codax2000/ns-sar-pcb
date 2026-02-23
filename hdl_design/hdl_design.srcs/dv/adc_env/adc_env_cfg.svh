@@ -10,7 +10,7 @@ class adc_env_cfg extends uvm_object;
 
     `uvm_object_utils(adc_env_cfg)
 
-    function new(name);
+    function new(string name = "adc_env_cfg");
         super.new(name);
     endfunction
 

@@ -19,6 +19,7 @@ package oscillator_agent_pkg;
     `include "uvm_macros.svh"
 
     `include "oscillator_packet.svh"
+    `include "oscillator_agent_cfg.svh"
     `include "oscillator_seq_lib.svh"
     `include "oscillator_driver.svh"
     `include "oscillator_monitor.svh"

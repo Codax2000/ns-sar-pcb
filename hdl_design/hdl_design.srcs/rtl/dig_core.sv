@@ -32,13 +32,8 @@ module dig_core #(
         .scl(i_scl),
         .mosi(i_mosi),
         .miso(o_miso),
-        .cs_b(i_cs_b || (!sys_rst_b)), // hold SPI in reset if the device is in reset
+        .cs_b(i_cs_b || (!sys_rst_b)) // hold SPI in reset if the device is in reset
 
-        .reg_wr_data,
-        .reg_rd_data,
-        .reg_addr,
-        .reg_rd_en,
-        .reg_wr_en
     );
 
     assign spi_rd_data = 0;

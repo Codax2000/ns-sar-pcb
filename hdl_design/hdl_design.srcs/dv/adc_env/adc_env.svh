@@ -49,7 +49,7 @@ class adc_env extends uvm_env;
 
     // Variable: m_reg_env
     // The register environment for this ADC. Parametrized for SPI and this register block.
-    reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(spi_adapter), .REG_BLOCK(adc_regs)) m_reg_env;
+    reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs)) m_reg_env;
 
     // Variable: m_spi_packet_splitter
     // Subscriber to SPI monitor that splits monitored packets into RAL-digestible chunks.
@@ -80,7 +80,7 @@ class adc_env extends uvm_env;
         create_configs();
 
         uvm_config_db #(spi_agent_cfg)::set(this, "m_spi", "cfg", m_spi_cfg);
-        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_clk", "cfg", m_spi_cfg);
+        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_clk", "cfg", m_clk_cfg);
         uvm_config_db #(bit_bus_agent_cfg #(.WIDTH(1)))::set(this, "m_reset", "cfg", m_reset_cfg);
         uvm_config_db #(sine_agent_cfg)::set(this, "m_adc_in", "cfg", m_adc_in_cfg);
         
@@ -89,7 +89,7 @@ class adc_env extends uvm_env;
         m_reset  = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset", this);
         m_adc_in = sine_agent::type_id::create("m_adc_in", this);
 
-        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(spi_adapter), .REG_BLOCK(adc_regs))::
+        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
                     type_id::create("m_reg_env", this);
         m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
     endfunction
@@ -113,24 +113,24 @@ class adc_env extends uvm_env;
     that the device has successfully been reset.
     */
     virtual task reset_phase(uvm_phase phase);
-        oscillator_single_packet_seq      clk_seq;
-        single_value_seq #(int WIDTH = 1) reset_seq;
-        oscillator_single_packet_seq      adc_seq;
-        uvm_status_e                      status;
-        uvm_reg_data_t                    value;
+        oscillator_single_packet_seq  clk_seq;
+        single_value_seq #(.WIDTH(1)) reset_seq;
+        oscillator_single_packet_seq  adc_seq;
+        uvm_status_e                  status;
+        uvm_reg_data_t                value;
 
         real time_start;
         real time_reset;
 
         phase.raise_objection(this);
         
-        clk_seq   = oscillator_single_packet_seq      ::type_id::create("clk_seq");
-        reset_seq = single_value_seq #(int WIDTH = 1) ::type_id::create("reset_seq");
-        adc_seq   = oscillator_single_packet_seq      ::type_id::create("adc_seq");
+        clk_seq   = oscillator_single_packet_seq ::type_id::create("clk_seq");
+        reset_seq = single_value_seq #(.WIDTH(1))::type_id::create("reset_seq");
+        adc_seq   = oscillator_single_packet_seq ::type_id::create("adc_seq");
 
         clk_seq.randomize() with {
             pkt_enabled == 1;
-            pkt_frequency == this.system_clk_frequency;
+            pkt_frequency_int == int'(this.system_clk_frequency);
         };
         reset_seq.randomize() with {
             seq_value == 1;

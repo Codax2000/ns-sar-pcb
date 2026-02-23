@@ -40,16 +40,16 @@ class sine_monitor extends oscillator_monitor;
         ms_pkt.frequency = vif.frequency_observed;
         ms_pkt.disabled_state = vif.disabled_state_observed;
 
-        vproxy.sample(ms_pkt.enabled, ms_pkt.amplitude);
+        vproxy.sample(ms_pkt.amplitude);
 
         item = ms_pkt;
     endtask
 
-    virtual task publish_transaction_if_needed(ref oscillator_packet item, item_was_published);
+    virtual task publish_transaction_if_needed(ref oscillator_packet item, output bit did_publish);
         real amplitude_difference;
         
-        item_was_published = 0;
-        super.publish_transaction_if_needed(item, item_was_published);
+        did_publish = 0;
+        super.publish_transaction_if_needed(item, did_publish);
 
         if (! $cast(ms_pkt, item))
             `uvm_ms_fatal(get_full_name(), "Could not cast item to mixed-signal equivalent")
@@ -57,7 +57,7 @@ class sine_monitor extends oscillator_monitor;
         amplitude_difference = ms_pkt.amplitude - current_amplitude;
         amplitude_difference = amplitude_difference < 0.0 ? -amplitude_difference : amplitude_difference;
 
-        if ((!item_was_published) && (amplitude_difference > amplitude_threshold)) begin
+        if ((!did_publish) && (amplitude_difference > amplitude_threshold)) begin
             this.current_amplitude = ms_pkt.amplitude;
             publish_item(item);
         end

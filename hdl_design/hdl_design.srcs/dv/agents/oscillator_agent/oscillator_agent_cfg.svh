@@ -35,9 +35,9 @@ class oscillator_agent_cfg extends uvm_object;
     int timeout_time_ns;
 
     `uvm_object_utils_begin(oscillator_agent_cfg)
-        `uvm_field_int(checks_enable)
-        `uvm_field_int(coverage_enable)
-        `uvm_field_real(frequency_threshold)
+        `uvm_field_int(checks_enable, UVM_ALL_ON)
+        `uvm_field_int(coverage_enable, UVM_ALL_ON)
+        `uvm_field_real(frequency_threshold, UVM_ALL_ON)
     `uvm_object_utils_end
 
     function new(string name = "oscillator_agent_cfg");

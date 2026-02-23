@@ -10,7 +10,7 @@ class bit_bus_packet #(int WIDTH = 1) extends uvm_sequence_item;
 
     `uvm_object_param_utils_begin(bit_bus_packet #(WIDTH))
         `uvm_field_int(value, UVM_ALL_ON)
-    `uvm_object_param_utils_end
+    `uvm_object_utils_end
 
     function new(string name = "bit_bus_packet");
         super.new(name);

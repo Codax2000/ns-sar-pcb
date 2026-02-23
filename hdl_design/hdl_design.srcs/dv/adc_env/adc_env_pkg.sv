@@ -43,6 +43,7 @@ package adc_env_pkg;
     import oscillator_agent_pkg::*;
     import sine_agent_pkg::*;
     import reg_env_pkg::*;
+    import adc_regs_pkg::*;
 
     // TODO: eventually, include scoreboard package
 

@@ -12,7 +12,7 @@ class max_amp_packet extends sine_packet;
     endfunction
 
     constraint max_amplitude {
-        amplitude == 0.5;
+        amplitude_int == 1024;
     }
 
 endclass

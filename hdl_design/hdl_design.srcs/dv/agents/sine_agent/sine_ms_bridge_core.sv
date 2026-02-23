@@ -63,9 +63,11 @@ module sine_ms_bridge_core #(
     end
 
     assign voutp = clk_enabled ? ((vdd + vss) / 2.0) + amplitude_driven * $sin(phase) : 
-                                 ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss);
-    assign voutn = clk_enabled ? ((vdd + vss) / 2.0) - amplitude_driven * $sin(phase) : 
+                   clk_driven  ? ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss) : 
                                  ((vdd + vss) / 2.0) - amplitude_driven * (vdd - vss);
+    assign voutn = clk_enabled ? ((vdd + vss) / 2.0) - amplitude_driven * $sin(phase) : 
+                   clk_driven  ? ((vdd + vss) / 2.0) - amplitude_driven * (vdd - vss) : 
+                                 ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss);
 
     // Group: Monitor
     // These are signals that are intended to be used by the proxy to signal values to the monitor.
@@ -90,9 +92,10 @@ module sine_ms_bridge_core #(
     bit    differential_gt_0;
     assign differential_gt_0 = differential > 0;
 
-    always @(differential_gt_0) : save_amplitude
-        amplitude_observed <= vinp > vin ? (vinp - vinn) - differential : 
+    always @(differential_gt_0) begin
+        amplitude_observed <= vinp > vinn ? (vinp - vinn) - differential : 
                                            (vinn - vinp) - differential;
+    end
     assign clk_observed = vinp > vinn;
 
 endmodule

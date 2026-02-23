@@ -34,7 +34,7 @@ DEFAULT_HTML_PATH = './docs/docs/adc_regs'
 # Variable: DEFAULT_UVM_PKG_PATH
 # Defines the default path to the file which will contain UVM registers
 DEFAULT_UVM_PKG_PATH = \
-    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_pkg.svh'
+    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_pkg.sv'
 
 # Variable: DEFAULT_REG_RTL_PATH
 # Path to the directory in which the RTL package and path will be stored

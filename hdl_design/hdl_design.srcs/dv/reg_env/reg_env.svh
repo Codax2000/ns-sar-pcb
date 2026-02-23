@@ -39,7 +39,7 @@ class reg_env #(
         ral     = REG_BLOCK::type_id::create("ral_model", this);
         adapter = ADAPTER::type_id::create("adapter");
         
-        spi_predictor = uvm_reg_predictor #(SEQ_ITEM)::type_id::create("spi_predictor", this);
+        predictor = uvm_reg_predictor #(SEQ_ITEM)::type_id::create("predictor", this);
 
         ral.build();
         ral.lock_model();

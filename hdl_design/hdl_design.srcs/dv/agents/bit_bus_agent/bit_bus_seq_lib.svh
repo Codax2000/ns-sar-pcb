@@ -22,7 +22,7 @@ class single_value_seq #(int WIDTH = 1) extends uvm_sequence #(bit_bus_packet #(
 
         `uvm_info(get_full_name(), $sformatf("Single-value sequence: %b", value), UVM_HIGH)
 
-        `uvm_do_with(pkt, { value == seq_value })
+        `uvm_do_with(pkt, { value == seq_value; })
 
     endtask
 

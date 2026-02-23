@@ -39,7 +39,7 @@ module uvm_tb_top ();
     board_top #(
         .N_QUANTIZER_BITS(4)
     ) DUT (
-        .vdd(1.VDD),
+        .vdd(VDD),
 
         .clk(i_clk_if.clk_driven),
         .arst_n(i_reset_if.value),
@@ -50,19 +50,19 @@ module uvm_tb_top ();
         .spi_signals(i_spi_if)
     );
 
-    tb_top_cfg cfg;
+    // tb_top_cfg cfg;
 
-    initial begin
-        cfg = new("tb_top_cfg");
-        cfg.vif_spi = i_spi_if;
-        cfg.vif_reset = i_reset_if;
-        cfg.vif_clk = i_clk_if;
-        cfg.vif_adc = m_bridge.bridge_if;
-        cfg.vproxy_adc = m_bridge.proxy;
+    // initial begin
+        // cfg = new("tb_top_cfg");
+        // cfg.vif_spi = i_spi_if;
+        // cfg.vif_reset = i_reset_if;
+        // cfg.vif_clk = i_clk_if;
+        // cfg.vif_adc = m_bridge.bridge_if;
+        // cfg.vproxy_adc = m_bridge.proxy;
 
-        uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
+        // uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test();
-    end
+        // run_test();
+    // end
 
 endmodule

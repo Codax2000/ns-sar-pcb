@@ -10,9 +10,9 @@ virtual class sine_proxy extends uvm_ms_proxy;
 
     // Function: push
     // Send the given amplitude to be driven by the bridge
-    virtual function void push(real amplitude);
+    virtual task push(real amplitude);
         `uvm_ms_warning("SINE PROXY", "Function push not implemented")
-    endfunction
+    endtask
 
     // Function: configure_driver
     // Set any config values that the driver needs

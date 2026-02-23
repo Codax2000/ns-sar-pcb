@@ -7,7 +7,13 @@ module spi #(
     output logic        miso,       // Master In Slave Out
     input  logic        cs_b,       // Chip Select (active low)
 
-    obi_intf.manager if_reg
+    // obi_intf.manager if_reg,
+
+    output logic [DATA_WIDTH-1:0] reg_wr_data,
+    input  logic [DATA_WIDTH-1:0] reg_rd_data,
+    output logic [ADDR_WIDTH-1:0] reg_addr,
+    output logic                  reg_rd_en,
+    output logic                  reg_wr_en
 );
 
     typedef enum logic [1:0] {

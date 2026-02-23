@@ -4,6 +4,9 @@ Package: spi_agent_pkg
 SPI agent package that contains supporting classes for burst read and write,
 in addition to an adapter for RAL that is specific to this agent.
 
+Since this is an extension of the <oscillator_agent>, requires that <oscillator_agent_pkg>
+be compiled.
+
 Includes the following classes:
 
 - <spi_packet>

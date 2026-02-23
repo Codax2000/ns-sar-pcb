@@ -14,3 +14,4 @@ find . -maxdepth 2 -type f -name "*.md" \
   | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
   >> docs.txt
 
+git log > gitlog.txt

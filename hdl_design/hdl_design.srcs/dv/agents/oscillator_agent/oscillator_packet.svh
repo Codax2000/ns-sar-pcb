@@ -11,9 +11,11 @@ class oscillator_packet extends uvm_sequence_item;
     // disabled with the packet disabled state.
     rand bit enabled;
 
-    // Variable: frequency
-    // Determines the frequency of an active clock
-    rand real frequency;
+    // Variable: frequency_int
+    // Determines the frequency of an active clock. Just an integer workaround
+    // to a real variable set in post_randomize.
+    rand int frequency_int;
+         real frequency;
 
     // Variable: disabled_state
     // Determines the disabled state of an inactive clock
@@ -30,9 +32,14 @@ class oscillator_packet extends uvm_sequence_item;
     endfunction
 
     constraint default_frequency_range {
-        frequency <= 1e9;
-        frequency >= 100.0;
+        frequency_int <= 1000000000;
+        frequency_int >= 100;
     }
+
+    function void post_randomize();
+        super.post_randomize();
+        frequency = real'(frequency_int);
+    endfunction
 
     virtual function bit do_compare (uvm_object rhs, uvm_comparer comparer);
         oscillator_packet rhs_;
