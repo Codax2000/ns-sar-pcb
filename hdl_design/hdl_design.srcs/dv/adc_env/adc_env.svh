@@ -146,6 +146,18 @@ class adc_env extends uvm_env;
             adc_seq.start(m_adc_in.sequencer);
         join
 
+        #1us;
+        adc_seq.randomize() with {
+            pkt_enabled == 0;
+        };
+        adc_seq.start(m_adc_in.sequencer);
+
+        #1us;
+        adc_seq.randomize() with {
+            pkt_enabled == 1;
+        };
+        adc_seq.start(m_adc_in.sequencer);
+
         #(reset_duration * 1e9); // delay reset duration in ns instead of seconds
         `uvm_info(get_full_name(), $sformatf("Reset Duration: %f ns", reset_duration * 1e9), UVM_HIGH)
 
@@ -217,7 +229,7 @@ class adc_env extends uvm_env;
         m_adc_in_cfg.timeout_time_ns = 1e6; // minimum input speed of 1 kHz, may have to change
         m_adc_in_cfg.vproxy = m_env_cfg.vproxy_adc;
         m_adc_in_cfg.amplitude_threshold = 0.005;
-        m_adc_in_cfg.points_per_period = 24; // reasonable value to start, no reason to go higher atm
+        m_adc_in_cfg.points_per_period = 48; // reasonable value to start, no reason to go higher atm
 
         this.reset_duration = m_env_cfg.reset_duration;
         this.system_clk_frequency = m_env_cfg.system_clk_frequency;

@@ -35,7 +35,7 @@ module uvm_tb_top ();
         .vss(0.0),
 
         .voutp(vinp),
-        .voutn(vinp),
+        .voutn(vinn),
 
         .vinp(vinp),
         .vinn(vinn)

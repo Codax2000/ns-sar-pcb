@@ -6,7 +6,7 @@ Converts differential signals to single-ended.
 */
 module sine_ms_bridge_core #(
     parameter DEFAULT_AMPLITUDE = 0.5,
-    parameter DEFAULT_POINTS_PER_PERIOD = 17
+    parameter DEFAULT_POINTS_PER_PERIOD = 48
 ) (
     input real vdd,
     input real vss,
@@ -22,8 +22,6 @@ module sine_ms_bridge_core #(
     input logic clk_driven,
     input bit clk_enabled
 );
-
-    localparam real PI = 3.14159265358979323846;
 
     // Group: Driver
 
@@ -47,17 +45,17 @@ module sine_ms_bridge_core #(
     initial frequency = 1.0;
 
     real current_delay_ns = 1.0;
-    always @(frequency or points_per_period)
+    real phase_increase;
+    always @(frequency or points_per_period) begin
         current_delay_ns = 1e9 / (frequency * points_per_period);
+        phase_increase = (3.14159) / (0.5 * points_per_period);
+    end
 
     initial begin
         phase = 0.0;
         forever begin
-            while (clk_enabled) begin
-                #(current_delay_ns);
-                phase += ((3.14159) / (0.5 * points_per_period));
-            end
-            wait(clk_enabled == 1);
+            #(current_delay_ns);
+            phase += (phase_increase);
         end
     end
 
@@ -68,12 +66,13 @@ module sine_ms_bridge_core #(
             phase = PI;
     end
 
+    always @(posedge clk_enabled)
+        phase = 0.0;
+
     assign voutp = clk_enabled ? ((vdd + vss) / 2.0) + amplitude_driven * $sin(phase) : 
                    clk_driven  ? ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss) : 
                                  ((vdd + vss) / 2.0) - amplitude_driven * (vdd - vss);
-    assign voutn = clk_enabled ? ((vdd + vss) / 2.0) - amplitude_driven * $sin(phase) : 
-                   clk_driven  ? ((vdd + vss) / 2.0) - amplitude_driven * (vdd - vss) : 
-                                 ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss);
+    assign voutn = vdd - voutp;
 
     int voutp_int;
     int voutn_int;
