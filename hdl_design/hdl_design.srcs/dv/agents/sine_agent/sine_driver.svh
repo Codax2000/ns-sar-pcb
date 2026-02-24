@@ -31,12 +31,13 @@ class sine_driver extends oscillator_driver;
     endtask
 
     virtual task drive_signals(oscillator_packet req);
-
-        super.drive_signals(req);
-
-        if ($cast(ms_req, req))
+        if ($cast(ms_req, req)) begin
             vproxy.push(ms_req.amplitude);
-
+            `uvm_info(get_full_name(),
+                      $sformatf("Driving ms-packet with amplitude %f", ms_req.amplitude),
+                      UVM_MEDIUM)
+        end
+        super.drive_signals(req);
     endtask
 
 endclass

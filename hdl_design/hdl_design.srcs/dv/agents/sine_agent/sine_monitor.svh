@@ -32,8 +32,7 @@ class sine_monitor extends oscillator_monitor;
     endtask
 
     virtual task collect_transaction(ref oscillator_packet item);
-        if (! $cast(ms_pkt, item))
-            `uvm_ms_fatal(get_full_name(), "Could not cast item to mixed-signal equivalent")
+        ms_pkt = sine_packet::type_id::create("ms_pkt");
 
         @(vif.clk_enable_observed or vif.frequency_observed or vif.disabled_state_observed or vproxy.amplitude);
         ms_pkt.enabled = vif.clk_enable_observed;

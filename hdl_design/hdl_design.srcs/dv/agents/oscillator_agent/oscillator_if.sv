@@ -20,13 +20,14 @@ interface oscillator_if;
     bit clk_enable_driven;
 
     // Variable: frequency_driven
-    // The frequency in Hz that will be driven onto the output clock. Ignored
-    // if <clk_enable_driven> is low.
+    // A utility variable used by the sine bridge and set in <start_clock>.
     real frequency_driven;
 
     // Variable: disabled_state_driven
     // The disabled state that the clock will use when not oscillating
     bit disabled_state_driven;
+
+    real delay_ns;
 
     // Function: start_clock
     // Allows the user to start the clock going to the DUT with the given
@@ -35,8 +36,20 @@ interface oscillator_if;
     // Parameters:
     //   frequency - the frequency in Hz with which to drive the clock
     task start_clock(real frequency);
-        frequency_driven = frequency;
+        stop_clock(0);
+        delay_ns = (1e9 / (frequency * 2.0));
         clk_enable_driven = 1;
+        frequency_driven = frequency;
+        fork
+            begin
+                while (clk_enable_driven) begin
+                    #(delay_ns);
+                    if (clk_enable_driven)
+                        clk_driven = !clk_driven;
+                end
+                clk_driven = disabled_state_driven;
+            end
+        join_none
     endtask
 
     // Function: stop_clock
@@ -44,15 +57,8 @@ interface oscillator_if;
     task stop_clock(bit disabled_state);
         disabled_state_driven = disabled_state;
         clk_enable_driven = 0;
+        clk_driven = disabled_state;
     endtask
-
-    always @(clk_enable_driven or disabled_state_driven) begin : dut_clock_gen
-        while (clk_enable_driven) begin
-            clk_driven = !clk_driven;
-            #(1e-9 / (2.0 * frequency_driven));
-        end
-        clk_driven = disabled_state_driven;
-    end
 
     // Group: Monitor Values
     // Defines values and functions intended for use by the UVM monitor.

@@ -100,6 +100,30 @@ class RTLSyncExporter:
                 hwif_srcclk = 'ifclk'
                 hwif_destclk = 'sysclk'
 
+            self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
+                                        hwif_destclk, hwif_path, node)
+
+            # If the "hwclr" property active, make another synchronizer for
+            # the clear signal
+            if node.get_property('hwclr'):
+                hwif_value = 'hwclr'
+                hwif_srcclk = 'sysclk'
+                hwif_destclk = 'ifclk'
+                hwif_name = 'hwif_in'
+
+                self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
+                                            hwif_destclk, hwif_path, node)
+        
+        '''
+        Function: print_sync_declaration
+
+        Utility function to shorten how hard it is to print the synchronizer
+        declaration. Takes in several things about the field and prints it
+        to self.f.
+        '''
+        def print_sync_declaration(self, hwif_name, hwif_value, hwif_srcclk,
+                                   hwif_destclk, hwif_path, node):
+            
             hwif_in_path = f'{hwif_name}_{hwif_srcclk}.{
                 hwif_path}.{hwif_value}'
             hwif_out_path = f'{hwif_name}_{hwif_destclk}.{

@@ -15,4 +15,8 @@ class max_amp_packet extends sine_packet;
         amplitude_int == 1024;
     }
 
+    function void post_randomize();
+        super.post_randomize();
+    endfunction
+
 endclass

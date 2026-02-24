@@ -21,6 +21,7 @@ class oscillator_driver extends uvm_driver #(oscillator_packet);
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        vif.stop_clock(0);
         forever begin
             seq_item_port.get_next_item(req);
             drive_signals(req);
@@ -29,6 +30,7 @@ class oscillator_driver extends uvm_driver #(oscillator_packet);
     endtask
 
     virtual task drive_signals(oscillator_packet req);
+        `uvm_info(get_full_name(), $sformatf("Driving new packet: %s", req.sprint()), UVM_MEDIUM)
         if (req.enabled)
             vif.start_clock(req.frequency);
         else

@@ -19,6 +19,9 @@ module uvm_tb_top ();
     oscillator_if           i_clk_if   ();
     spi_if                  i_spi_if   ();
 
+    assign i_clk_if.clk_observed = i_clk_if.clk_driven;
+    assign i_reset_if.bit_observed = i_reset_if.bit_driven;
+
     status_if i_status_if ();
 
     // Variable: VDD

@@ -32,7 +32,7 @@ class bit_bus_driver #(int WIDTH = 1)
     virtual task drive_value(bit_bus_packet req);
         `uvm_info(get_full_name(),
                   $sformatf("Driving bus value 0x%0h", req.value),
-                  UVM_HIGH)
+                  UVM_MEDIUM)
         vif.bit_driven = req.value;
     endtask
 

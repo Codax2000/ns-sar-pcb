@@ -22,6 +22,7 @@ class sine_packet extends oscillator_packet;
     }
 
     `uvm_object_utils_begin(sine_packet)
+        `uvm_field_int(amplitude_int, UVM_ALL_ON)
         `uvm_field_real(amplitude, UVM_ALL_ON)
     `uvm_object_utils_end
 

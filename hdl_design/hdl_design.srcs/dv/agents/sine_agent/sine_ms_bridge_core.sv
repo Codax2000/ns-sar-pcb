@@ -44,14 +44,20 @@ module sine_ms_bridge_core #(
     // The current frequency that is being driven
     real frequency;
 
-    real current_delay_ns;
-    assign current_delay_ns = 1e9 / (frequency * points_per_period);
+    initial frequency = 1.0;
 
-    always @(clk_enabled) begin
+    real current_delay_ns = 1.0;
+    always @(frequency or points_per_period)
+        current_delay_ns = 1e9 / (frequency * points_per_period);
+
+    initial begin
         phase = 0.0;
-        while (clk_enabled) begin
-            #(1 / (frequency * points_per_period));
-            phase += 2 * PI * frequency * (current_delay_ns / 1e9);
+        forever begin
+            while (clk_enabled) begin
+                #(current_delay_ns);
+                phase += ((3.14159) / (0.5 * points_per_period));
+            end
+            wait(clk_enabled == 1);
         end
     end
 
@@ -68,6 +74,13 @@ module sine_ms_bridge_core #(
     assign voutn = clk_enabled ? ((vdd + vss) / 2.0) - amplitude_driven * $sin(phase) : 
                    clk_driven  ? ((vdd + vss) / 2.0) - amplitude_driven * (vdd - vss) : 
                                  ((vdd + vss) / 2.0) + amplitude_driven * (vdd - vss);
+
+    int voutp_int;
+    int voutn_int;
+    int phase_int;
+    assign voutp_int = int'(voutp * 2048.0);
+    assign voutn_int = int'(voutn * 2048.0);
+    assign phase_int = int'(phase * 2048.0);
 
     // Group: Monitor
     // These are signals that are intended to be used by the proxy to signal values to the monitor.

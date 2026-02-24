@@ -114,7 +114,7 @@ package adc_regs_pkg;
 
         virtual function void build();
             this.default_map = create_map("reg_map", 0, 2.0, UVM_NO_ENDIAN);
-            this.m_mem = new("m_mem", 16384, 16, "RO");
+            this.m_mem = new("m_mem", 8192, 16, "RO");
             this.m_mem.configure(this);
             this.default_map.add_mem(this.m_mem, 0);
         endfunction : build
@@ -176,7 +176,7 @@ package adc_regs_pkg;
             this.adc_output_mem = adc_regs__adc_output_mem::type_id::create("adc_output_mem");
             this.adc_output_mem.configure(this);
             this.adc_output_mem.build();
-            this.default_map.add_submap(this.adc_output_mem.default_map, 'h8000);
+            this.default_map.add_submap(this.adc_output_mem.default_map, 'h4000);
         endfunction : build
     endclass : adc_regs
 

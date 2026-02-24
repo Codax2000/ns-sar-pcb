@@ -137,7 +137,7 @@ class adc_env extends uvm_env;
             seq_value == 1;
         };
         adc_seq.randomize() with {
-            pkt_enabled == 0;
+            pkt_enabled == 1;
         };
 
         fork
@@ -146,8 +146,9 @@ class adc_env extends uvm_env;
             adc_seq.start(m_adc_in.sequencer);
         join
 
-        #(reset_duration / 1e9); // delay reset duration in ns instead of seconds
-        
+        #(reset_duration * 1e9); // delay reset duration in ns instead of seconds
+        `uvm_info(get_full_name(), $sformatf("Reset Duration: %f ns", reset_duration * 1e9), UVM_HIGH)
+
         reset_seq.randomize() with {
             seq_value == 0;
         };

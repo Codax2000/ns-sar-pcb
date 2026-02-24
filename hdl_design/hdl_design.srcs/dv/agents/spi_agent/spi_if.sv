@@ -24,5 +24,5 @@ interface spi_if ();
     );
 
     logic enable_sva;
-
+    
 endinterface
