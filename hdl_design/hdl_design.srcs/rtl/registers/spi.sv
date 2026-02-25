@@ -36,22 +36,29 @@ module spi #(
 
     assign miso = 0;
 
+    assign increment_address_counter = ; // TODO:
+    assign increment_transaction_count = ; // TODO:
+    assign load_address = ; // TODO:
+
     always_ff @(posedge scl or posedge cs_b) begin : state_transition
         if (cs_b) begin
             current_state <= RECEIVE_HEADER;
             current_parity <= 1;
             byte_counter <= 0;
             n_expected_transactions <= 0;
+            transaction_is_read <= 0;
+            transaction_count <= 0;
         end
         else begin
             current_state <= next_state;
             byte_counter  <= (current_state == next_state) ? byte_counter + 1 : 0;
-            if (current_state == RECEIVE_HEADER && next_state == CHECK_AND_SEND_WRITE_PARITY)
+            if (current_state == RECEIVE_HEADER && next_state == CHECK_AND_SEND_WRITE_PARITY) begin
                 n_expected_transactions <= mosi_shift_register[6:0];
+                transaction_is_read <= mosi_shift_register[7];
             if (increment_address_counter)
                 address_counter <= address_counter + 1;
             if (increment_transaction_count)
-                address_counter <= 
+                transaction_count <= transaction_count + 1;
         end
     end : state_transition
 
@@ -73,7 +80,7 @@ module spi #(
                 next_state = transaction_count == n_expected_transactions ? DONE :
                              (current_parity ^ mosi) || (current_parity ^ miso) ? DONE :
                              (address_counter != (ADDR_BYTES - 1)) ? RECEIVE_ADDR :
-                             RECEIVE_WR_DATA;
+                             transaction_is_read ? SEND_RD_DATA : RECEIVE_WR_DATA;
             end
             CHECK_AND_SEND_READ_PARITY : next_state = transaction_count == n_expected_transactions ?
                                                       DONE : SEND_RD_DATA;
