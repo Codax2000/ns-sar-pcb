@@ -45,57 +45,74 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     // drive with 5 MHz clock, which is 200ns
     virtual task drive_signals(spi_packet req);
-        bit [15:0] mosi = {req.rd_en, req.address};
-        bit [15:0] reg_temp;
+        spi_parity_t current_parity;
+        logic [7:0]  header_byte;
+        logic [7:0]  current_output;
 
-        `uvm_info("DRV", "Driving SPI packet", UVM_HIGH);
-        req.print();
+        `uvm_info("DRV", $sformat("Driving SPI packet: %s", req.sprint()), UVM_MEDIUM);
+        if (req.n_reads != req.read_parity.size())
+            `uvm_fatal(get_full_name(), "Received SPI packet with n_reads != read parity size")
+        if (req.write_data.size() != req.write_parity.size())
+            `uvm_fatal(get_full_name(), "Received SPI packet with write data != write parity size")
 
         #(clk_period_ns/2);
         vif.csb = 1'b0;
         #(clk_period_ns/2);
 
-        // send bit and address
-        for (int i = 15; i >= 0; i--) begin
-            vif.mosi = mosi[i]; // MSB first
-            #(clk_period_ns/2);
-            vif.scl = 1'b1;
-            #(clk_period_ns/2);
-            vif.scl = 1'b0;
-        end
+        header_byte[6:0] = req.rd_en ? req.n_reads - 1 : req.write_data.size() - 1;
+        header_byte[7]   = req.rd_en;
+        drive_byte(header_byte, req.header_parity, current_output);
 
-        // receive MISO data
-        if (req.rd_en == 1'b1) begin : read_reg
-            vif.mosi = 1'b0; // drive low to avoid MOSI staying high and being confusing
-            req.read_data.delete();
+        drive_byte(req.address[7:0], req.address_parity[0], current_output);
+        drive_byte(req.address[15:7], req.address_parity[1], current_output);
+
+        if (req.rd_en) begin
             for (int i = 0; i < req.n_reads; i++) begin
-                reg_temp = 16'h0000;
-                for (int j = 15; j >= 0; j--) begin
-                    #(clk_period_ns/2);
-                    vif.scl = 1'b1;
-                    reg_temp[j] = vif.miso;
-                    #(clk_period_ns/2);
-                    vif.scl = 1'b0;
-                end
-                req.read_data.push_back(reg_temp);
-            end
-        end else begin : write_reg
-            for (int j = 0; j < req.write_data.size(); j++) begin
-                mosi = req.write_data[j];
-                for (int i = 15; i >= 0; i--) begin
-                    vif.mosi = mosi[i]; // MSB first
-                    #(clk_period_ns/2);
-                    vif.scl = 1'b1;
-                    #(clk_period_ns/2);
-                    vif.scl = 1'b0;
-                end
+                drive_byte(8'h00, req.read_parity[i], current_output);
+                req.read_data.push_back(current_output);
             end
         end
-
+        else begin
+            while (req.write_data.size() > 0) begin
+                drive_byte(req.write_data.pop_front(), req.write_parity.pop_front(), current_output);
+            end
+        end
+        
         #(clk_period_ns/2);
         vif.csb = 1'b1;
         #(clk_period_ns/2);
 
+    endtask
+
+    virtual task drive_byte(logic [7:0] value_to_drive, spi_parity_t parity_to_drive, output logic [7:0] observed_value);
+        bit current_parity;
+        bit current_output_bit;
+
+        current_parity = 1;
+
+        for (int i = 0; i < 8; i--) begin
+            current_parity = current_parity ^ value_to_drive[i];
+            drive_bit(value_to_drive[i], observed_value[i]);
+        end
+
+        if (parity_to_drive == GOOD_PARITY)
+            drive_bit(current_parity, current_output_bit);
+        else
+            drive_bit(!current_parity, current_output_bit);
+
+        // if (current_output_bit == current_parity)
+        //     observed_parity == GOOD_PARITY;
+        // else
+        //     observed_parity == BAD_PARITY;
+    endtask
+
+    virtual task drive_bit(logic value_to_drive, output logic observed_value);
+        vif.mosi = value_to_drive;
+        #(clk_period_ns/2);
+        vif.scl = 1'b1;
+        observed_value = vif.miso;
+        #(clk_period_ns/2);
+        vif.scl = 1'b0;
     endtask
 
 endclass

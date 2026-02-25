@@ -24,6 +24,11 @@ package spi_agent_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
+    typedef enum bit {
+        BAD_PARITY = 0,
+        GOOD_PARITY = 1
+    } spi_parity_t;
+
     `include "spi_packet.svh"
     `include "spi_packet_reg_extension.svh"
     `include "spi_driver.svh"

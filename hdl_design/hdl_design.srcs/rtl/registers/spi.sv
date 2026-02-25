@@ -1,116 +1,84 @@
 module spi #(
-    parameter ADDR_WIDTH = 16,
-    parameter DATA_WIDTH = 8
+    parameter ADDR_BYTES = 2,
+    parameter REGISTER_BYTES = 2
 )(
-    input  logic        scl,        // SPI clock
-    input  logic        mosi,       // Master Out Slave In
-    output logic        miso,       // Master In Slave Out
-    input  logic        cs_b,       // Chip Select (active low)
-
-    // obi_intf.manager if_reg,
-
-    output logic [DATA_WIDTH-1:0] reg_wr_data,
-    input  logic [DATA_WIDTH-1:0] reg_rd_data,
-    output logic [ADDR_WIDTH-1:0] reg_addr,
-    output logic                  reg_rd_en,
-    output logic                  reg_wr_en
+    input  logic        scl, 
+    input  logic        mosi,
+    output logic        miso,
+    input  logic        cs_b
 );
 
-    typedef enum logic [1:0] {
-        RESET,
-        ADDR_DECODE,
-        REG_RECEIVE,
-        REG_SEND
+    typedef enum logic [2:0] {
+        RECEIVE_HEADER,
+        RECEIVE_ADDR,
+        RECEIVE_WR_DATA,
+        SEND_RD_DATA,
+        CHECK_AND_SEND_WRITE_PARITY,
+        CHECK_AND_SEND_READ_PARITY,
+        DONE
     } spi_state_e;
 
-    spi_state_e state, next_state;
+    logic [ADDR_BYTES-1:0][7:0] reg_addr;
 
-    logic [$clog2(ADDR_WIDTH+1)-1:0] addr_count;
-    logic [ADDR_WIDTH:0] addr_shift;
-    logic [DATA_WIDTH-1:0] rx_shift, tx_shift;
-    logic [$clog2(DATA_WIDTH)-1:0] bit_cnt;
-    logic miso_n;
+    logic [7:0] mosi_shift_register;
+    logic [7:0] miso_shift_register;
+    logic       current_parity, next_parity;
 
-    // FSM state transition
-    always_ff @(posedge scl or posedge cs_b) begin
-        if (cs_b)
-            state <= ADDR_DECODE;
-        else
-            state <= next_state;
-    end
+    spi_state_e current_state, next_state;
+    logic [2:0] byte_counter;
+    logic [$clog2(ADDR_BYTES)-1:0] address_counter;
+    logic [6:0] transaction_count, n_expected_transactions;
 
-    // FSM next state logic
-    always_comb begin
-        case (state)
-            ADDR_DECODE: begin
-                if (addr_count == ADDR_WIDTH)
-                    next_state = addr_shift[ADDR_WIDTH-1] ? REG_SEND : REG_RECEIVE;
-                else
-                    next_state = ADDR_DECODE;
-            end
-            REG_RECEIVE: next_state = REG_RECEIVE; // burst mode write
-            REG_SEND   : next_state = REG_SEND;    // burst mode read
-            RESET      : next_state = ADDR_DECODE;
-            default    : next_state = RESET;
-        endcase
-    end
+    logic shift_mosi;
+    logic increment_address_counter;
+    logic increment_transaction_count;
+    logic transaction_is_read
 
-    // Shift logic reset on cs_b deassertion
-    always_ff @(posedge scl or posedge cs_b) begin
+    assign miso = 0;
+
+    always_ff @(posedge scl or posedge cs_b) begin : state_transition
         if (cs_b) begin
-            addr_count  <= 0;
-            addr_shift  <= 0;
-            rx_shift    <= 0;
-            tx_shift    <= 0;
-            bit_cnt     <= 0;
-            reg_rd_en   <= 0;
-            reg_wr_en   <= 0;
-        end else begin
-            case (state)
-
-                ADDR_DECODE: begin
-                    addr_shift <= {addr_shift[ADDR_WIDTH-1:0], mosi};
-                    if (addr_count < ADDR_WIDTH)
-                        addr_count <= addr_count + 1;
-                end
-
-                REG_RECEIVE: begin
-                    rx_shift <= {rx_shift[DATA_WIDTH-2:0], mosi};
-                    if (bit_cnt == DATA_WIDTH-1) begin
-                        bit_cnt <= 0;
-                        addr_shift <= addr_shift + 1;
-                    end else begin
-                        bit_cnt  <= bit_cnt + 1;
-                    end
-                end
-
-                REG_SEND: begin
-                    if (bit_cnt == 0)
-                        tx_shift <= {reg_rd_data[DATA_WIDTH-2:0], 1'b0};
-                    else
-                        tx_shift <= {tx_shift[DATA_WIDTH-2:0], 1'b0};
-                    bit_cnt  <= bit_cnt + 1;
-                    if ((bit_cnt == (DATA_WIDTH-1)))
-                        addr_shift <= addr_shift + 1;
-                end
-            endcase
+            current_state <= RECEIVE_HEADER;
+            current_parity <= 1;
+            byte_counter <= 0;
+            n_expected_transactions <= 0;
         end
-    end
+        else begin
+            current_state <= next_state;
+            byte_counter  <= (current_state == next_state) ? byte_counter + 1 : 0;
+            if (current_state == RECEIVE_HEADER && next_state == CHECK_AND_SEND_WRITE_PARITY)
+                n_expected_transactions <= mosi_shift_register[6:0];
+            if (increment_address_counter)
+                address_counter <= address_counter + 1;
+            if (increment_transaction_count)
+                address_counter <= 
+        end
+    end : state_transition
 
-    always_ff @(negedge scl or posedge cs_b) begin
-        if (cs_b)
-            miso <= 0;
-        else
-            miso <= miso_n;
-    end
-
-    assign reg_rd_en   = ((state == ADDR_DECODE) && (next_state == REG_SEND)) ||
-                         ((state == REG_SEND)    && (bit_cnt == DATA_WIDTH-1));
-    assign reg_wr_en   = ((state == REG_RECEIVE) && (bit_cnt == DATA_WIDTH-1));
-    assign reg_wr_data = {rx_shift[DATA_WIDTH-2:0], mosi};
-    assign miso_n      = (state == REG_SEND) && (bit_cnt == 0) ? reg_rd_data[DATA_WIDTH-1] : 
-                         (state == REG_SEND)                   ? tx_shift[DATA_WIDTH-1]    : 0;
-    assign reg_addr    = (state == ADDR_DECODE) ? {addr_shift[ADDR_WIDTH-1:0], mosi} : 
-                         (state == REG_RECEIVE) ? addr_shift                         : addr_shift + 1;
+    always_comb begin : next_state_logic
+        case (current_state)
+            RECEIVE_HEADER : next_state = byte_counter == 3'h7 ? 
+                                          CHECK_AND_SEND_WRITE_PARITY : 
+                                          RECEIVE_HEADER;
+            RECEIVE_ADDR : next_state = byte_counter == 3'h7 ?
+                                        CHECK_AND_SEND_WRITE_PARITY :
+                                        RECEIVE_ADDR;
+            RECEIVE_WR_DATA : next_state = byte_counter == 3'h7 ?
+                                           CHECK_AND_SEND_WRITE_PARITY :
+                                           RECEIVE_WR_DATA;
+            SEND_RD_DATA : next_state = byte_counter == 3'h7 ?
+                                        CHECK_AND_SEND_READ_PARITY :
+                                        SEND_RD_DATA;
+            CHECK_AND_SEND_WRITE_PARITY : begin
+                next_state = transaction_count == n_expected_transactions ? DONE :
+                             (current_parity ^ mosi) || (current_parity ^ miso) ? DONE :
+                             (address_counter != (ADDR_BYTES - 1)) ? RECEIVE_ADDR :
+                             RECEIVE_WR_DATA;
+            end
+            CHECK_AND_SEND_READ_PARITY : next_state = transaction_count == n_expected_transactions ?
+                                                      DONE : SEND_RD_DATA;
+            default: next_state = DONE;
+        endcase
+    end : next_state_logic
 
 endmodule

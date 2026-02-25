@@ -51,7 +51,7 @@ class sine_agent extends oscillator_agent;
         );
         oscillator_packet::type_id::set_inst_override(
             sine_packet::get_type(), 
-            "sequencer.*pkt*",
+            "sequencer.pkt",
             this
         );
 

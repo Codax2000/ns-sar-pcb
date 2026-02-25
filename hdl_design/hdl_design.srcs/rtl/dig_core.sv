@@ -22,21 +22,18 @@ module dig_core #(
     // system signals from clock gen and reset IP
     logic pll_clk;
     logic pll_is_locked;
-    logic sys_rst_b;
+    logic sys_rst_n;
     logic sys_rst;
     
-    spi #(
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .DATA_WIDTH(DATA_WIDTH)
-    ) i_spi (
-        .scl(i_scl),
-        .mosi(i_mosi),
-        .miso(o_miso),
-        .cs_b(i_cs_b || (!sys_rst_b)) // hold SPI in reset if the device is in reset
-
-    );
-
-    assign spi_rd_data = 0;
+    // spi #(
+    //     .ADDR_WIDTH(ADDR_WIDTH),
+    //     .DATA_WIDTH(DATA_WIDTH)
+    // ) i_spi (
+    //     .scl(i_scl),
+    //     .mosi(i_mosi),
+    //     .miso(o_miso),
+    //     .cs_b(i_cs_b || (!sys_rst_b)) // hold SPI in reset if the device is in reset
+    // );
 
     clk_gen_xip i_clk_gen (
         .reset(sys_rst),
@@ -56,6 +53,6 @@ module dig_core #(
         .peripheral_reset(sys_rst)
     );
 
-    assign sys_rst_b = (!sys_rst) && pll_is_locked;
+    assign sys_rst_n = (!sys_rst) && pll_is_locked;
 
 endmodule

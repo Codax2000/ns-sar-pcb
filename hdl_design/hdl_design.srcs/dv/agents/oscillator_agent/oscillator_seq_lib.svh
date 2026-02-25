@@ -19,6 +19,8 @@ class oscillator_single_packet_seq extends uvm_sequence #(oscillator_packet);
     // Determines the disabled state of an inactive clock
     rand bit pkt_disabled_state;
 
+    oscillator_packet pkt;
+
     `uvm_object_utils_begin(oscillator_single_packet_seq)
         `uvm_field_int(pkt_enabled, UVM_ALL_ON)
         `uvm_field_int(pkt_frequency, UVM_ALL_ON)
@@ -35,7 +37,6 @@ class oscillator_single_packet_seq extends uvm_sequence #(oscillator_packet);
     endfunction
 
     virtual task body();
-        oscillator_packet pkt;
 
         pkt = oscillator_packet::type_id::create("pkt");
 
