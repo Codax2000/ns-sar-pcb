@@ -46,7 +46,7 @@ class spi_packet extends uvm_sequence_item;
         }
     }
 
-    constraint short_reads {
+    constraint short_transactions {
         n_reads < 10;
         n_reads >= 0;
         if (rd_en) {
@@ -55,6 +55,7 @@ class spi_packet extends uvm_sequence_item;
         else {
             n_reads == 0;
         }
+        write_data.size() <= 10;
     }
 
     `uvm_object_utils_begin(spi_packet)

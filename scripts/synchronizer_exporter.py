@@ -102,17 +102,6 @@ class RTLSyncExporter:
 
             self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
                                         hwif_destclk, hwif_path, node)
-
-            # If the "hwclr" property active, make another synchronizer for
-            # the clear signal
-            if node.get_property('hwclr'):
-                hwif_value = 'hwclr'
-                hwif_srcclk = 'sysclk'
-                hwif_destclk = 'ifclk'
-                hwif_name = 'hwif_in'
-
-                self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
-                                            hwif_destclk, hwif_path, node)
         
         '''
         Function: print_sync_declaration
@@ -133,9 +122,7 @@ class RTLSyncExporter:
             print('\t\t.N_SYNC_STAGES(N_SYNC_STAGES),', file=self.f)
             print('\t\t.SRC_INPUT_REG(SRC_INPUT_REG),', file=self.f)
             print(f"\t\t.N_BITS({node.width})", file=self.f)
-            print(f"\t) sync_{
-                '.'.join(hwif_path.split('.')[1:3]).replace('.', '_')
-                } (", file=self.f)
+            print(f"\t) sync_{'.'.join(hwif_path.split('.')[1:3]).replace('.', '_')} (", file=self.f)
             print(f'\t\t.src_clk({hwif_srcclk}),', file=self.f)
             print(f'\t\t.dest_clk({hwif_destclk}),', file=self.f)
             print(f'\t\t.src_data({hwif_in_path}),', file=self.f)

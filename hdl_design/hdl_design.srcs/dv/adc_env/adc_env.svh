@@ -100,7 +100,7 @@ class adc_env extends uvm_env;
         m_ral.default_map.set_sequencer(m_spi.sequencer, m_reg_env.adapter);
 
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
-        m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
+        // m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
     endfunction
 
