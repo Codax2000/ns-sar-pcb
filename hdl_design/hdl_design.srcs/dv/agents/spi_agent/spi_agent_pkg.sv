@@ -31,8 +31,8 @@ package spi_agent_pkg;
 
     `include "spi_packet.svh"
     `include "spi_packet_reg_extension.svh"
-    // `include "spi_driver.svh"
-    // `include "spi_monitor.svh"
+    `include "spi_driver.svh"
+    `include "spi_monitor.svh"
     `include "spi_agent_cfg.svh"
     `include "spi_agent.svh"
     `include "spi_packet_splitter.svh"

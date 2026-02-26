@@ -89,7 +89,7 @@ class adc_env extends uvm_env;
         m_reset  = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset", this);
         m_adc_in = sine_agent::type_id::create("m_adc_in", this);
 
-        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
+        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs_dv_pkg::adc_regs))::
                     type_id::create("m_reg_env", this);
         m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
     endfunction
@@ -100,7 +100,7 @@ class adc_env extends uvm_env;
         m_ral.default_map.set_sequencer(m_spi.sequencer, m_reg_env.adapter);
 
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
-        // m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
+        m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
     endfunction
 

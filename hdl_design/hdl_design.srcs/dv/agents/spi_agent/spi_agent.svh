@@ -11,8 +11,8 @@ class spi_agent extends uvm_agent;
 
     `uvm_component_utils(spi_agent)
 
-    // spi_driver driver;
-    // spi_monitor monitor;
+    spi_driver driver;
+    spi_monitor monitor;
     uvm_sequencer #(spi_packet) sequencer;
 
     virtual spi_if vif;
@@ -33,16 +33,16 @@ class spi_agent extends uvm_agent;
         uvm_config_db #(virtual spi_if)::set(this, "monitor", "vif", cfg.vif);
         uvm_config_db #(int)::set(this, "driver", "clk_speed_hz", cfg.clk_speed_hz);
 
-        // monitor = spi_monitor::type_id::create("monitor", this);
-        // if (cfg.is_active) begin
-        //     driver = spi_driver::type_id::create("driver", this);
+        monitor = spi_monitor::type_id::create("monitor", this);
+        if (cfg.is_active) begin
+            driver = spi_driver::type_id::create("driver", this);
             sequencer = uvm_sequencer #(spi_packet)::type_id::create("sequencer", this);
-        // end
+        end
     endfunction
 
-    // function void connect_phase(uvm_phase phase);
-    //     if (cfg.is_active)
-    //         driver.seq_item_port.connect(sequencer.seq_item_export);
-    // endfunction
+    function void connect_phase(uvm_phase phase);
+        if (cfg.is_active)
+            driver.seq_item_port.connect(sequencer.seq_item_export);
+    endfunction
 
 endclass

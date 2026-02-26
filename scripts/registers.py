@@ -10,7 +10,7 @@ Generates the following for the ADC registers:
 - A synchronizer that goes from the SPI clock to the system clock, if necessary
 '''
 
-
+import pdb
 import sys
 import argparse
 from systemrdl import RDLCompiler, RDLCompileError
@@ -167,7 +167,8 @@ Runs RDL compiler and generates register export files.
 def main():
     args = parse_input_arguments()
     root = compile_rdl(args.spec)
-    gen_uvm_pkg(root, args.uvmpkg)
+    gen_uvm_pkg(root, args.uvmpkg,
+                user_template_dir='./scripts/peakrdl_templates')
     gen_html(root, args.html)
     gen_rtl(root, args.rtl)
     gen_sync(root, args.sync)
