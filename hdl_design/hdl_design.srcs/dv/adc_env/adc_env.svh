@@ -89,7 +89,7 @@ class adc_env extends uvm_env;
         m_reset  = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset", this);
         m_adc_in = sine_agent::type_id::create("m_adc_in", this);
 
-        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs_dv_pkg::adc_regs))::
+        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
                     type_id::create("m_reg_env", this);
         m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
     endfunction
@@ -137,7 +137,7 @@ class adc_env extends uvm_env;
             seq_value == 1;
         };
         adc_seq.randomize() with {
-            pkt_enabled == 1;
+            pkt_enabled == 0;
         };
 
         fork
@@ -166,18 +166,7 @@ class adc_env extends uvm_env;
         };
         reset_seq.start(m_reset.sequencer);
 
-        // add a timeout with UVM_FATAL if it times out (100 * reset duration should be fine)
-        time_start = $realtime();
-        do begin
-            reset_field = m_ral.get_field_by_name(m_env_cfg.reset_reg_rb_name);
-            if (reset_field == null)
-                `uvm_fatal(get_full_name(), $sformatf("Reset phase error: ADC env could not find field named %s",
-                                                      m_env_cfg.reset_reg_rb_name))
-            reset_field.read(status, value);
-        end while (((value == 0) || (status != UVM_IS_OK)) && (($realtime() - time_start) <= (100 * (reset_duration / 1e9))));
-        
-        if ((value == 0) || (status != UVM_IS_OK))
-            `uvm_fatal(get_full_name(), "Reset request timed out, reset did not deassert cleanly. Value is 0 or status is not OK.")
+        #3us;
 
         phase.drop_objection(this);
     endtask

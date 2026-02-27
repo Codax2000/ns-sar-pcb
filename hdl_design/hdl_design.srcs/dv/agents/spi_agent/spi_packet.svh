@@ -70,7 +70,7 @@ class spi_packet extends uvm_sequence_item;
 
     function new (string name = "spi_packet");
         super.new(name);
-        `uvm_info("PKT", "SPI packet created", "UVM_LOW")
+        `uvm_info("PKT", "SPI packet created", UVM_HIGH)
     endfunction
 
 endclass

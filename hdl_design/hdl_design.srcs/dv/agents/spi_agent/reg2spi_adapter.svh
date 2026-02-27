@@ -49,8 +49,8 @@ class reg2spi_adapter extends uvm_reg_adapter;
                 end
                 3 : begin
                     pkt.n_reads = 2;
-                    pkt.read_data.push_back(GOOD_PARITY);
-                    pkt.read_data.push_back(GOOD_PARITY);
+                    pkt.read_parity.push_back(GOOD_PARITY);
+                    pkt.read_parity.push_back(GOOD_PARITY);
                 end
             endcase
         end
@@ -99,7 +99,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
         `uvm_info ("ADAPTER",
                    $sformatf ("reg2bus addr=0x%0h data=0x%0h kind=%s byte_en=%h",
                               rw.addr, rw.data, rw.kind.name(), rw.byte_en),
-                   UVM_HIGH)
+                   UVM_MEDIUM)
         return pkt;
     endfunction
 

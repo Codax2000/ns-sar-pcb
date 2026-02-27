@@ -4,17 +4,17 @@ module spi #(
     input  logic scl,
     input  logic mosi,
     output logic miso,
-    input  logic cs_b
+    input  logic cs_b,
+
+    output logic                      if_req,
+    output logic                      if_rd_en,
+    output logic [(8*ADDR_BYTES)-1:0] if_addr,
+    output logic                [7:0] if_wr_data,
+
+    input  logic                [7:0] if_rd_data,
+    input  logic                      if_rd_err,
+    input  logic                      if_wr_err
 );
-
-    logic                      if_req;
-    logic                      if_rd_en;
-    logic [(8*ADDR_BYTES)-1:0] if_addr;
-    logic                [7:0] if_wr_data;
-    logic                [7:0] if_rd_data;
-
-    logic                      if_rd_err;
-    logic                      if_wr_err;
 
     typedef enum logic [2:0] {
         RECEIVE_HEADER,
@@ -52,46 +52,38 @@ module spi #(
     assign bit_counter_done = bit_counter == 3'h7;
 
     assign if_rd_en = header[0][0];
-    assign if_addr = header[ADDR_BYTES:1];
+
+    generate
+        if (ADDR_BYTES == 1)
+            assign if_addr = current_state == RECEIVE_HEADER ? mosi_shift_register + data_byte_counter : header[ADDR_BYTES] + data_byte_counter;
+        else
+            assign if_addr = current_state == RECEIVE_HEADER ? {mosi_shift_register, header[ADDR_BYTES-1:1]} + data_byte_counter : header[ADDR_BYTES:1] + data_byte_counter;
+    endgenerate
+
     assign n_expected_transactions = header[0][7:1];
     assign load_wr_data = bit_counter_done && (current_state == RECEIVE_WR_DATA);
     assign flip_parity = 0;
-    assign increment_head_byte_counter = current_state == CHECK_AND_SEND_HEADER_PARITY;
-    assign increment_data_byte_counter = current_state == CHECK_AND_SEND_DATA_PARITY;
-    assign increment_bit_counter = !((current_state == CHECK_AND_SEND_DATA_PARITY) || 
+    assign increment_head_byte_counter = (current_state == CHECK_AND_SEND_HEADER_PARITY) && (head_byte_counter != ADDR_BYTES);
+    assign increment_data_byte_counter = (current_state == CHECK_AND_SEND_DATA_PARITY) && (data_byte_counter != n_expected_transactions);
+    assign increment_bit_counter = !((current_state == CHECK_AND_SEND_DATA_PARITY) ||
                                      (current_state == CHECK_AND_SEND_HEADER_PARITY));
     assign load_header = ((current_state == RECEIVE_HEADER) && (bit_counter_done));
-    assign miso = 0;
-    assign bad_parity = 0;
+    assign miso = current_state == CHECK_AND_SEND_DATA_PARITY || current_state == CHECK_AND_SEND_HEADER_PARITY ? current_parity : 
+                  current_state == SEND_RD_DATA ? miso_shift_register[0] : 0;
+    assign bad_parity = (current_state == CHECK_AND_SEND_DATA_PARITY) || (current_state == CHECK_AND_SEND_HEADER_PARITY) ? 
+                            (mosi_shift_register[7] != miso) && ((if_rd_en && if_rd_err) || ((!if_rd_en) && if_wr_err)) : 0;
+    assign load_miso_shift_register = if_rd_en && (head_byte_counter == ADDR_BYTES) &&
+                                      ((current_state == CHECK_AND_SEND_DATA_PARITY) || (current_state == CHECK_AND_SEND_HEADER_PARITY));
+    assign if_wr_data = mosi_shift_register;
+    assign if_req = if_rd_en ?
+                        bit_counter_done &&
+                        (((current_state == RECEIVE_HEADER) && (head_byte_counter == ADDR_BYTES)) || (current_state == SEND_RD_DATA)) :
+                        bit_counter_done && (current_state == RECEIVE_WR_DATA);
+    assign flip_parity = current_state == SEND_RD_DATA ? miso_shift_register[0] : 
+                         ((current_state == RECEIVE_HEADER) || (current_state == RECEIVE_WR_DATA)) ? mosi_shift_register[7] : 0;
 
-    always_ff @(negedge scl or negedge cs_b) begin
-        if (!cs_b) begin
-            current_state <= next_state;
-
-            if (increment_bit_counter)
-                bit_counter <= bit_counter + 3'h1;
-
-            if (increment_data_byte_counter)
-                data_byte_counter <= data_byte_counter + 7'h01;
-
-            if (load_header)
-                header[head_byte_counter] <= {mosi, mosi_shift_register[7:1]};
-
-            if (load_miso_shift_register)
-                miso_shift_register <= if_rd_data;
-            else
-                miso_shift_register <= {1'b0, miso_shift_register[7:1]};
-
-            if (flip_parity)
-                current_parity <= !current_parity;
-
-            if (load_wr_data)
-                if_wr_data <= mosi_shift_register;
-
-            if (if_wr_err || if_rd_err)
-                if_err <= 1;
-        end
-        else begin
+    always_ff @(negedge scl or posedge cs_b) begin
+        if (cs_b) begin
             current_state <= RECEIVE_HEADER;
             bit_counter <= 0;
             head_byte_counter <= 0;
@@ -100,6 +92,35 @@ module spi #(
             miso_shift_register <= 0;
             current_parity <= 1;
             if_err <= 0;
+        end
+        else begin
+            current_state <= next_state;
+
+            if (increment_bit_counter)
+                bit_counter <= bit_counter + 3'h1;
+
+            if (increment_data_byte_counter)
+                data_byte_counter <= data_byte_counter + 7'h01;
+
+            if (increment_head_byte_counter)
+                head_byte_counter <= head_byte_counter + 1;
+
+            if (load_header)
+                header[head_byte_counter] <= mosi_shift_register;
+
+            if (load_miso_shift_register)
+                miso_shift_register <= if_rd_data;
+            else
+                miso_shift_register <= {1'b0, miso_shift_register[7:1]};
+
+            if ((current_state == CHECK_AND_SEND_DATA_PARITY) || (current_state == CHECK_AND_SEND_HEADER_PARITY))
+                current_parity <= 1;
+            else
+            if (flip_parity)
+                current_parity <= !current_parity;
+
+            if (if_wr_err || if_rd_err)
+                if_err <= 1;
         end
     end
 
@@ -116,7 +137,7 @@ module spi #(
                     next_state = DONE;
                 else
                 if (head_byte_counter == ADDR_BYTES) begin
-                    if (if_rd_data)
+                    if (if_rd_en)
                         next_state = SEND_RD_DATA;
                     else
                         next_state = RECEIVE_WR_DATA;

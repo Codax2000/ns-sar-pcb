@@ -83,4 +83,16 @@ class base_test extends uvm_test;
         uvm_factory::get().print();
     endfunction
 
+    virtual task main_phase(uvm_phase phase);
+        uvm_status_e status;
+        uvm_reg_data_t value;
+
+        phase.raise_objection(this);
+
+        m_env.m_ral.SH_CTRL.N_ACTIVE_CYCLES.write(status, 4);
+        m_env.m_ral.SH_CTRL.N_ACTIVE_CYCLES.read(status, value);
+
+        phase.drop_objection(this);
+    endtask
+
 endclass

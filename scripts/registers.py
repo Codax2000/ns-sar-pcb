@@ -142,7 +142,8 @@ Parameters:
 def gen_rtl(root, filename, **kwargs):
     exporter = RegblockExporter(**kwargs)
     exporter.export(root, filename, cpuif_cls=PassthroughCpuif,
-                    generate_hwif_report=True)
+                    generate_hwif_report=True, module_name='adc_regs_mod',
+                    retime_read_response=True)
 
 
 '''
