@@ -45,6 +45,8 @@ module spi #(
     logic load_wr_data;
     logic flip_parity;
     logic bad_parity;
+    logic load_address;
+    logic increment_address;
 
     // Variable: bit_counter_done
     // Utility variable to avoid having to type it out every time
@@ -55,9 +57,9 @@ module spi #(
 
     generate
         if (ADDR_BYTES == 1)
-            assign if_addr = current_state == RECEIVE_HEADER ? mosi_shift_register + data_byte_counter : header[ADDR_BYTES] + data_byte_counter;
+            assign if_addr = current_state == RECEIVE_HEADER ? mosi_shift_register : header[ADDR_BYTES];
         else
-            assign if_addr = current_state == RECEIVE_HEADER ? {mosi_shift_register, header[ADDR_BYTES-1:1]} + data_byte_counter : header[ADDR_BYTES:1] + data_byte_counter;
+            assign if_addr = current_state == RECEIVE_HEADER ? {mosi_shift_register, header[ADDR_BYTES-1:1]} : header[ADDR_BYTES:1];
     endgenerate
 
     assign n_expected_transactions = header[0][7:1];
@@ -92,9 +94,11 @@ module spi #(
             miso_shift_register <= 0;
             current_parity <= 1;
             if_err <= 0;
+            increment_address <= 0;
         end
         else begin
             current_state <= next_state;
+            increment_address <= if_req;
 
             if (increment_bit_counter)
                 bit_counter <= bit_counter + 3'h1;
@@ -107,6 +111,9 @@ module spi #(
 
             if (load_header)
                 header[head_byte_counter] <= mosi_shift_register;
+            else
+            if (increment_address)
+                header[ADDR_BYTES:1] <= header[ADDR_BYTES:1] + 1;
 
             if (load_miso_shift_register)
                 miso_shift_register <= if_rd_data;
