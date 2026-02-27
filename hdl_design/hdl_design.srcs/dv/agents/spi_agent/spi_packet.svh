@@ -60,11 +60,14 @@ class spi_packet extends uvm_sequence_item;
 
     `uvm_object_utils_begin(spi_packet)
         `uvm_field_int(rd_en, UVM_ALL_ON)
+        `uvm_field_enum(spi_parity_t, header_parity, UVM_ALL_ON)
         `uvm_field_int(address, UVM_ALL_ON)
+        `uvm_field_sarray_enum(spi_parity_t, address_parity, UVM_ALL_ON)
         `uvm_field_queue_int(write_data, UVM_ALL_ON)
-        `uvm_field_queue_int(write_parity, UVM_ALL_ON)
+        `uvm_field_queue_enum(spi_parity_t, write_parity, UVM_ALL_ON)
         `uvm_field_int(n_reads, UVM_ALL_ON)
         `uvm_field_queue_int(read_data, UVM_ALL_ON)
+        `uvm_field_queue_enum(spi_parity_t, read_parity, UVM_ALL_ON)
         `uvm_field_int(is_subsequent_transaction, UVM_ALL_ON)
     `uvm_object_utils_end
 

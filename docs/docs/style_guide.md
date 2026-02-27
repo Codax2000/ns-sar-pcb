@@ -12,7 +12,8 @@ All SystemVerilog files must utilize **NaturalDocs** headers. Comments should ex
 
 ### 1.1 RTL (Synthesizable)
 * **Assignments:** Sequential logic **must** use non-blocking assignments (`<=`).
-* **Resets:** Use active-low synchronous resets with the name `rst_n`. They will be synchronized on-chip if they are asynchronous coming in.
+* **Resets:** Use active-high synchronous resets with the name `rst` where possible. They should be synchronized on-chip if they are asynchronous coming in. This is mainly because Xilinx
+has active-high, synchronous resets, so this cuts down on utilization, but there are cases where async reset is necessary (like in SPI with csb).
 * **Automation:** Never manually code register banks. Use **PeakRDL** to generate RTL from the `.rdl` specification to ensure a single source of truth.
 
 ### 1.2 Behavioral Modeling (Analog/Mixed-Signal)
@@ -25,7 +26,9 @@ All SystemVerilog files must utilize **NaturalDocs** headers. Comments should ex
 * **Naming:** * Classes: `snake_case` (e.g., `adc_scoreboard`, `spi_monitor`).
     * Member Variables: `m_` prefix if an instance of an object that extends a UVM type (e.g., `m_env_cfg`) Exceptions for an agent, in which case the driver, monitor, sequencer should be called `driver`, `monitor`, `sequencer`.
 * **Virtual Interfaces:** No direct RTL hierarchy references. Use `uvm_config_db` to pass virtual interfaces (`vif`).
-* **Reporting:** Use `uvm_ms_info`, `uvm_ms_warning`, and `uvm_ms_error` macros to ensure analog-bridge signals are logged correctly within the UVM environment.
+* **Reporting:**
+- Use `uvm_ms_info`, `uvm_ms_warning`, and `uvm_ms_error` macros to ensure analog-bridge signals are logged correctly within the UVM environment.
+- When you no longer need a particular `uvm_info`, don't delete it; just turn up the verbosity to `UVM_HIGH` or `UVM_DEBUG`. If you had it there to start, chances are it's for a reason, so keep it.
 * **Variables:** * If something is Vivado-incompliant (e.g. real-type coverpoints), use a workaround and add `ifdef`s using the `VIVADO` define.
 ---
 
