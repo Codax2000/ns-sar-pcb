@@ -81,6 +81,7 @@ class base_test extends uvm_test;
     virtual function void end_of_elaboration_phase(uvm_phase phase);
         uvm_top.print_topology();
         uvm_factory::get().print();
+        m_env.m_ral.print();
     endfunction
 
     virtual task main_phase(uvm_phase phase);
@@ -89,8 +90,13 @@ class base_test extends uvm_test;
 
         phase.raise_objection(this);
 
-        m_env.m_ral.SH_CTRL.N_ACTIVE_CYCLES.write(status, 4);
-        m_env.m_ral.SH_CTRL.N_ACTIVE_CYCLES.read(status, value);
+        m_env.m_ral.SH_CTRL.N_ACTIVE_CYCLES.set(4);
+        m_env.m_ral.SH_CTRL.N_PASSIVE_CYCLES.set(10);
+        m_env.m_ral.SH_CTRL.update(status);
+
+        m_env.m_ral.INT2_CTRL.read(status, value);
+
+        m_env.m_ral.INT2_CTRL.write(status, 16'hDEAD);
 
         phase.drop_objection(this);
     endtask

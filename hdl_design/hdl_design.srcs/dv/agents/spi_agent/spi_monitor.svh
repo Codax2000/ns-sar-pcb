@@ -46,16 +46,18 @@ class spi_monitor extends uvm_monitor;
         logic [7:0] current_byte;
         spi_parity_t current_parity;
         int n_reads;
+        
         n_reads = 0;
 
         observe_byte(1, current_byte, current_parity);
-        item.rd_en = current_byte[7];
+        item.rd_en = current_byte[0];
         item.header_parity = current_parity;
 
         observe_byte(1, item.address[7:0], item.address_parity[0]);
         observe_byte(1, item.address[15:8], item.address_parity[1]);
-
+        `uvm_info(get_full_name(), $sformatf("Observed SPI address=%h", item.address), UVM_MEDIUM)
         while (!vif.csb) begin
+            `uvm_info(get_full_name(), $sformatf("Observing SPI data"), UVM_MEDIUM)
             observe_byte(item.rd_en, current_byte, current_parity);
 
             if (!vif.csb) begin
@@ -68,6 +70,7 @@ class spi_monitor extends uvm_monitor;
                     item.write_parity.push_back(current_parity);
                 end
             end
+
         end
 
     endtask
@@ -81,11 +84,13 @@ class spi_monitor extends uvm_monitor;
         current_byte = 8'bxxxx_xxxx;
         current_parity = BAD_PARITY;
 
-        for (int i = 0; ((i < 8) || (!vif.csb)); i++) begin
+        for (int i = 0; ((i < 8) && (!vif.csb)); i++) begin
             @(posedge vif.scl or posedge vif.csb);
             current_byte[i] = watch_mosi ? vif.mosi : vif.miso;
             parity_count = parity_count ^ current_byte[i];
         end
+        // wait another clock cycle and check parity
+        @(posedge vif.scl or posedge vif.csb);
         if ((parity_count == vif.mosi) && (parity_count == vif.miso))
             current_parity = GOOD_PARITY;
         

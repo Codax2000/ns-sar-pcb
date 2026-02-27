@@ -51,15 +51,6 @@ module dig_core #(
     adc_regs_mod_pkg::adc_regs__in_t hwif_in_spiclk;
     adc_regs_mod_pkg::adc_regs__out_t hwif_out_spiclk;
 
-    assign hwif_in_spiclk.ADC_CTRL.START_CONVERSION.hwclr = 0;
-    assign hwif_in_spiclk.ADC_CTRL.SYNC_RESET_RB.next = 0;
-    assign hwif_in_spiclk.ADC_CTRL.MAIN_STATE_RB.next[3:0] = 0;
-    assign hwif_in_spiclk.CONVERSION_FLAGS.N_VALID_SAMPLES.next[14:0] = 0;
-    assign hwif_in_spiclk.CONVERSION_FLAGS.PREVIOUS_CONVERSION_CORRUPTED.next = 0;
-    assign hwif_in_spiclk.adc_output_mem.rd_ack = 0;
-    assign hwif_in_spiclk.adc_output_mem.rd_data[7:0] = 0;
-    assign hwif_in_spiclk.adc_output_mem.wr_ack = 0;
-
     logic por_reset;
     initial begin
         por_reset = 1;
@@ -82,6 +73,33 @@ module dig_core #(
 
         .hwif_in(hwif_in_spiclk),
         .hwif_out(hwif_out_spiclk)
+    );
+
+    // Group: clocking signals & PLL
+    logic pll_clk;
+    assign pll_clk = i_sysclk;
+
+    adc_regs_mod_pkg::adc_regs__in_t hwif_in_sysclk;
+    adc_regs_mod_pkg::adc_regs__out_t hwif_out_sysclk;
+
+    assign hwif_in_spiclk.ADC_CTRL.START_CONVERSION.hwclr = 0;
+    assign hwif_in_sysclk.ADC_CTRL.SYNC_RESET_RB.next = 0;
+    assign hwif_in_sysclk.ADC_CTRL.MAIN_STATE_RB.next[3:0] = 0;
+    assign hwif_in_sysclk.CONVERSION_FLAGS.N_VALID_SAMPLES.next[14:0] = 0;
+    assign hwif_in_sysclk.CONVERSION_FLAGS.PREVIOUS_CONVERSION_CORRUPTED.next = 0;
+    assign hwif_in_sysclk.adc_output_mem.rd_ack = 0;
+    assign hwif_in_sysclk.adc_output_mem.rd_data[7:0] = 0;
+    assign hwif_in_sysclk.adc_output_mem.wr_ack = 0;
+
+    adc_regs_reg_sync i_sync (
+        .hwif_in_sysclk(hwif_in_sysclk),
+        .hwif_in_ifclk(hwif_in_spiclk),
+        .hwif_out_sysclk(hwif_out_sysclk),
+        .hwif_out_ifclk(hwif_out_spiclk),
+        .sysclk(pll_clk),
+        .ifclk(!i_scl),
+        .sysclk_rst(por_reset),
+        .ifclk_rst(i_cs_b) // TODO: sync this signal to SPI clk
     );
 
 endmodule
