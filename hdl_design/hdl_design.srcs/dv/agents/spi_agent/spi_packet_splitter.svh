@@ -48,12 +48,17 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
             current = spi_packet::type_id::create("current_pkt");
             current.rd_en = t.rd_en;
             current.address = address;
+            current.header_parity = t.header_parity;
+            current.address_parity[0] = t.address_parity[0];
+            current.address_parity[1] = t.address_parity[1];
             if (t.rd_en) begin
                 current.n_reads = 1;
                 current.read_data.push_back(t.read_data.pop_front());
+                current.read_parity.push_back(t.read_parity.pop_front());
             end else begin
                 current.n_reads = 0;
                 current.write_data.push_back(t.write_data.pop_front());
+                current.write_parity.push_back(t.write_parity.pop_front());
             end
             current.is_subsequent_transaction = is_subsequent_transaction;
             ap.write(current);

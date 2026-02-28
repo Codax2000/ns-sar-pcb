@@ -7,8 +7,8 @@ module dig_core #(
 ) (
     // clkgen pins
     input logic i_sysclk,
-    input logic i_sysrst_b,
-    
+    input logic i_sysrst,
+
     // analog boundary pins
     input logic i_sar_compare,
 
@@ -18,44 +18,110 @@ module dig_core #(
     input logic i_mosi,
     output logic o_miso
 );
-
-    // system signals from clock gen and reset IP
     logic pll_clk;
-    logic pll_is_locked;
-    logic sys_rst_b;
-    logic sys_rst;
+    assign pll_clk = i_sysclk;
+
+    // Group: Reset Synchronization
+    logic rst_spi;
+    logic rst_pll;
     
+    external_reset i_external_reset (
+        .arst(i_sysrst),
+        .clk(!i_scl),
+        .rst(rst_spi)
+    );
+
+    sync_nstage i_sync_rst (   
+        .src_data(rst_spi),
+        .dest_data(rst_pll),
+        .src_clk(!i_scl),
+        .dest_clk(pll_clk),
+        .dest_clk_rst(1'b0) // no reset on this sync
+    );
+
+    sync_nstage i_sync_hwclr (
+        .src_data(hwif_in_sysclk.ADC_CTRL.START_CONVERSION.hwclr),
+        .dest_data(hwif_in_spiclk.ADC_CTRL.START_CONVERSION.hwclr),
+        .src_clk(pll_clk),
+        .dest_clk(!i_scl),
+        .dest_clk_rst(rst_spi)
+    );
+
+    // Group: CSR interface (SPI) and registers
+    logic        if_req;
+    logic        if_rd_en;
+    logic [15:0] if_addr;
+    logic  [7:0] if_wr_data;
+
+    logic  [7:0] if_rd_data;
+    logic        if_rd_err;
+    logic        if_wr_err;
+
     spi #(
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .DATA_WIDTH(DATA_WIDTH)
+        .ADDR_BYTES(2)
     ) i_spi (
         .scl(i_scl),
         .mosi(i_mosi),
         .miso(o_miso),
-        .cs_b(i_cs_b || (!sys_rst_b)) // hold SPI in reset if the device is in reset
+        .cs_b(i_cs_b),
 
+        .if_req,
+        .if_rd_en,
+        .if_addr,
+        .if_wr_data,
+
+        .if_rd_data,
+        .if_rd_err,
+        .if_wr_err
     );
 
-    assign spi_rd_data = 0;
+    adc_regs_mod_pkg::adc_regs__in_t  hwif_in_spiclk;
+    adc_regs_mod_pkg::adc_regs__out_t hwif_out_spiclk;
 
-    clk_gen_xip i_clk_gen (
-        .reset(sys_rst),
-        .clk_in1(i_sysclk),
-        .clk_out1(pll_clk),
-        .locked(pll_is_locked)
+    adc_regs_mod i_registers (
+        .clk(!i_scl),
+        .rst(rst_spi),
+
+        .s_cpuif_req(if_req),
+        .s_cpuif_req_is_wr(!if_rd_en),
+        .s_cpuif_addr(if_addr),
+        .s_cpuif_wr_data(if_wr_data),
+        .s_cpuif_wr_biten(8'hFF),
+        .s_cpuif_rd_err(if_rd_err),
+        .s_cpuif_rd_data(if_rd_data),
+        .s_cpuif_wr_err(if_wr_err),
+
+        .hwif_in(hwif_in_spiclk),
+        .hwif_out(hwif_out_spiclk)
     );
 
-    reset_gen_xip i_reset_gen (
-        .slowest_sync_clk(i_sysclk),
-        .ext_reset_in(i_sysrst_b),
+    // Group: Signal synchronization
+    adc_regs_mod_pkg::adc_regs__in_t hwif_in_sysclk;
+    adc_regs_mod_pkg::adc_regs__out_t hwif_out_sysclk;
 
-        .dcm_locked(1'b1),
-        .aux_reset_in(1'b1),
-        .mb_debug_sys_rst(1'b0),
+    assign hwif_in_sysclk.ADC_CTRL.START_CONVERSION.hwclr = 0;
+    assign hwif_in_sysclk.ADC_CTRL.SYNC_RESET_RB.next = 0;
+    assign hwif_in_sysclk.ADC_CTRL.MAIN_STATE_RB.next[3:0] = 0;
+    assign hwif_in_sysclk.CONVERSION_FLAGS.N_VALID_SAMPLES.next[14:0] = 0;
+    assign hwif_in_sysclk.CONVERSION_FLAGS.PREVIOUS_CONVERSION_CORRUPTED.next = 0;
+    assign hwif_in_sysclk.adc_output_mem.rd_ack = 0;
+    assign hwif_in_sysclk.adc_output_mem.rd_data[7:0] = 0;
+    assign hwif_in_sysclk.adc_output_mem.wr_ack = 0;
 
-        .peripheral_reset(sys_rst)
+    adc_regs_reg_sync i_sync (
+        .hwif_in_sysclk(hwif_in_sysclk),
+        .hwif_in_ifclk(hwif_in_spiclk),
+        .hwif_out_sysclk(hwif_out_sysclk),
+        .hwif_out_ifclk(hwif_out_spiclk),
+        .sysclk(pll_clk),
+        .ifclk(!i_scl),
+        .sysclk_rst(rst_pll),
+        .ifclk_rst(rst_spi)
     );
 
-    assign sys_rst_b = (!sys_rst) && pll_is_locked;
+    // Group: ADC Output Memory
+    assign hwif_in_spiclk.adc_output_mem.rd_ack  = 0;
+    assign hwif_in_spiclk.adc_output_mem.rd_data = 0;
+    assign hwif_in_spiclk.adc_output_mem.wr_ack  = 0;
 
 endmodule

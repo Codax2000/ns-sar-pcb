@@ -47,7 +47,7 @@ module uvm_tb_top ();
         .vdd(VDD),
 
         .clk(i_clk_if.clk_driven),
-        .arst_n(i_reset_if.bit_driven),
+        .arst(i_reset_if.bit_driven),
 
         .vinp(vinp),
         .vinn(vinn),

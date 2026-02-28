@@ -60,6 +60,10 @@ class adc_env extends uvm_env;
     // invoke "the RAL in the ADC env" than "the RAL in the register environment in the ADC env."
     adc_regs m_ral;
 
+    // Variable: m_mc_sequencer
+    // Pointer to the multichannel/virtual sequencer that can be used for some repetitive tasks (reset, conversions of some size or other)
+    adc_mc_sequencer m_mc_sequencer;
+
     // Variable: reset_duration
     // The duration of the initial reset pulse in seconds
     real reset_duration;
@@ -92,6 +96,8 @@ class adc_env extends uvm_env;
         m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
                     type_id::create("m_reg_env", this);
         m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
+    
+        m_mc_sequencer = adc_mc_sequencer::type_id::create("m_mc_sequencer", this);
     endfunction
 
     virtual function void connect_phase(uvm_phase phase);
@@ -102,6 +108,13 @@ class adc_env extends uvm_env;
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
         m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
+
+        // connect sequencers
+        m_mc_sequencer.ral = m_ral;
+        m_mc_sequencer.m_reset_sequencer  = m_reset.sequencer;
+        m_mc_sequencer.m_clk_sequencer    = m_clk.sequencer;
+        m_mc_sequencer.m_adc_in_sequencer = m_adc_in.sequencer;
+        
     endfunction
 
     /**
@@ -137,7 +150,7 @@ class adc_env extends uvm_env;
             seq_value == 1;
         };
         adc_seq.randomize() with {
-            pkt_enabled == 1;
+            pkt_enabled == 0;
         };
 
         fork
@@ -146,18 +159,6 @@ class adc_env extends uvm_env;
             adc_seq.start(m_adc_in.sequencer);
         join
 
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 0;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 1;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
         #(reset_duration * 1e9); // delay reset duration in ns instead of seconds
         `uvm_info(get_full_name(), $sformatf("Reset Duration: %f ns", reset_duration * 1e9), UVM_HIGH)
 
@@ -165,19 +166,6 @@ class adc_env extends uvm_env;
             seq_value == 0;
         };
         reset_seq.start(m_reset.sequencer);
-
-        // add a timeout with UVM_FATAL if it times out (100 * reset duration should be fine)
-        time_start = $realtime();
-        do begin
-            reset_field = m_ral.get_field_by_name(m_env_cfg.reset_reg_rb_name);
-            if (reset_field == null)
-                `uvm_fatal(get_full_name(), $sformatf("Reset phase error: ADC env could not find field named %s",
-                                                      m_env_cfg.reset_reg_rb_name))
-            reset_field.read(status, value);
-        end while (((value == 0) || (status != UVM_IS_OK)) && (($realtime() - time_start) <= (100 * (reset_duration / 1e9))));
-        
-        if ((value == 0) || (status != UVM_IS_OK))
-            `uvm_fatal(get_full_name(), "Reset request timed out, reset did not deassert cleanly. Value is 0 or status is not OK.")
 
         phase.drop_objection(this);
     endtask

@@ -34,61 +34,76 @@ class spi_monitor extends uvm_monitor;
     virtual task run_phase(uvm_phase phase);
         spi_packet item;
         forever begin
+            @(negedge vif.csb);
             item = spi_packet::type_id::create("mon_packet");
             collect_transaction(item);
+            `uvm_info(get_full_name(), $sformatf("Collected monitor packet: %s", item.sprint()), UVM_MEDIUM)
+            mon_analysis_port.write(item);
         end
     endtask
 
     virtual task collect_transaction(spi_packet item);
-        @(negedge vif.csb);
-        `uvm_info("MON", "Collecting SPI Packet", UVM_HIGH)
-        collect_signals(item);
-    endtask
+        logic [7:0] current_byte;
+        spi_parity_t current_parity;
+        int n_observed_transactions;
+        int n_expected_transactions;
 
-    virtual task collect_signals(spi_packet item);
-        logic [7:0] reg_temp;
+        n_observed_transactions = 0;
+        n_expected_transactions = 0;
 
-        item = spi_packet::type_id::create("monitor_spi_pkt_copy");
-        item.is_subsequent_transaction = 0;
-        
-        // collect transaction type
-        @(posedge vif.scl);
-        item.rd_en = vif.mosi;
-        
-        // collect address
-        for (int i = 14; (i >= 0) && (!vif.csb); i--) begin
-            @(posedge vif.scl or posedge vif.csb);
-            item.address[i] = vif.mosi;
-        end
+        observe_byte(1, current_byte, current_parity);
+        item.rd_en = current_byte[0];
+        n_expected_transactions = current_byte[7:1] + 1;
+        item.header_parity = current_parity;
 
-        // receive MISO data if read, MOSI if write
-        if (item.rd_en) begin : reg_read
-            while (!vif.csb) begin
-                // monitor transaction
-                reg_temp = 8'bxxxx_xxxx;
-                for (int j = 7; (j >= 0) && (!vif.csb); j--) begin
-                    @(posedge vif.scl or posedge vif.csb);
-                    reg_temp[j] = vif.miso;
-                end
-                item.n_reads++;
-                item.read_data.push_back(reg_temp);
-            end
+        observe_byte(1, item.address[7:0], item.address_parity[0]);
+        observe_byte(1, item.address[15:8], item.address_parity[1]);
+        `uvm_info(get_full_name(),
+                  $sformatf("Observed SPI address=%h, rd_en=%b, %0d expected transaction bytes", 
+                            item.address, item.rd_en, n_expected_transactions),
+                  UVM_MEDIUM)
+        while (n_observed_transactions != n_expected_transactions) begin
+            `uvm_info(get_full_name(), $sformatf("Observing SPI data"), UVM_MEDIUM)
+            observe_byte(!item.rd_en, current_byte, current_parity);
+            n_observed_transactions++;
             
-            `uvm_info("MON", $sformatf("Sending Read Packet", item.sprint()), UVM_HIGH)
-            mon_analysis_port.write(item);
-        end else begin : reg_write
-            while (!vif.csb) begin
-                reg_temp = 8'bxxxx_xxxx;
-                for (int j = 7; (j >= 0) && (!vif.csb); j--) begin
-                    @(posedge vif.scl or posedge vif.csb);
-                    reg_temp[j] = vif.mosi;
-                end
-                item.write_data.push_back(reg_temp);
+            if (item.rd_en) begin
+                item.read_data.push_back(current_byte);
+                item.read_parity.push_back(current_parity);
+                item.n_reads++;
+            end else begin
+                item.write_data.push_back(current_byte);
+                item.write_parity.push_back(current_parity);
             end
 
-            `uvm_info("MON", $sformatf("Sending Write Packet", item.sprint()), UVM_HIGH)
-            mon_analysis_port.write(item);
         end
+        @(posedge vif.csb);
 
     endtask
+
+    virtual task observe_byte(bit watch_mosi,
+                              output logic [7:0] current_byte,
+                              output spi_parity_t current_parity);
+        bit parity_count;
+        
+        parity_count = 1;
+        current_byte = 8'bxxxx_xxxx;
+        current_parity = BAD_PARITY;
+
+        for (int i = 0; i < 8; i++) begin
+            @(posedge vif.scl);
+            current_byte[i] = watch_mosi ? vif.mosi : vif.miso;
+            parity_count = parity_count ^ current_byte[i];
+        end
+        // wait another clock cycle and check parity
+        @(posedge vif.scl);
+        if ((parity_count == vif.mosi) && (parity_count == vif.miso))
+            current_parity = GOOD_PARITY;
+        
+        `uvm_info(get_full_name(),
+                  $sformatf("Observed monitor byte: data=%h, parity=%s",
+                            current_byte, current_parity.name()),
+                  UVM_MEDIUM)
+    endtask
+
 endclass
