@@ -60,6 +60,10 @@ class adc_env extends uvm_env;
     // invoke "the RAL in the ADC env" than "the RAL in the register environment in the ADC env."
     adc_regs m_ral;
 
+    // Variable: m_mc_sequencer
+    // Pointer to the multichannel/virtual sequencer that can be used for some repetitive tasks (reset, conversions of some size or other)
+    adc_mc_sequencer m_mc_sequencer;
+
     // Variable: reset_duration
     // The duration of the initial reset pulse in seconds
     real reset_duration;
@@ -92,6 +96,8 @@ class adc_env extends uvm_env;
         m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
                     type_id::create("m_reg_env", this);
         m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
+    
+        m_mc_sequencer = adc_mc_sequencer::type_id::create("m_mc_sequencer", this);
     endfunction
 
     virtual function void connect_phase(uvm_phase phase);
@@ -102,6 +108,13 @@ class adc_env extends uvm_env;
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
         m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
+
+        // connect sequencers
+        m_mc_sequencer.ral = m_ral;
+        m_mc_sequencer.m_reset_sequencer  = m_reset.sequencer;
+        m_mc_sequencer.m_clk_sequencer    = m_clk.sequencer;
+        m_mc_sequencer.m_adc_in_sequencer = m_adc_in.sequencer;
+        
     endfunction
 
     /**
@@ -146,18 +159,6 @@ class adc_env extends uvm_env;
             adc_seq.start(m_adc_in.sequencer);
         join
 
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 0;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 1;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
         #(reset_duration * 1e9); // delay reset duration in ns instead of seconds
         `uvm_info(get_full_name(), $sformatf("Reset Duration: %f ns", reset_duration * 1e9), UVM_HIGH)
 
@@ -165,8 +166,6 @@ class adc_env extends uvm_env;
             seq_value == 0;
         };
         reset_seq.start(m_reset.sequencer);
-
-        #3us;
 
         phase.drop_objection(this);
     endtask

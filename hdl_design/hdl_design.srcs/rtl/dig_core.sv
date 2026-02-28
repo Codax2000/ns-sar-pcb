@@ -7,7 +7,7 @@ module dig_core #(
 ) (
     // clkgen pins
     input logic i_sysclk,
-    input logic i_sysrst_b,
+    input logic i_sysrst,
 
     // analog boundary pins
     input logic i_sar_compare,
@@ -18,9 +18,36 @@ module dig_core #(
     input logic i_mosi,
     output logic o_miso
 );
+    logic pll_clk;
+    assign pll_clk = i_sysclk;
 
+    // Group: Reset Synchronization
+    logic rst_spi;
+    logic rst_pll;
+    
+    external_reset i_external_reset (
+        .arst(i_sysrst),
+        .clk(!i_scl),
+        .rst(rst_spi)
+    );
 
-    // Group: CPUIF Interface Signals. No ACKs, not useful.
+    sync_nstage i_sync_rst (   
+        .src_data(rst_spi),
+        .dest_data(rst_pll),
+        .src_clk(!i_scl),
+        .dest_clk(pll_clk),
+        .dest_clk_rst(1'b0) // no reset on this sync
+    );
+
+    sync_nstage i_sync_hwclr (
+        .src_data(hwif_in_sysclk.ADC_CTRL.START_CONVERSION.hwclr),
+        .dest_data(hwif_in_spiclk.ADC_CTRL.START_CONVERSION.hwclr),
+        .src_clk(pll_clk),
+        .dest_clk(!i_scl),
+        .dest_clk_rst(rst_spi)
+    );
+
+    // Group: CSR interface (SPI) and registers
     logic        if_req;
     logic        if_rd_en;
     logic [15:0] if_addr;
@@ -48,19 +75,12 @@ module dig_core #(
         .if_wr_err
     );
 
-    adc_regs_mod_pkg::adc_regs__in_t hwif_in_spiclk;
+    adc_regs_mod_pkg::adc_regs__in_t  hwif_in_spiclk;
     adc_regs_mod_pkg::adc_regs__out_t hwif_out_spiclk;
-
-    logic por_reset;
-    initial begin
-        por_reset = 1;
-        repeat (2) @(negedge i_scl);
-        por_reset = 0;
-    end
 
     adc_regs_mod i_registers (
         .clk(!i_scl),
-        .rst(por_reset),
+        .rst(rst_spi),
 
         .s_cpuif_req(if_req),
         .s_cpuif_req_is_wr(!if_rd_en),
@@ -75,14 +95,11 @@ module dig_core #(
         .hwif_out(hwif_out_spiclk)
     );
 
-    // Group: clocking signals & PLL
-    logic pll_clk;
-    assign pll_clk = i_sysclk;
-
+    // Group: Signal synchronization
     adc_regs_mod_pkg::adc_regs__in_t hwif_in_sysclk;
     adc_regs_mod_pkg::adc_regs__out_t hwif_out_sysclk;
 
-    assign hwif_in_spiclk.ADC_CTRL.START_CONVERSION.hwclr = 0;
+    assign hwif_in_sysclk.ADC_CTRL.START_CONVERSION.hwclr = 0;
     assign hwif_in_sysclk.ADC_CTRL.SYNC_RESET_RB.next = 0;
     assign hwif_in_sysclk.ADC_CTRL.MAIN_STATE_RB.next[3:0] = 0;
     assign hwif_in_sysclk.CONVERSION_FLAGS.N_VALID_SAMPLES.next[14:0] = 0;
@@ -98,8 +115,13 @@ module dig_core #(
         .hwif_out_ifclk(hwif_out_spiclk),
         .sysclk(pll_clk),
         .ifclk(!i_scl),
-        .sysclk_rst(por_reset),
-        .ifclk_rst(i_cs_b) // TODO: sync this signal to SPI clk
+        .sysclk_rst(rst_pll),
+        .ifclk_rst(rst_spi)
     );
+
+    // Group: ADC Output Memory
+    assign hwif_in_spiclk.adc_output_mem.rd_ack  = 0;
+    assign hwif_in_spiclk.adc_output_mem.rd_data = 0;
+    assign hwif_in_spiclk.adc_output_mem.wr_ack  = 0;
 
 endmodule

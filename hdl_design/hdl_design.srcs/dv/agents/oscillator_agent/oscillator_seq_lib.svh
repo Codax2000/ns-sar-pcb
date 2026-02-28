@@ -37,14 +37,30 @@ class oscillator_single_packet_seq extends uvm_sequence #(oscillator_packet);
     endfunction
 
     virtual task body();
+        uvm_object tmp_pkt;
 
-        pkt = oscillator_packet::type_id::create("pkt");
+        uvm_factory::get().debug_create_by_type(
+            oscillator_packet::get_type(),
+            get_full_name(),
+            "pkt"
+        );
+
+        tmp_pkt = uvm_factory::get().create_object_by_type(
+            oscillator_packet::get_type(),
+            get_full_name(),
+            "pkt"
+        );
+
+        if (! $cast(pkt, tmp_pkt))
+            `uvm_fatal(get_full_name(), $sformatf("Illegal packet type created: tmp_pkt=%s", tmp_pkt.sprint()))
 
         pkt.randomize() with {
             enabled == pkt_enabled;
             frequency_int == pkt_frequency;
             disabled_state == pkt_disabled_state;
         };
+        
+        `uvm_info(get_full_name(), $sformatf("New oscillator sequence: %s", pkt.sprint()), UVM_DEBUG)
 
         start_item(pkt);
         finish_item(pkt);

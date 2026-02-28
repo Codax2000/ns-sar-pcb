@@ -96,13 +96,13 @@ class RTLSyncExporter:
             if node.get_property('hw').name == 'r':
                 hwif_name = 'hwif_out'
                 hwif_value = 'value'
-                hwif_destclk = 'ifclk'
-                hwif_srcclk = 'sysclk'
+                hwif_srcclk = 'ifclk'
+                hwif_destclk = 'sysclk'
             else:
                 hwif_name = 'hwif_in'
                 hwif_value = 'next'
-                hwif_srcclk = 'ifclk'
-                hwif_destclk = 'sysclk'
+                hwif_destclk = 'ifclk'
+                hwif_srcclk = 'sysclk'
 
             self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
                                         hwif_destclk, hwif_path, node)

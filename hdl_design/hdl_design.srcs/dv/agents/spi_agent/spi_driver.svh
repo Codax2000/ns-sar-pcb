@@ -49,7 +49,7 @@ class spi_driver extends uvm_driver #(spi_packet);
         logic [7:0]  header_byte;
         logic [7:0]  current_output;
 
-        `uvm_info("DRV", $sformatf("Driving SPI packet: %s", req.sprint()), UVM_MEDIUM);
+        `uvm_info("DRV", $sformatf("Driving SPI packet: %s", req.sprint()), UVM_HIGH);
         if (req.n_reads != req.read_parity.size())
             `uvm_fatal(get_full_name(), "Received SPI packet with n_reads != read parity size")
         if (req.write_data.size() != req.write_parity.size())

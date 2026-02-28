@@ -55,8 +55,12 @@ module sine_ms_bridge_core #(
     initial begin
         phase = 0.0;
         forever begin
-            #(current_delay_ns);
-            phase += (phase_increase);
+            if (clk_enabled) begin
+                #(current_delay_ns);
+                phase += (phase_increase);
+            end
+            else
+                wait (clk_enabled == 1);
         end
     end
 
