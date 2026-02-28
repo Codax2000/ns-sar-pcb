@@ -47,7 +47,7 @@ package adc_env_pkg;
 
     // TODO: eventually, include scoreboard package
 
-    // TODO: include multichannel sequencer once completed
+    // include multichannel sequencer and sequence library
     `include "adc_mc_sequencer.svh"
     `include "adc_mc_seq_lib.svh"
 

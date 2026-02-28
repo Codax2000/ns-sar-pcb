@@ -69,8 +69,7 @@ class RTLSyncExporter:
                 file=self.f)
             print(f'import {name}_mod_pkg::*;', file=self.f)
             print(f'module {name}_reg_sync #(', file=self.f)
-            print(f'\tparameter N_SYNC_STAGES={n_sync_stages},', file=self.f)
-            print(f'\tparameter SRC_INPUT_REG={0}', file=self.f)
+            print(f'\tparameter N_SYNC_STAGES={n_sync_stages}', file=self.f)
             print(') (', file=self.f)
             print(f'\tinput {name}__in_t hwif_in_sysclk,', file=self.f)
             print(f'\tinput {name}__in_t hwif_in_ifclk,', file=self.f)
@@ -124,7 +123,6 @@ class RTLSyncExporter:
 
             print('\tsync_nstage #(', file=self.f)
             print('\t\t.N_SYNC_STAGES(N_SYNC_STAGES),', file=self.f)
-            print('\t\t.SRC_INPUT_REG(SRC_INPUT_REG),', file=self.f)
             print(f"\t\t.N_BITS({node.width})", file=self.f)
             print(f"\t) sync_{'.'.join(hwif_path.split('.')[:3]).replace('.', '_')} (", file=self.f)
             print(f'\t\t.src_clk({hwif_srcclk}),', file=self.f)
