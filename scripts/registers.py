@@ -29,12 +29,12 @@ DEFAULT_RDL_SPEC = './hdl_design/hdl_design.srcs/registers/registers.rdl'
 # Variable: DEFAULT_HTML_PATH
 # Defines the default path to the directory in which the HTML documentation
 # will be stored
-DEFAULT_HTML_PATH = './adc_regs'
+DEFAULT_HTML_PATH = './docs/docs/adc_regs'
 
 # Variable: DEFAULT_UVM_PKG_PATH
 # Defines the default path to the file which will contain UVM registers
 DEFAULT_UVM_PKG_PATH = \
-    './hdl_design/hdl_design.srcs/dv/reg_env/adc_regs_pkg.svh'
+    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_pkg.sv'
 
 # Variable: DEFAULT_REG_RTL_PATH
 # Path to the directory in which the RTL package and path will be stored
@@ -117,7 +117,7 @@ Parameters:
 '''
 def gen_uvm_pkg(root, filename, **kwargs):
     exporter = UVMExporter(**kwargs)
-    exporter.export(root, filename)
+    exporter.export(root, filename, use_uvm_factory=True)
 
 
 '''
@@ -131,7 +131,7 @@ Parameters:
 '''
 def gen_html(root, filename, **kwargs):
     exporter = HTMLExporter(**kwargs)
-    exporter.export(root, filename)
+    exporter.export(root, filename, home_url='../')
 
 
 '''
