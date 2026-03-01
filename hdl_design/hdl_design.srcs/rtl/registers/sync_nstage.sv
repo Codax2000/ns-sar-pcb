@@ -13,7 +13,7 @@ module sync_nstage #(
     logic [N_BITS-1:0] sync_to_src_clk;
     genvar i;
     for (i = 0; i < N_SYNC_STAGES; i++) begin
-        always_ff @(posedge dest_clk or dest_clk_rst) begin
+        always_ff @(posedge dest_clk) begin
             if (dest_clk_rst) begin
                 sync_to_dest_clk[i] <= 0;
             end

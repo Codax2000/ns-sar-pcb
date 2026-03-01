@@ -112,7 +112,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
             `uvm_fatal("reg2spi_adapter", "Failed to cast bus item to SPI packet");
             
         rw.kind = pkt.rd_en ? UVM_READ : UVM_WRITE ;
-        rw.addr = pkt.address[15:1];
+        rw.addr = {pkt.address[15:1], 1'b0};
         rw.byte_en = 1 << pkt.address[0];
         rw.data = pkt.rd_en ? pkt.read_data[0] : pkt.write_data[0];
 

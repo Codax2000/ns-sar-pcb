@@ -1,42 +1,34 @@
+/**
+Class: reg_rw_test
 
+Runs UVM predefined sequences on register layer to make sure that
+all fields are readable/writeable. This includes RW and bit-banging.
+*/
+class reg_rw_test extends base_test;
 
-class main_sm_test extends base_test;
+    `uvm_component_utils(reg_rw_test)
 
-    `uvm_component_utils(main_sm_test)
-
-    function new (string name = "main_sm_test", uvm_component parent = null);
+    function new (string name = "reg_rw_test", uvm_component parent = null);
         super.new(name, parent);
     endfunction
 
-    virtual function int randomize_config();
-        i_env_cfg.randomize() with {
-            nfft_power == 4; // NFFT == 16
-            osr_power  == 3; // OSR  == 8
-            n_sh_total_cycles == 6;
-            n_sh_active_cycles == 5;
-            n_bottom_plate_active_cycles == 4;
-            n_sar_cycles == 1;
-            n_int1_total_cycles == 6;
-            n_int1_active_cycles == 5;
-            n_int2_total_cycles == 6;
-            n_int2_active_cycles == 5;
-        };
-    endfunction
-
     virtual task main_phase(uvm_phase phase);
-        logic readback_status;
-        
+        uvm_reg_hw_reset_seq m_reg_reset_seq;
+
         phase.raise_objection(this);
-        `uvm_info("TEST", "Starting main phase", UVM_MEDIUM)
 
-        write_field("START_CONVERSION", 1);
+        // For each field in address map,
+        
+        // if field is writeable and is not volatile, randomize it and set()
 
-        do begin
-            read_field("START_CONVERSION", readback_status);
-        end while (readback_status == 0);
+        // burst update the whole map
+
+        // For each field in address map,
+        // read it back and check it
+
+        // Do it again with random bursts (min/max, various sizes)
 
         phase.drop_objection(this);
-        `uvm_info("TEST", "Ending main phase", UVM_MEDIUM)
     endtask
 
 endclass
