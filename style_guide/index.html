@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Codax2000 Engineering Style Guide - Noise-Shaping SAR PCB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Codax2000 Engineering Style Guide";
+        var mkdocs_page_input_path = "style_guide.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../theory/">ADC Theory</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../hdl/">HDL</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pcb/">PCB</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ndocs/">Code</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../adc_regs/">Register Map</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Noise-Shaping SAR PCB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Codax2000 Engineering Style Guide</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="codax2000-engineering-style-guide">Codax2000 Engineering Style Guide</h1>
+<p><strong>Revision:</strong> 1.0  </p>
+<p><strong>Core Philosophy:</strong> Documentation is a contract. If code and comments diverge, the code is the truth,
+but the comments are a liability. Prefer automated documentation (NaturalDocs) and readable logic over "clouds of text."
+In short, comments are no substitute for illegible code.</p>
+<hr />
+<h2 id="1-systemverilog-style-guide">1. SystemVerilog Style Guide</h2>
+<p>All SystemVerilog files must utilize <strong>NaturalDocs</strong> headers. Comments should explain the <em>why</em> (architectural intent), while the code should be readable enough to explain the <em>what</em> at a glance.</p>
+<h3 id="11-rtl-synthesizable">1.1 RTL (Synthesizable)</h3>
+<ul>
+<li><strong>Assignments:</strong> Sequential logic <strong>must</strong> use non-blocking assignments (<code>&lt;=</code>).</li>
+<li><strong>Resets:</strong> Use active-high synchronous resets with the name <code>rst</code> where possible. They should be synchronized on-chip if they are asynchronous coming in. This is mainly because Xilinx
+has active-high, synchronous resets, so this cuts down on utilization, but there are cases where async reset is necessary (like in SPI with csb).</li>
+<li><strong>Automation:</strong> Never manually code register banks. Use <strong>PeakRDL</strong> to generate RTL from the <code>.rdl</code> specification to ensure a single source of truth.</li>
+</ul>
+<h3 id="12-behavioral-modeling-analogmixed-signal">1.2 Behavioral Modeling (Analog/Mixed-Signal)</h3>
+<ul>
+<li><strong>Signal Types:</strong> Use <code>real</code> for continuous signals (voltages, currents) in behavioral models.</li>
+<li><strong>Precision:</strong> Every behavioral file must include a local <code>`timescale</code>.</li>
+<li><strong>Partitioning:</strong> Models should mimic the physical PCB floorplan. If an integrator is discrete on the board, it should be a standalone module in the simulation. This also helps with block-level validation in SPICE, since we can't do co-simulation without some kind of sim engine.</li>
+</ul>
+<h3 id="13-design-verification-dv">1.3 Design Verification (DV)</h3>
+<ul>
+<li><strong>File Names</strong> * Package files should end with <code>_pkg.sv</code>. All other UVM class files should be defined as header files, using <code>.svh</code>. Modules should always end in <code>.sv</code>.</li>
+<li><strong>Naming:</strong> * Classes: <code>snake_case</code> (e.g., <code>adc_scoreboard</code>, <code>spi_monitor</code>).<ul>
+<li>Member Variables: <code>m_</code> prefix if an instance of an object that extends a UVM type (e.g., <code>m_env_cfg</code>) Exceptions for an agent, in which case the driver, monitor, sequencer should be called <code>driver</code>, <code>monitor</code>, <code>sequencer</code>.</li>
+</ul>
+</li>
+<li><strong>Virtual Interfaces:</strong> No direct RTL hierarchy references. Use <code>uvm_config_db</code> to pass virtual interfaces (<code>vif</code>).</li>
+<li><strong>Reporting:</strong></li>
+<li>Use <code>uvm_ms_info</code>, <code>uvm_ms_warning</code>, and <code>uvm_ms_error</code> macros to ensure analog-bridge signals are logged correctly within the UVM environment.</li>
+<li>When you no longer need a particular <code>uvm_info</code>, don't delete it; just turn up the verbosity to <code>UVM_HIGH</code> or <code>UVM_DEBUG</code>. If you had it there to start, chances are it's for a reason, so keep it.</li>
+<li><strong>Variables:</strong> * If something is Vivado-incompliant (e.g. real-type coverpoints), use a workaround and add <code>ifdef</code>s using the <code>VIVADO</code> define.</li>
+</ul>
+<hr />
+<h2 id="2-python-style-guide">2. Python Style Guide</h2>
+<p>Python is the "automation glue" of the project. It must be as reliable as the hardware it generates.</p>
+<h3 id="21-linting-standards">2.1 Linting &amp; Standards</h3>
+<ul>
+<li><strong>Linter:</strong> <strong>flake8</strong> is mandatory. Code must pass with zero warnings.</li>
+<li><strong>Docstrings:</strong> Use NaturalDocs for documentation. Python <code>help</code> still works, but docstrings have
+to be above the function. This sucks, but we want our documentation in one place.</li>
+</ul>
+<h3 id="22-project-specific-rules">2.2 Project-Specific Rules</h3>
+<ul>
+<li><strong>No Hard-Coding:</strong> Scripts must pull parameters (bit-widths, memory depths) from the design source where possible.</li>
+<li><strong>Diagrammatic Integrity:</strong> Technical diagrams must be generated via <code>schemdraw</code> in <code>scripts/diagrams.py</code>. Manual edits to images are a pain,
+just update the script so Git can see the changes.</li>
+</ul>
+<hr />
+<h2 id="3-general-clean-code-principles">3. General "Clean Code" Principles</h2>
+<ul>
+<li><strong>Meaningful Names:</strong> If you need a comment to explain a variable name, the name is probably wrong. We comment variables in NaturalDocs so a user
+knows how to use them from the documentation, not to explain poor naming.</li>
+<li><strong>Small Functions:</strong> Functions should do one thing. </li>
+<li><strong>Stale Comments are Bugs:</strong> Delete self-evident comments. Document the <em>decisions</em>, not the <em>syntax</em>.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
