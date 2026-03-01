@@ -4,6 +4,7 @@ import uvm_pkg::*;
 `include "uvm_macros.svh"
 
 import base_test_pkg::*;
+import tests_pkg::*;
 
 /**
 Module: uvm_tb_top
@@ -67,7 +68,7 @@ module uvm_tb_top ();
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test("base_test");
+        run_test("reg_rw_test");
     end
 
 endmodule

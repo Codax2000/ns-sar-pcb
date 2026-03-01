@@ -18,6 +18,6 @@ module external_reset #(
         end
     end
 
-    assign rst = reset_counter == RESET_COUNT;
+    assign rst = reset_counter != RESET_COUNT;
 
 endmodule

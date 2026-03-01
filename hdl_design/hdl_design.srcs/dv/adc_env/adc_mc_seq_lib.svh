@@ -40,8 +40,10 @@ class reset_seq extends uvm_sequence;
         p_sequencer.reset_seq.start(p_sequencer.m_reset_sequencer);
         
         p_sequencer.ral.get_field_by_name(field_name).read(status, value);
-        if (value != 0)
-            `uvm_error(get_full_name(), "Expected synchronous reset readback to be 0, received device still in reset")
+        if (value != 1)
+            `uvm_error(get_full_name(), "Expected synchronous reset readback to be 1, received 0 (no readback, device still in reset)")
+        else
+            `uvm_info(get_full_name(), "Expected synchronous reset readback to be 1, received 1", UVM_LOW)
     endtask
 
 endclass

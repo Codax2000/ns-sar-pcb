@@ -79,6 +79,7 @@ module spi #(
     assign if_wr_data = mosi_shift_register;
     assign if_req = if_rd_en ?
                         bit_counter_done &&
+                        data_byte_counter != n_expected_transactions &&
                         (((current_state == RECEIVE_HEADER) && (head_byte_counter == ADDR_BYTES)) || (current_state == SEND_RD_DATA)) :
                         bit_counter_done && (current_state == RECEIVE_WR_DATA);
     assign flip_parity = current_state == SEND_RD_DATA ? miso_shift_register[0] : 
