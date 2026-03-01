@@ -43,13 +43,13 @@ package adc_env_pkg;
     import oscillator_agent_pkg::*;
     import sine_agent_pkg::*;
     import reg_env_pkg::*;
-    import adc_regs_pkg::*;
+    import adc_regs_dv_pkg::*;
 
     // TODO: eventually, include scoreboard package
 
-    // TODO: include multichannel sequencer once completed
-    // `include "adc_mc_sequencer.svh"
-    // `include "adc_mc_seq_lib.svh"
+    // include multichannel sequencer and sequence library
+    `include "adc_mc_sequencer.svh"
+    `include "adc_mc_seq_lib.svh"
 
     // finally, include environment
     `include "adc_env_cfg.svh"

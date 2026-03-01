@@ -60,13 +60,9 @@ class adc_env extends uvm_env;
     // invoke "the RAL in the ADC env" than "the RAL in the register environment in the ADC env."
     adc_regs m_ral;
 
-    // Variable: reset_duration
-    // The duration of the initial reset pulse in seconds
-    real reset_duration;
-
-    // Variable: system_clk_frequency
-    // The speed in Hz at which the system clock is running
-    int system_clk_frequency;
+    // Variable: m_mc_sequencer
+    // Pointer to the multichannel/virtual sequencer that can be used for some repetitive tasks (reset, conversions of some size or other)
+    adc_mc_sequencer m_mc_sequencer;
 
     function new(string name = "adc_env", uvm_component parent);
         super.new(name, parent);
@@ -81,17 +77,25 @@ class adc_env extends uvm_env;
 
         uvm_config_db #(spi_agent_cfg)::set(this, "m_spi", "cfg", m_spi_cfg);
         uvm_config_db #(oscillator_agent_cfg)::set(this, "m_clk", "cfg", m_clk_cfg);
-        uvm_config_db #(bit_bus_agent_cfg #(.WIDTH(1)))::set(this, "m_reset", "cfg", m_reset_cfg);
-        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_adc_in", "cfg", m_adc_in_cfg);
+        uvm_config_db #(bit_bus_agent_cfg #(.WIDTH(1)))::set(this, "m_reset", 
+                                                             "cfg", m_reset_cfg);
+        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_adc_in", 
+                                                   "cfg", m_adc_in_cfg);
         
         m_spi    = spi_agent::type_id::create("m_spi", this);
         m_clk    = oscillator_agent::type_id::create("m_clk", this);
         m_reset  = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset", this);
         m_adc_in = sine_agent::type_id::create("m_adc_in", this);
 
-        m_reg_env = reg_env #(.SEQ_ITEM(spi_packet), .ADAPTER(reg2spi_adapter), .REG_BLOCK(adc_regs))::
+        m_reg_env = reg_env #(
+                        .SEQ_ITEM(spi_packet), 
+                        .ADAPTER(reg2spi_adapter), 
+                        .REG_BLOCK(adc_regs))::
                     type_id::create("m_reg_env", this);
-        m_spi_packet_splitter = spi_packet_splitter::type_id::create("m_spi_packet_splitter", this);
+        m_spi_packet_splitter = spi_packet_splitter::type_id::create(
+            "m_spi_packet_splitter", this);
+    
+        m_mc_sequencer = adc_mc_sequencer::type_id::create("m_mc_sequencer", this);
     endfunction
 
     virtual function void connect_phase(uvm_phase phase);
@@ -102,6 +106,13 @@ class adc_env extends uvm_env;
         // add a packet splitter between the SPI monitor and register predictor to break up burst transactions
         m_spi.monitor.mon_analysis_port.connect(m_spi_packet_splitter.analysis_export);
         m_spi_packet_splitter.ap.connect(m_reg_env.predictor.bus_in);
+
+        // connect sequencers
+        m_mc_sequencer.ral = m_ral;
+        m_mc_sequencer.m_reset_sequencer  = m_reset.sequencer;
+        m_mc_sequencer.m_clk_sequencer    = m_clk.sequencer;
+        m_mc_sequencer.m_adc_in_sequencer = m_adc_in.sequencer;
+        
     endfunction
 
     /**
@@ -113,71 +124,45 @@ class adc_env extends uvm_env;
     that the device has successfully been reset.
     */
     virtual task reset_phase(uvm_phase phase);
-        oscillator_single_packet_seq  clk_seq;
-        single_value_seq #(.WIDTH(1)) reset_seq;
-        oscillator_single_packet_seq  adc_seq;
+        oscillator_single_packet_seq  m_clk_seq;
+        reset_seq                     m_reset_seq;
         uvm_reg_field                 reset_field;
         uvm_status_e                  status;
         uvm_reg_data_t                value;
+        int                           reset_duration_ns_int;
 
         real time_start;
         real time_reset;
+        
+        m_clk_seq   = oscillator_single_packet_seq ::type_id::create("m_clk_seq");
+        m_reset_seq = reset_seq                    ::type_id::create("reset_seq");
+        
+        `uvm_info(get_full_name(), $sformatf(
+            "RESET PHASE: sending:\nClock sequence:\n%s\n\tReset Sequence:\n%s",
+            m_clk_seq.sprint(),
+            m_reset_seq.sprint()
+        ), UVM_MEDIUM)
+        `uvm_info(get_full_name(),
+            $sformatf("Delaying by %f ns", m_env_cfg.reset_duration),
+            UVM_MEDIUM)
 
         phase.raise_objection(this);
-        
-        clk_seq   = oscillator_single_packet_seq ::type_id::create("clk_seq");
-        reset_seq = single_value_seq #(.WIDTH(1))::type_id::create("reset_seq");
-        adc_seq   = oscillator_single_packet_seq ::type_id::create("adc_seq");
 
-        clk_seq.randomize() with {
+        reset_duration_ns_int = m_env_cfg.reset_duration * 1e9;
+        m_reset_seq.field_name = this.m_env_cfg.reset_reg_rb_name;
+
+        m_clk_seq.randomize() with {
             pkt_enabled == 1;
-            pkt_frequency == system_clk_frequency;
+            pkt_frequency == m_env_cfg.system_clk_frequency;
         };
-        reset_seq.randomize() with {
-            seq_value == 1;
-        };
-        adc_seq.randomize() with {
-            pkt_enabled == 1;
+        m_reset_seq.randomize() with {
+            reset_duration_ns == reset_duration_ns_int;
         };
 
         fork
-            clk_seq.start(m_clk.sequencer);
-            reset_seq.start(m_reset.sequencer);
-            adc_seq.start(m_adc_in.sequencer);
+            m_clk_seq.start(m_clk.sequencer);
+            m_reset_seq.start(m_mc_sequencer);
         join
-
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 0;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
-        #1us;
-        adc_seq.randomize() with {
-            pkt_enabled == 1;
-        };
-        adc_seq.start(m_adc_in.sequencer);
-
-        #(reset_duration * 1e9); // delay reset duration in ns instead of seconds
-        `uvm_info(get_full_name(), $sformatf("Reset Duration: %f ns", reset_duration * 1e9), UVM_HIGH)
-
-        reset_seq.randomize() with {
-            seq_value == 0;
-        };
-        reset_seq.start(m_reset.sequencer);
-
-        // add a timeout with UVM_FATAL if it times out (100 * reset duration should be fine)
-        time_start = $realtime();
-        do begin
-            reset_field = m_ral.get_field_by_name(m_env_cfg.reset_reg_rb_name);
-            if (reset_field == null)
-                `uvm_fatal(get_full_name(), $sformatf("Reset phase error: ADC env could not find field named %s",
-                                                      m_env_cfg.reset_reg_rb_name))
-            reset_field.read(status, value);
-        end while (((value == 0) || (status != UVM_IS_OK)) && (($realtime() - time_start) <= (100 * (reset_duration / 1e9))));
-        
-        if ((value == 0) || (status != UVM_IS_OK))
-            `uvm_fatal(get_full_name(), "Reset request timed out, reset did not deassert cleanly. Value is 0 or status is not OK.")
 
         phase.drop_objection(this);
     endtask
@@ -231,8 +216,6 @@ class adc_env extends uvm_env;
         m_adc_in_cfg.amplitude_threshold = 0.005;
         m_adc_in_cfg.points_per_period = 48; // reasonable value to start, no reason to go higher atm
 
-        this.reset_duration = m_env_cfg.reset_duration;
-        this.system_clk_frequency = m_env_cfg.system_clk_frequency;
     endfunction
 
 endclass

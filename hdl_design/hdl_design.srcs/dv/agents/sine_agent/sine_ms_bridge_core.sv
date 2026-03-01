@@ -22,6 +22,7 @@ module sine_ms_bridge_core #(
     input logic clk_driven,
     input bit clk_enabled
 );
+    localparam real PI = 3.14159;
 
     // Group: Driver
 
@@ -48,14 +49,18 @@ module sine_ms_bridge_core #(
     real phase_increase;
     always @(frequency or points_per_period) begin
         current_delay_ns = 1e9 / (frequency * points_per_period);
-        phase_increase = (3.14159) / (0.5 * points_per_period);
+        phase_increase = (PI) / (0.5 * points_per_period);
     end
 
     initial begin
         phase = 0.0;
         forever begin
-            #(current_delay_ns);
-            phase += (phase_increase);
+            if (clk_enabled) begin
+                #(current_delay_ns);
+                phase += (phase_increase);
+            end
+            else
+                wait (clk_enabled == 1);
         end
     end
 

@@ -3,6 +3,9 @@ Class: spi_agent
 
 Instantiates driver, monitor, sequencer. Also instantiates coverage and enables
 or disables SPI SVA based on configuration.
+
+Note: this agent is ONLY valid for SPI that has a register width of 16 and
+2 byte lanes, i.e. access width of 8.
 */
 class spi_agent extends uvm_agent;
 

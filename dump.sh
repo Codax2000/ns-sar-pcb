@@ -6,6 +6,10 @@ find ./hdl_design/hdl_design.srcs -type f -name "*.svh" \
   | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
   >> hdl.txt
 
+find ./hdl_design/hdl_design.srcs -type f -name "*.rdl" \
+  | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
+  >> hdl.txt
+
 find ./scripts -type f -name "*.py" \
   | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
   >> scripts.txt

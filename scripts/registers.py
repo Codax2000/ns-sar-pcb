@@ -10,14 +10,14 @@ Generates the following for the ADC registers:
 - A synchronizer that goes from the SPI clock to the system clock, if necessary
 '''
 
-
+import pdb
 import sys
 import argparse
 from systemrdl import RDLCompiler, RDLCompileError
 from peakrdl_uvm import UVMExporter
 from peakrdl_html import HTMLExporter
 from peakrdl_regblock import RegblockExporter
-from peakrdl_regblock.cpuif.obi import OBI_Cpuif
+from peakrdl_regblock.cpuif.passthrough import PassthroughCpuif
 from peakrdl_regblock.udps import ALL_UDPS
 from synchronizer_exporter import RTLSyncExporter
 
@@ -34,7 +34,7 @@ DEFAULT_HTML_PATH = './docs/docs/adc_regs'
 # Variable: DEFAULT_UVM_PKG_PATH
 # Defines the default path to the file which will contain UVM registers
 DEFAULT_UVM_PKG_PATH = \
-    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_pkg.sv'
+    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_dv_pkg.sv'
 
 # Variable: DEFAULT_REG_RTL_PATH
 # Path to the directory in which the RTL package and path will be stored
@@ -64,17 +64,13 @@ def parse_input_arguments():
     parser.add_argument('-s', '--spec', type=str, default=DEFAULT_RDL_SPEC,
                         help=f"RDL Spec path, default {DEFAULT_RDL_SPEC}")
     parser.add_argument('--html', type=str, default=DEFAULT_HTML_PATH,
-                        help=f"Output HTML directory, default {
-                            DEFAULT_HTML_PATH}")
+                        help=f"Output HTML directory, default {DEFAULT_HTML_PATH}")
     parser.add_argument('--uvmpkg', type=str, default=DEFAULT_UVM_PKG_PATH,
-                        help=f'Output UVM register package path, default {
-                            DEFAULT_UVM_PKG_PATH}')
+                        help=f'Output UVM register package path, default {DEFAULT_UVM_PKG_PATH}')
     parser.add_argument('--rtl', type=str, default=DEFAULT_REG_RTL_PATH,
-                        help=f'Output register RTL path, default {
-                            DEFAULT_REG_RTL_PATH}')
+                        help=f'Output register RTL path, default {DEFAULT_REG_RTL_PATH}')
     parser.add_argument('--sync', type=str, default=DEFAULT_REG_SYNC_PATH,
-                        help=f'Output synchronizer path, default {
-                            DEFAULT_REG_SYNC_PATH}')
+                        help=f'Output synchronizer path, default {DEFAULT_REG_SYNC_PATH}')
 
     return parser.parse_args()
 
@@ -145,8 +141,9 @@ Parameters:
 '''
 def gen_rtl(root, filename, **kwargs):
     exporter = RegblockExporter(**kwargs)
-    exporter.export(root, filename, cpuif_cls=OBI_Cpuif,
-                    default_reset_activelow=True, generate_hwif_report=True)
+    exporter.export(root, filename, cpuif_cls=PassthroughCpuif,
+                    generate_hwif_report=True, module_name='adc_regs_mod',
+                    retime_read_response=True)
 
 
 '''
@@ -171,7 +168,8 @@ Runs RDL compiler and generates register export files.
 def main():
     args = parse_input_arguments()
     root = compile_rdl(args.spec)
-    gen_uvm_pkg(root, args.uvmpkg)
+    gen_uvm_pkg(root, args.uvmpkg,
+                user_template_dir='./scripts/peakrdl_templates')
     gen_html(root, args.html)
     gen_rtl(root, args.rtl)
     gen_sync(root, args.sync)

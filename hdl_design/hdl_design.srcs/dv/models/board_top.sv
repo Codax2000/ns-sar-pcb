@@ -4,7 +4,7 @@ module board_top #(
     input real vdd,
 
     input logic clk,
-    input logic arst_n,
+    input logic arst,
 
     input real vinp,
     input real vinn,
@@ -31,7 +31,7 @@ module board_top #(
         .i_sar_compare(0),
 
         .i_sysclk(clk),
-        .i_sysrst_b(arst_n),
+        .i_sysrst(arst),
 
         .i_cs_b(spi_signals.csb),
         .i_scl(spi_signals.scl),

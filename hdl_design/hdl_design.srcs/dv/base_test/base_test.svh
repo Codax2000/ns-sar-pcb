@@ -83,4 +83,26 @@ class base_test extends uvm_test;
         uvm_factory::get().print();
     endfunction
 
+    virtual task main_phase(uvm_phase phase);
+        uvm_status_e   status;
+        uvm_reg_data_t data;
+        spi_packet_reg_extension ext;
+
+        phase.raise_objection(this);
+
+        ext = spi_packet_reg_extension::type_id::create("ext");
+        ext.additional_write_data.push_back(14);
+        ext.additional_write_data.push_back(12);
+
+        m_env.m_ral.INT1_CTRL.N_PASSIVE_CYCLES.write(
+            status, 8'hAF, .extension(ext)
+        );
+
+        m_env.m_ral.INT1_CTRL.N_PASSIVE_CYCLES.mirror(status, UVM_CHECK);
+        m_env.m_ral.INT2_CTRL.N_ACTIVE_CYCLES.mirror(status, UVM_CHECK);
+        m_env.m_ral.INT2_CTRL.N_PASSIVE_CYCLES.mirror(status, UVM_CHECK);
+
+        phase.drop_objection(this);
+    endtask
+
 endclass

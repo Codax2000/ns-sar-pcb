@@ -15,6 +15,8 @@ from systemrdl.walker import RDLListener
 if TYPE_CHECKING:
     import argparse
 
+import pdb
+
 
 '''
 Class: RTLSyncExporter
@@ -59,22 +61,24 @@ class RTLSyncExporter:
             name = node.inst_name
 
             n_sync_stages = 2
-            print(f'// Class: {name}_reg_sync', file=self.f)
+            print(f'// Module: {name}_reg_sync', file=self.f)
             print('// Instantiates CDC synchronizers for the CSR registers.',
                   file=self.f)
             print(
                 '// Automatically generated from registers.rdl using PeakRDL.',
                 file=self.f)
-            print('module #(', file=self.f)
-            print(f'\tparameter N_SYNC_STAGES={n_sync_stages},', file=self.f)
-            print(f'\tparameter SRC_INPUT_REG={0}', file=self.f)
-            print(f') {name}_reg_sync (', file=self.f)
-            print(f'\t{name}__in_t hwif_in_sysclk,', file=self.f)
-            print(f'\t{name}__in_t hwif_in_ifclk,', file=self.f)
-            print(f'\t{name}__out_t hwif_out_sysclk,', file=self.f)
-            print(f'\t{name}__out_t hwif_out_ifclk,', file=self.f)
+            print(f'import {name}_mod_pkg::*;', file=self.f)
+            print(f'module {name}_reg_sync #(', file=self.f)
+            print(f'\tparameter N_SYNC_STAGES={n_sync_stages}', file=self.f)
+            print(') (', file=self.f)
+            print(f'\tinput {name}__in_t hwif_in_sysclk,', file=self.f)
+            print(f'\tinput {name}__in_t hwif_in_ifclk,', file=self.f)
+            print(f'\toutput {name}__out_t hwif_out_sysclk,', file=self.f)
+            print(f'\toutput {name}__out_t hwif_out_ifclk,', file=self.f)
             print('\tinput logic sysclk,', file=self.f)
-            print('\tinput logic ifclk\n);\n', file=self.f)
+            print('\tinput logic ifclk,', file=self.f)
+            print('\tinput logic sysclk_rst,', file=self.f)
+            print('\tinput logic ifclk_rst\n);\n', file=self.f)
 
         '''
         Function: enter_Field
@@ -86,7 +90,6 @@ class RTLSyncExporter:
         '''
         def enter_Field(self, node):
             # Print some stuff about the field
-            sw_access_str = f"hw={node.get_property('hw').name}"
             hwif_path = node.get_path().split('.')[1:]
             hwif_path = '.'.join(hwif_path)
             if node.get_property('hw').name == 'r':
@@ -97,22 +100,11 @@ class RTLSyncExporter:
             else:
                 hwif_name = 'hwif_in'
                 hwif_value = 'next'
-                hwif_srcclk = 'ifclk'
-                hwif_destclk = 'sysclk'
+                hwif_destclk = 'ifclk'
+                hwif_srcclk = 'sysclk'
 
             self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
                                         hwif_destclk, hwif_path, node)
-
-            # If the "hwclr" property active, make another synchronizer for
-            # the clear signal
-            if node.get_property('hwclr'):
-                hwif_value = 'hwclr'
-                hwif_srcclk = 'sysclk'
-                hwif_destclk = 'ifclk'
-                hwif_name = 'hwif_in'
-
-                self.print_sync_declaration(hwif_name, hwif_value, hwif_srcclk,
-                                            hwif_destclk, hwif_path, node)
         
         '''
         Function: print_sync_declaration
@@ -131,15 +123,13 @@ class RTLSyncExporter:
 
             print('\tsync_nstage #(', file=self.f)
             print('\t\t.N_SYNC_STAGES(N_SYNC_STAGES),', file=self.f)
-            print('\t\t.SRC_INPUT_REG(SRC_INPUT_REG),', file=self.f)
             print(f"\t\t.N_BITS({node.width})", file=self.f)
-            print(f"\t) sync_{
-                '.'.join(hwif_path.split('.')[1:3]).replace('.', '_')
-                } (", file=self.f)
+            print(f"\t) sync_{'.'.join(hwif_path.split('.')[:3]).replace('.', '_')} (", file=self.f)
             print(f'\t\t.src_clk({hwif_srcclk}),', file=self.f)
             print(f'\t\t.dest_clk({hwif_destclk}),', file=self.f)
             print(f'\t\t.src_data({hwif_in_path}),', file=self.f)
-            print(f'\t\t.dest_data({hwif_out_path})', file=self.f)
+            print(f'\t\t.dest_data({hwif_out_path}),', file=self.f)
+            print(f'\t\t.dest_clk_rst({hwif_destclk}_rst)', file=self.f)
             print('\t);\n', file=self.f)
 
         '''
