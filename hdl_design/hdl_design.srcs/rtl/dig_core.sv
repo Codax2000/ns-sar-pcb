@@ -124,4 +124,34 @@ module dig_core #(
     assign hwif_in_spiclk.adc_output_mem.rd_data = 0;
     assign hwif_in_spiclk.adc_output_mem.wr_ack  = 0;
 
+    logic [15:0] mem_read_data;
+    logic        mem_read_byte;
+
+    logic [15:0] mem_write_data;
+    logic [13:0] mem_write_address;
+    logic        mem_write_enable;
+
+    assign hwif_in_spiclk.adc_output_mem.rd_data = mem_read_byte       ? 
+                                                   mem_read_data[15:8] : 
+                                                   mem_read_data[7:0];
+    always_ff @(negedge i_scl)
+        mem_read_byte <= hwif_out_spiclk.adc_output_mem.addr[0];
+    
+    data_mem #(
+        .ADDR_WIDTH=14,
+        .DATA_WIDTH=16
+    ) (
+        .clka(pll_clk),
+        .addr_a(mem_write_address),
+        .wr_data_a(mem_write_data),
+        .rd_data_a,
+        .wr_enable_a(mem_write_enable),
+
+        .clkb(!i_scl),
+        .addr_b(hwif_out_spiclk.adc_output_mem.addr[14:1]),
+        .rd_data_b(mem_read_data)
+    );
+
+    // Group: main and SAR state machines
+
 endmodule
