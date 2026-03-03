@@ -138,13 +138,12 @@ module dig_core #(
         mem_read_byte <= hwif_out_spiclk.adc_output_mem.addr[0];
     
     data_mem #(
-        .ADDR_WIDTH=14,
-        .DATA_WIDTH=16
-    ) (
+        .ADDR_WIDTH(14),
+        .DATA_WIDTH(16)
+    ) i_datamem (
         .clka(pll_clk),
         .addr_a(mem_write_address),
         .wr_data_a(mem_write_data),
-        .rd_data_a,
         .wr_enable_a(mem_write_enable),
 
         .clkb(!i_scl),

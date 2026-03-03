@@ -24,6 +24,7 @@ module main_state_machine (
 
     logic reset_active_passive_counter;
     logic increment_active_passive_counter;
+    logic reset_osr_counter;
     logic increment_osr_counter;
     logic increment_nfft_counter;
 
@@ -37,8 +38,22 @@ module main_state_machine (
         DONE
     } state, next_state;
 
+    assign reset_active_passive_counter = state != next_state;
+    assign increment_active_passive_counter = state inside {SAMPLE, INT1, INT2};
+    assign reset_osr_counter = (state == SAR_CONVERT) && (next_state != SAR_CONVERT) &&
+                               (osr_counter == ((1 << hwif_read.FFT_CTRL.OSR_POWER.value) - 1));
+    assign increment_osr_counter = (state == SAR_CONVERT) && (next_state != SAR_CONVERT) && (!reset_osr_counter);
+    assign increment_nfft_counter = reset_osr_counter;
+
+    assign o_sample = (state == SAMPLE) && (active_passive_counter < hwif_read.SH_CTRL.N_ACTIVE_CYCLES.value);
+    assign o_int1   = (state == INT1)   && (active_passive_counter < hwif_read.INT1_CTRL.N_ACTIVE_CYCLES.value);
+    assign o_int2   = (state == INT2)   && (active_passive_counter < hwif_read.INT2_CTRL.N_ACTIVE_CYCLES.value);
+    assign o_start_sar = state == SAR_CONVERT;
+    assign o_start_dwa = state == SAR_DWA;
+
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
+            state                  <= READY;
             active_passive_counter <= 0;
             osr_counter            <= 0;
             nfft_counter           <= 0;
@@ -57,6 +72,9 @@ module main_state_machine (
                 nfft_counter <= 0;
             end
             else begin
+                if (reset_osr_counter)
+                    osr_counter <= 0;
+                else
                 if (increment_osr_counter)
                     osr_counter <= osr_counter + 1;
                 if (increment_nfft_counter)
