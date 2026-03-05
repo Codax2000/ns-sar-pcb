@@ -19,6 +19,9 @@ module main_state_machine (
 );
 
     logic [8:0]  active_passive_counter;
+    logic [8:0]  sh_counter_sum;
+    logic [8:0]  int1_counter_sum;
+    logic [8:0]  int2_counter_sum;
     logic [7:0]  osr_counter;
     logic [15:0] nfft_counter;
 
@@ -50,7 +53,11 @@ module main_state_machine (
     assign o_int2   = (state == INT2)   && (active_passive_counter < hwif_read.INT2_CTRL.N_ACTIVE_CYCLES.value);
     assign o_start_sar = state == SAR_CONVERT;
     assign o_start_dwa = state == SAR_DWA;
-
+    assign hwif_rb.ADC_CTRL.START_CONVERSION.hwclr = state == DONE;
+    assign sh_counter_sum = hwif_read.SH_CTRL.N_ACTIVE_CYCLES.value + hwif_read.SH_CTRL.N_PASSIVE_CYCLES.value;
+    assign int1_counter_sum = hwif_read.INT1_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT1_CTRL.N_PASSIVE_CYCLES.value;
+    assign int2_counter_sum = hwif_read.INT2_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT2_CTRL.N_PASSIVE_CYCLES.value;
+    
     always_ff @(posedge i_clk) begin
         if (i_rst) begin
             state                  <= READY;
