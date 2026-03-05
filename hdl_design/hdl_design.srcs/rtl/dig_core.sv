@@ -10,13 +10,18 @@ module dig_core #(
     input logic i_sysrst,
 
     // analog boundary pins
-    input logic i_sar_compare,
+    input  logic i_sar_compare,
+    output logic o_sample,
+    output logic o_int1,
+    output logic o_int2,
+    output logic o_incremental_reset,
 
     // SPI IO pins
-    input logic i_cs_b,
-    input logic i_scl,
-    input logic i_mosi,
+    input  logic i_cs_b,
+    input  logic i_scl,
+    input  logic i_mosi,
     output logic o_miso
+
 );
     logic pll_clk;
     assign pll_clk = i_sysclk;
@@ -123,5 +128,58 @@ module dig_core #(
     assign hwif_in_spiclk.adc_output_mem.rd_ack  = 0;
     assign hwif_in_spiclk.adc_output_mem.rd_data = 0;
     assign hwif_in_spiclk.adc_output_mem.wr_ack  = 0;
+
+    logic [15:0] mem_read_data;
+    logic        mem_read_byte;
+
+    logic [15:0] mem_write_data;
+    logic [13:0] mem_write_address;
+    logic        mem_write_enable;
+
+    assign hwif_in_spiclk.adc_output_mem.rd_data = mem_read_byte       ? 
+                                                   mem_read_data[15:8] : 
+                                                   mem_read_data[7:0];
+    always_ff @(negedge i_scl)
+        mem_read_byte <= hwif_out_spiclk.adc_output_mem.addr[0];
+    
+    data_mem #(
+        .ADDR_WIDTH(14),
+        .DATA_WIDTH(16)
+    ) i_datamem (
+        .clka(pll_clk),
+        .addr_a(mem_write_address),
+        .wr_data_a(mem_write_data),
+        .wr_enable_a(mem_write_enable),
+
+        .clkb(!i_scl),
+        .addr_b(hwif_out_spiclk.adc_output_mem.addr[14:1]),
+        .rd_data_b(mem_read_data)
+    );
+
+    // Group: main and SAR state machines
+    logic i_sar_done;
+    logic i_dwa_done;
+
+    // TODO: pull these from SAR state machine
+    assign i_sar_done = 0;
+    assign i_dwa_done = 0;
+
+    main_state_machine i_main_state_machine (
+        .i_clk(pll_clk),
+        .i_rst(sysclk_rst),
+
+        .hwif_read(hwif_out_sysclk),
+        .hwif_rb(hwif_in_sysclk),
+
+        .o_sample(o_sample),
+        .o_int1(o_int1),
+        .o_int2(o_int2),
+        .o_incremental_reset,
+
+        .o_start_sar(o_start_sar),
+        .i_sar_done(i_sar_done),
+        .o_start_dwa(o_start_dwa),
+        .i_dwa_done(i_dwa_done)
+    );
 
 endmodule
