@@ -14,19 +14,26 @@ class reg_rw_test extends base_test;
 
     virtual task main_phase(uvm_phase phase);
         uvm_reg_hw_reset_seq m_reg_reset_seq;
+        uvm_reg              m_registers [$];
+        uvm_status_e         status;
 
         phase.raise_objection(this);
 
-        // For each field in address map,
+        m_env.m_ral.randomize();
+        m_env.m_ral.print();
+        m_env.burst_update_all_registers();
+        m_env.burst_mirror_all_registers(UVM_CHECK);
+
+        m_env.m_ral.randomize();
+        m_env.m_ral.update(status);
         
-        // if field is writeable and is not volatile, randomize it and set()
+        m_env.m_ral.get_registers(m_registers);
+        foreach (m_registers[i]) begin
+            m_registers[i].mirror(status, UVM_CHECK);
+            if (status != UVM_IS_OK)
+                `uvm_error(get_full_name(), $sformatf("Received mirror with status=%s", status.name()))
+        end
 
-        // burst update the whole map
-
-        // For each field in address map,
-        // read it back and check it
-
-        // Do it again with random bursts (min/max, various sizes)
 
         phase.drop_objection(this);
     endtask

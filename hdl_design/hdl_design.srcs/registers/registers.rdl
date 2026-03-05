@@ -1,3 +1,8 @@
+property norand {
+    type = boolean;
+    component = field;
+};
+
 addrmap adc_regs {
     desc = "SAR ADC PCB register map";
     default regwidth=16;
@@ -57,6 +62,7 @@ addrmap adc_regs {
         field {
             hwclr;
             desc="When a 1 is written, starts an NFFT conversion. When read, a 1 means the NFFT conversion is running, and a 0 means it is not. If a 0 is written while the conversion is running, terminates the conversion early and sets state machine back to ready state.";
+            norand=true;
         } START_CONVERSION [0:0];
         field {
             sw=r;
