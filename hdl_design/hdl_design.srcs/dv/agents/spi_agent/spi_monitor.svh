@@ -37,7 +37,7 @@ class spi_monitor extends uvm_monitor;
             @(negedge vif.csb);
             item = spi_packet::type_id::create("mon_packet");
             collect_transaction(item);
-            `uvm_info(get_full_name(), $sformatf("Collected monitor packet: %s", item.sprint()), UVM_MEDIUM)
+            `uvm_info(get_full_name(), $sformatf("Collected monitor packet: %s", item.sprint()), UVM_HIGH)
             mon_analysis_port.write(item);
         end
     endtask
@@ -61,9 +61,9 @@ class spi_monitor extends uvm_monitor;
         `uvm_info(get_full_name(),
                   $sformatf("Observed SPI address=%h, rd_en=%b, %0d expected transaction bytes", 
                             item.address, item.rd_en, n_expected_transactions),
-                  UVM_MEDIUM)
+                  UVM_HIGH)
         while (n_observed_transactions != n_expected_transactions) begin
-            `uvm_info(get_full_name(), $sformatf("Observing SPI data"), UVM_MEDIUM)
+            `uvm_info(get_full_name(), $sformatf("Observing SPI data"), UVM_HIGH)
             observe_byte(!item.rd_en, current_byte, current_parity);
             n_observed_transactions++;
             
@@ -103,7 +103,7 @@ class spi_monitor extends uvm_monitor;
         `uvm_info(get_full_name(),
                   $sformatf("Observed monitor byte: data=%h, parity=%s",
                             current_byte, current_parity.name()),
-                  UVM_MEDIUM)
+                  UVM_HIGH)
     endtask
 
 endclass

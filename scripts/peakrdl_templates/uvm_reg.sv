@@ -50,7 +50,7 @@ virtual function void build();
     {%- else %}
     this.{{get_inst_name(field)}} = new("{{get_inst_name(field)}}");
     {%- endif %}
-    this.{{get_inst_name(field)}}.configure(this, {{field.width}}, {{field.lsb}}, "{{get_field_access(field)}}", {{field.is_volatile|int}}, {{"'h%x" % field.get_property('reset', default=0)}}, {{field.get_property('reset') is not none|int}}, 1, {{((field.lsb % 8 == 0) and (field.msb % 8 == 7))|int}});
+    this.{{get_inst_name(field)}}.configure(this, {{field.width}}, {{field.lsb}}, "{{get_field_access(field)}}", {{field.is_volatile|int}}, {{"'h%x" % field.get_property('reset', default=0)}}, {{field.get_property('reset') is not none|int}}, {{((field.get_property('norand') is none) or (field.get_property('norand') is false))|int}}, {{((field.lsb % 8 == 0) and (field.msb % 8 == 7))|int}});
     {%- endfor %}
 endfunction : build
 {%- endmacro %}

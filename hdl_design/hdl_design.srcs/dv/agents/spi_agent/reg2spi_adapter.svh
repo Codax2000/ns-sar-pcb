@@ -132,7 +132,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
                    $sformatf("bus2reg : addr=0x%0h data=0x%0h kind=%s byte_en=%h status=%s",
                              rw.addr, rw.data, rw.kind.name(), rw.byte_en, rw.status.name()),
                    UVM_MEDIUM)
-        pkt.print();
+        `uvm_info(get_full_name(), $sformatf("Current Packet:\n%s", pkt.sprint()), UVM_HIGH);
     endfunction
 
 endclass
