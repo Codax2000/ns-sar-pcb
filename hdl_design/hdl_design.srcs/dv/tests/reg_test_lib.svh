@@ -1,8 +1,7 @@
 /**
 Class: reg_rw_test
 
-Runs UVM predefined sequences on register layer to make sure that
-all fields are readable/writeable. This includes RW and bit-banging.
+Reads and writes all registers single-address and burst reads/writes.
 */
 class reg_rw_test extends base_test;
 
@@ -20,7 +19,6 @@ class reg_rw_test extends base_test;
         phase.raise_objection(this);
 
         m_env.m_ral.randomize();
-        m_env.m_ral.print();
         m_env.burst_update_all_registers();
         m_env.burst_mirror_all_registers(UVM_CHECK);
 
@@ -33,7 +31,6 @@ class reg_rw_test extends base_test;
             if (status != UVM_IS_OK)
                 `uvm_error(get_full_name(), $sformatf("Received mirror with status=%s", status.name()))
         end
-
 
         phase.drop_objection(this);
     endtask
