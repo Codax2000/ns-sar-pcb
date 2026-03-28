@@ -21,6 +21,8 @@ hdl_design/hdl_design.srcs/dv/waveforms
 
 freq_adapter/
 docs/docs/adc_regs/
+docs/docs/ndocs/
+nd_config/Working\ Data/
 docs/site
 docs/docs/img/
 img/
