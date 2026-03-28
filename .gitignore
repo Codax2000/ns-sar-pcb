@@ -22,6 +22,7 @@ hdl_design/hdl_design.srcs/dv/waveforms
 freq_adapter/
 docs/docs/adc_regs/
 docs/site
+docs/docs/img/
 img/
 scripts.txt
 hdl.txt
