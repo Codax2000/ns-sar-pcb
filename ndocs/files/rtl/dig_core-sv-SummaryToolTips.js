@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("File:rtl/dig_core.sv",{});

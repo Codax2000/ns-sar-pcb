@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("m_t",["Variable"],[["m_top_cfg",,[["base_test",,,,0,"File:dv/base_test/base_test.svh:base_test.m_top_cfg","SystemVerilogClass:base_test:m_top_cfg"]]]]);

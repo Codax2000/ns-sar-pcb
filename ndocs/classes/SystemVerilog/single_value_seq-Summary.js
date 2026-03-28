@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:single_value_seq","single_value_seq");NDSummary.OnSummaryLoaded("SystemVerilogClass:single_value_seq",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[70,0,0,"single_value_seq"]]);

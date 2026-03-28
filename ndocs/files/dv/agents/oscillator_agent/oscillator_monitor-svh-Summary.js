@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/oscillator_agent/oscillator_monitor.svh","oscillator_monitor.svh");NDSummary.OnSummaryLoaded("File:dv/agents/oscillator_agent/oscillator_monitor.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[82,0,0,"oscillator_monitor","oscillator_monitor"]]);

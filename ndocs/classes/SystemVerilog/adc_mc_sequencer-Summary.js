@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:adc_mc_sequencer","adc_mc_sequencer");NDSummary.OnSummaryLoaded("SystemVerilogClass:adc_mc_sequencer",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[50,0,0,"adc_mc_sequencer"]]);

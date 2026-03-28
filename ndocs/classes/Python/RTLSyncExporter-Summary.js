@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("PythonClass:RTLSyncExporter","RTLSyncExporter");NDSummary.OnSummaryLoaded("PythonClass:RTLSyncExporter",[["Python","Python"]],[["Classes","Class"]],[[24,0,0,"RTLSyncExporter"]]);

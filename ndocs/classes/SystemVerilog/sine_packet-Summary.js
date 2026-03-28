@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:sine_packet","sine_packet");NDSummary.OnSummaryLoaded("SystemVerilogClass:sine_packet",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"],["Groups","Group"],["Variables","Variable"]],[[117,0,0,"sine_packet"],[118,0,1,"Variables","Variables"],[119,0,2,"amplitude","amplitude"]]);

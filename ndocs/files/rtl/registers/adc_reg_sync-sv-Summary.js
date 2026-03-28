@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:rtl/registers/adc_reg_sync.sv","adc_reg_sync.sv");NDSummary.OnSummaryLoaded("File:rtl/registers/adc_reg_sync.sv",[["SystemVerilog","SystemVerilog"]],[["Modules","Module"]],[[205,0,0,"adc_regs_reg_sync","adc_regs_reg_sync"]]);

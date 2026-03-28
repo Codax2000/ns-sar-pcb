@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("mai",["Function","Class"],[["main",,[[,,,,0,"File2:registers.py:main"]]],["main_sm_sar_convert_test",,[[,,,,1,"File:dv/tests/reg_test_lib.svh:main_sm_sar_convert_test","SystemVerilogClass:main_sm_sar_convert_test"]]]]);

@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({129:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype129\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">sine_coverage_collector</div></div></div><div class=\"TTSummary\">Collects coverage of amplitude as well as everything else for oscillator coverage.</div></div>"});

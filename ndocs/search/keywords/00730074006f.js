@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("sto",["Function"],[["stop_clock",,[["oscillator_if",,,,0,"File:dv/agents/oscillator_agent/oscillator_if.sv:oscillator_if.stop_clock","SystemVerilogClass:oscillator_if:stop_clock"]]]]);

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("bui",["Function"],[["build_phase",,[["reg_env",,,,0,"File:dv/reg_env/reg_env.svh:reg_env.build_phase","SystemVerilogClass:reg_env:build_phase"]]]]);

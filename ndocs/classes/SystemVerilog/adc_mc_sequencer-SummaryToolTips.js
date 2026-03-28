@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("SystemVerilogClass:adc_mc_sequencer",{50:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype50\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">adc_mc_sequencer</div></div></div><div class=\"TTSummary\">Class for driving sequences that are used in several places.</div></div>"});

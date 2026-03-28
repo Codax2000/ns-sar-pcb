@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_agent_cfg","spi_agent_cfg");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_agent_cfg",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"],["Groups","Group"],["Variables","Variable"]],[[161,0,0,"spi_agent_cfg"],[162,0,1,"Variables","Variables"],[163,0,2,"vif","vif"],[164,0,2,"clk_speed_hz","clk_speed_hz"]]);

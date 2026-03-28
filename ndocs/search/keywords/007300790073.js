@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("sys",["Variable"],[["system_clk_frequency",,[["adc_env_cfg",,,,0,"File:dv/adc_env/adc_env_cfg.svh:adc_env_cfg.system_clk_frequency","SystemVerilogClass:adc_env_cfg:system_clk_frequency"],["base_test_cfg",,,,0,"File:dv/base_test/base_test_cfg.svh:base_test_cfg.system_clk_frequency","SystemVerilogClass:base_test_cfg:system_clk_frequency"]]]]);

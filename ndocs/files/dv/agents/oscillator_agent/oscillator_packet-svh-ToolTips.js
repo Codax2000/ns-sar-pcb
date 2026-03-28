@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({117:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype117\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">sine_packet</div></div></div><div class=\"TTSummary\">Extension of oscillator_packet intended to be used to drive a sine wave.</div></div>"});

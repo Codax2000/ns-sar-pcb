@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("nff",["Variable"],[["NFFT_POWER",,[["adc_regs.FFT_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.FFT_CTRL.NFFT_POWER"]]]]);

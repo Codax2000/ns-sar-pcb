@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/oscillator_agent/oscillator_coverage_collector.svh","oscillator_coverage_collector.svh");NDSummary.OnSummaryLoaded("File:dv/agents/oscillator_agent/oscillator_coverage_collector.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[103,0,0,"oscillator_coverage_collector","oscillator_coverage_collector"]]);

@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({128:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype128\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">sine_monitor</div></div></div><div class=\"TTSummary\">Monitor capable of reporting sine wave amplitudes as well as frequency and such.</div></div>"});

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("pri",["Function"],[["print_sync_declaration",,[["_SyncFieldListener",,,,0,"File2:synchronizer_exporter.py:_SyncFieldListener.print_sync_declaration","PythonClass:_SyncFieldListener:print_sync_declaration"]]]]);

@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:max_amp_packet","max_amp_packet");NDSummary.OnSummaryLoaded("SystemVerilogClass:max_amp_packet",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[148,0,0,"max_amp_packet"]]);

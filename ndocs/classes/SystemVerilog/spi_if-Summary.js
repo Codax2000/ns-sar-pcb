@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_if","spi_if");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_if",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[157,0,0,"spi_if"]]);

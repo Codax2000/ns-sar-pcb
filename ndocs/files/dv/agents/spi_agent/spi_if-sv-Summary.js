@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/spi_agent/spi_if.sv","spi_if.sv");NDSummary.OnSummaryLoaded("File:dv/agents/spi_agent/spi_if.sv",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[157,0,0,"spi_if","spi_if"]]);

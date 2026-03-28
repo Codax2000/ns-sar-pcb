@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("dra",["Function"],[["draw_adc_loop",,[[,,,,0,"File2:diagrams.py:draw_adc_loop"]]],["draw_digital_architecture",,[[,,,,0,"File2:diagrams.py:draw_digital_architecture"]]],["draw_digital_filter",,[[,,,,0,"File2:diagrams.py:draw_digital_filter"]]],["draw_uvm_tb",,[[,,,,0,"File2:diagrams.py:draw_uvm_tb"]]]]);

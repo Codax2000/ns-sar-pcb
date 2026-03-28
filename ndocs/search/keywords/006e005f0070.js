@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("n_p",["Variable"],[["N_PASSIVE_CYCLES",,[["adc_regs.INT1_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.INT1_CTRL.N_PASSIVE_CYCLES"],["adc_regs.INT2_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.INT2_CTRL.N_PASSIVE_CYCLES"],["adc_regs.SH_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.SH_CTRL.N_PASSIVE_CYCLES"]]]]);

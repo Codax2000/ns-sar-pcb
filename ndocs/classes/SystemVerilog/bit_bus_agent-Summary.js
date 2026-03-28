@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:bit_bus_agent","bit_bus_agent");NDSummary.OnSummaryLoaded("SystemVerilogClass:bit_bus_agent",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[76,0,0,"bit_bus_agent"]]);

@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:oscillator_monitor","oscillator_monitor");NDSummary.OnSummaryLoaded("SystemVerilogClass:oscillator_monitor",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[82,0,0,"oscillator_monitor"]]);

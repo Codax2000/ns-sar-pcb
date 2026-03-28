@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("max",["Class"],[["max_amp_packet",,[[,,,,0,"File:dv/agents/sine_agent/max_amp_packet.svh:max_amp_packet","SystemVerilogClass:max_amp_packet"]]]]);

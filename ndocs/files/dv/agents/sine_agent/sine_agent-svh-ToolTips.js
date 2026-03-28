@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({113:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype113\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">oscillator_agent</div></div></div><div class=\"TTSummary\">Instantiates monitor, sequencer, and driver for driving oscillator packets.</div></div>"});

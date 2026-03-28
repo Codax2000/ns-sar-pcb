@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogPackage:spi_agent_pkg","spi_agent_pkg");NDSummary.OnSummaryLoaded("SystemVerilogPackage:spi_agent_pkg",[["SystemVerilog","SystemVerilog"]],[["Packages","Package"]],[[159,0,0,"spi_agent_pkg"]]);

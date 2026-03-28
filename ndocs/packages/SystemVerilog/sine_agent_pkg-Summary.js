@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogPackage:sine_agent_pkg","sine_agent_pkg");NDSummary.OnSummaryLoaded("SystemVerilogPackage:sine_agent_pkg",[["SystemVerilog","SystemVerilog"]],[["Packages","Package"]],[[130,0,0,"sine_agent_pkg"]]);
