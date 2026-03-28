@@ -11,6 +11,7 @@ this project. This includes:
 - Analog Comparator
 - SAR Logic
 - FPGA/PCB Floorplanning
+- SPI Packet structure
 
 '''
 

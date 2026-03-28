@@ -1,5 +1,7 @@
 site_name: Noise-Shaping SAR PCB
 
+theme: readthedocs
+
 nav:
   - Home: index.md
   - ADC Theory: theory.md
