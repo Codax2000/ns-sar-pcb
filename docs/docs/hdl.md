@@ -1,136 +1,88 @@
 # Digital Logic
 
-ADCs need digital logic. This means a register interface for CSRs (control and status registers) and
-a main state machine to control the conversion. It therefore means closing timing and rigorous
-verification.
+ADCs need digital logic. This means a register interface for CSRs (control and status registers) and a main state machine to control the conversion. It therefore means closing timing and rigorous verification.
 
-## RTL
+## Digital Architecture
+
+The digital architecture is mainly a SPI interface that connects to a state machine. The state machine manages the NFFT conversion using control/status registers from the SPI clock domain and writes data from the SAR ADC to the data memory, which can be read from the SPI domain.
+
+![Toplevel Architecture](./img/digital.png)
+
+The incremental filters are implemented as simple up-counters, since they have a reset.
+
+![Digital Filters](./img/dig_filter.png)
 
 ## Verification
-# Noise-Shaping SAR ADC – Verification Regression Test Plan
 
-## 1. Smoke / Sanity Tests (Per-Commit)
+There are two distinct and different verification environments used for this device.
 
-- smoke_reset
-  - Assert reset during idle and mid-conversion
-  - Verify registers return to defaults
-  - Ensure no X/Z propagation
+1. A UVM-MS testbench for verifying the digital RTL. This is robust and focuses on coverage of the digital IP.
+1. A Vivado testbench for integrating everything into Linux using AXI. As I have no testbench, no oscilloscope, etc., this will serve as the main bring-up platform.
 
-- smoke_reg_access
-  - Write/read all control registers
-  - Check illegal accesses
-  - Boundary value testing
+### UVM-MS Testbench
 
-- smoke_clock_div
-  - Sweep clock divider
-  - Verify timing scales correctly
+The UVM testbench is meant as a learning opportunity for UVM-MS and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
 
+![Digital Testbench](./img/uvm_tb.png)
 
-## 2. Functional Correctness Tests
+The test list is as follows:
 
-- ramp_monotonicity
-  - Slow ramp input
-  - No missing codes
-  - Monotonic output
-  - Correct SAR latency
+1. Sanity Tests
 
-- dc_levels
-  - Multiple DC inputs
-  - Check gain and offset error
+    1. `smoke_reset`
+        - assert external reset during idle
+        - check registers return to default and no X
+    1. `smoke_reg_access`
+        - Write/read all control registers that don't kick off a process
+        - Check illegal accesses
+        - Boundary value testing
 
-- step_response
-  - Large step input
-  - Verify settling and transient response
+1. Functional Correctness Tests
 
+    1. `ramp_monotonicity`
+        - Slow ramp input
+        - Check no missing codes
+        - Monotonic output
+    1. `rand_dc_levels`
+        - Send multiple DC inputs (incremental mode only)
+        - Check output code is correct
 
-## 3. Spectral / Performance Tests
+1. Spectral/Performance Tests
 
-- snr_nominal
-  - Full-scale sine input
-  - Measure SNR and ENOB
-  - Assert SNR > spec
+    1. `snr_continuous`
+        - Full-scale sine input in DSM mode
+        - Measure SNR, THD, SFDR
+        - Assert SNR within bound based on Python model
+    1. `snr_incremental`
+        - Full-scale sine input in incremental mode
+        - Measure SNR and ENOB
+        - Assert SNR within bound based on Python model
+    1. `osr_sweep`
+        - Sweep OSR with everything else set and a reasonable FFT value
+        - Verify 2nd-order noise shaping
+    1. `dem_compare`
+        - Compare spectra with DEM on vs off
+        - Verify harmonic reduction, even if minor (may need large capacitor mismatch)
 
-- thd_nominal
-  - Near full-scale sine
-  - Measure THD and SFDR
-  - Assert harmonics < spec
+1. Boundary/Stress Tests
 
-- osr_sweep
-  - Sweep OSR
-  - Verify 2nd-order noise shaping slope (~15 dB/octave)
+    1. `analog_digital_boundary_stress`
+        - Inject comparator offset and/or first conversion error
+        - Verify that output is still monotonic if using redundancy
+    1. `spi_mid_conversion`
+        - Modify registers mid-conversion
+        - Verify graceful handling
 
-- dem_on_off_compare
-  - Compare spectra with DEM on vs off
-  - Verify harmonic reduction
+### AXI Integration Testbench
 
+This is up in the air; if using an Arduino, this won't be used. However, if a Zynq dev board is available, then it would be best to integrate the analog board with the digital on Zynq.
 
-## 4. Mode Coverage Tests
+This would mean adding adapters for AXI/SPI, and also waveform generation, likely with an oversampled DAC off the shelf. The plus side is that all of the bringup could then be done in Python.
 
-- incremental_vs_continuous
-  - Compare both operating modes
-  - Validate behavior vs theory
+The testbench will need AXI adapters to I2C and SPI, and then just a couple of sanity tests would be sufficient:
 
-- filter_coeff_sweep
-  - Sweep 2nd-order filter coefficients
-  - Check stability and overflow
+1. SPI register read/write using AXI
+1. DAC waveform generation using AXI (reuse models from UVM tb + I2C and digital model of anti-aliasing filter)
+1. NFFT conversion test (could be small, just proof of concept)
 
-
-## 5. Boundary & Stress Tests
-
-- analog_digital_boundary_stress
-  - Inject jitter / metastability modeling
-  - Verify no lockup or corruption
-
-- spi_mid_conversion
-  - Modify registers mid-conversion
-  - Verify graceful handling
-
-- warmup_behavior
-  - Ensure warmup samples are discarded properly
-
-
-## 6. Randomized Tests
-
-- random_reg_sequence
-  - Randomized mode and OSR switching
-  - Constrained random register access
-
-- random_input_waveform
-  - Random sine amplitude/frequency/phase
-  - Verify stability
-
-
-## 7. Long-Run Stability
-
-- long_run_stability
-  - Extended simulation duration
-  - Verify no drift or state corruption
-
-
--------------------------------------------------------
-
-# Regression Tiers
-
-Per-Commit (Fast):
-- smoke_reset
-- smoke_reg_access
-- ramp_monotonicity
-- dc_levels
-
-Nightly:
-- snr_nominal
-- thd_nominal
-- osr_sweep
-- dem_on_off_compare
-- filter_coeff_sweep
-
-Weekly / Extended:
-- analog_digital_boundary_stress
-- random_reg_sequence
-- long_run_stability
-
-## FPGA Implementation
-
-### Timing
-
-### FPGA Resources
+This would also require writing Linux drivers, so there would be a lot of learning in the bringup.

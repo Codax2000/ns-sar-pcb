@@ -1,6 +1,7 @@
 # PCB Design for a Noise-Shaping SAR
 
 This has several goals:
+
 1) Understand, design, and build a mixed-signal PCB using SMD components
 1) Go through the process of FPGA design and synthesis, including asynchronous RTL design
 1) Become better at reading datasheets for discrete components
