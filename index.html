@@ -8,7 +8,7 @@
     <title>Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,11 +17,12 @@
         var mkdocs_page_url = null;
       </script>
     
+    <script src="js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-      <script>hljs.highlightAll();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -33,14 +34,14 @@
           <a href="." class="icon icon-home"> Noise-Shaping SAR PCB
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#theory">Theory</a>
     </li>
@@ -84,19 +85,19 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Home</li>
+    <li><a href="." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Home</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
+
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
                 <h1 id="pcb-design-for-a-noise-shaping-sar">PCB Design for a Noise-Shaping SAR</h1>
-<p>This has several goals:
-1) Understand, design, and build a mixed-signal PCB using SMD components
+<p>This has several goals:</p>
+<p>1) Understand, design, and build a mixed-signal PCB using SMD components
 1) Go through the process of FPGA design and synthesis, including asynchronous RTL design
 1) Become better at reading datasheets for discrete components
 1) Build a UVM testbench that includes real-number modeling.
@@ -139,21 +140,20 @@
     
   </span>
 </div>
-    <script src="js/jquery-3.6.0.min.js"></script>
-    <script>var base_url = ".";</script>
-    <script src="js/theme_extra.js"></script>
-    <script src="js/theme.js"></script>
-      <script src="search/main.js"></script>
-    <script>
-        jQuery(function () {
+    <script>var base_url = '.';</script>
+    <script src="js/theme_extra.js" defer></script>
+    <script src="js/theme.js" defer></script>
+      <script src="search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
             SphinxRtdTheme.Navigation.enable(true);
-        });
+        };
     </script>
 
 </body>
 </html>
 
 <!--
-MkDocs version : 1.6.1
-Build Date UTC : 2026-03-01 08:37:32.692841+00:00
+MkDocs version : 1.3.0
+Build Date UTC : 2026-03-28 09:25:45.748463+00:00
 -->

@@ -8,7 +8,7 @@
     <title>HDL - Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,11 +17,12 @@
         var mkdocs_page_url = null;
       </script>
     
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-      <script>hljs.highlightAll();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -33,7 +34,7 @@
           <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -48,11 +49,17 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="#">HDL</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">HDL</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#rtl">RTL</a>
+    <li class="toctree-l2"><a class="reference internal" href="#digital-architecture">Digital Architecture</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#uvm-ms-testbench">UVM-MS Testbench</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#axi-integration-testbench">AXI Integration Testbench</a>
+    </li>
+        </ul>
     </li>
     </ul>
                 </li>
@@ -82,167 +89,119 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">HDL</li>
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>HDL</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
+
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
                 <h1 id="digital-logic">Digital Logic</h1>
-<p>ADCs need digital logic. This means a register interface for CSRs (control and status registers) and
-a main state machine to control the conversion. It therefore means closing timing and rigorous
-verification.</p>
-<h2 id="rtl">RTL</h2>
+<p>ADCs need digital logic. This means a register interface for CSRs (control and status registers) and a main state machine to control the conversion. It therefore means closing timing and rigorous verification.</p>
+<h2 id="digital-architecture">Digital Architecture</h2>
+<p>The digital architecture is mainly a SPI interface that connects to a state machine. The state machine manages the NFFT conversion using control/status registers from the SPI clock domain and writes data from the SAR ADC to the data memory, which can be read from the SPI domain.</p>
+<p><img alt="Toplevel Architecture" src="../img/digital.png" /></p>
+<p>The incremental filters are implemented as simple up-counters, since they have a reset.</p>
+<p><img alt="Digital Filters" src="../img/dig_filter.png" /></p>
 <h2 id="verification">Verification</h2>
-<h1 id="noise-shaping-sar-adc-verification-regression-test-plan">Noise-Shaping SAR ADC – Verification Regression Test Plan</h1>
-<h2 id="1-smoke-sanity-tests-per-commit">1. Smoke / Sanity Tests (Per-Commit)</h2>
-<ul>
-<li>smoke_reset</li>
-<li>Assert reset during idle and mid-conversion</li>
-<li>Verify registers return to defaults</li>
+<p>There are two distinct and different verification environments used for this device.</p>
+<ol>
+<li>A UVM-MS testbench for verifying the digital RTL. This is robust and focuses on coverage of the digital IP.</li>
+<li>A Vivado testbench for integrating everything into Linux using AXI. As I have no testbench, no oscilloscope, etc., this will serve as the main bring-up platform.</li>
+</ol>
+<h3 id="uvm-ms-testbench">UVM-MS Testbench</h3>
+<p>The UVM testbench is meant as a learning opportunity for UVM-MS and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
+<p><img alt="Digital Testbench" src="../img/uvm_tb.png" /></p>
+<p>The test list is as follows:</p>
+<ol>
 <li>
-<p>Ensure no X/Z propagation</p>
+<p>Sanity Tests</p>
+<ol>
+<li><code>smoke_reset</code><ul>
+<li>assert external reset during idle</li>
+<li>check registers return to default and no X</li>
+</ul>
 </li>
-<li>
-<p>smoke_reg_access</p>
-</li>
-<li>Write/read all control registers</li>
+<li><code>smoke_reg_access</code><ul>
+<li>Write/read all control registers that don't kick off a process</li>
 <li>Check illegal accesses</li>
-<li>
-<p>Boundary value testing</p>
-</li>
-<li>
-<p>smoke_clock_div</p>
-</li>
-<li>Sweep clock divider</li>
-<li>Verify timing scales correctly</li>
+<li>Boundary value testing</li>
 </ul>
-<h2 id="2-functional-correctness-tests">2. Functional Correctness Tests</h2>
-<ul>
-<li>ramp_monotonicity</li>
+</li>
+</ol>
+</li>
+<li>
+<p>Functional Correctness Tests</p>
+<ol>
+<li><code>ramp_monotonicity</code><ul>
 <li>Slow ramp input</li>
-<li>No missing codes</li>
+<li>Check no missing codes</li>
 <li>Monotonic output</li>
-<li>
-<p>Correct SAR latency</p>
-</li>
-<li>
-<p>dc_levels</p>
-</li>
-<li>Multiple DC inputs</li>
-<li>
-<p>Check gain and offset error</p>
-</li>
-<li>
-<p>step_response</p>
-</li>
-<li>Large step input</li>
-<li>Verify settling and transient response</li>
 </ul>
-<h2 id="3-spectral-performance-tests">3. Spectral / Performance Tests</h2>
-<ul>
-<li>snr_nominal</li>
-<li>Full-scale sine input</li>
+</li>
+<li><code>rand_dc_levels</code><ul>
+<li>Send multiple DC inputs (incremental mode only)</li>
+<li>Check output code is correct</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>
+<p>Spectral/Performance Tests</p>
+<ol>
+<li><code>snr_continuous</code><ul>
+<li>Full-scale sine input in DSM mode</li>
+<li>Measure SNR, THD, SFDR</li>
+<li>Assert SNR within bound based on Python model</li>
+</ul>
+</li>
+<li><code>snr_incremental</code><ul>
+<li>Full-scale sine input in incremental mode</li>
 <li>Measure SNR and ENOB</li>
-<li>
-<p>Assert SNR &gt; spec</p>
+<li>Assert SNR within bound based on Python model</li>
+</ul>
 </li>
-<li>
-<p>thd_nominal</p>
+<li><code>osr_sweep</code><ul>
+<li>Sweep OSR with everything else set and a reasonable FFT value</li>
+<li>Verify 2nd-order noise shaping</li>
+</ul>
 </li>
-<li>Near full-scale sine</li>
-<li>Measure THD and SFDR</li>
-<li>
-<p>Assert harmonics &lt; spec</p>
-</li>
-<li>
-<p>osr_sweep</p>
-</li>
-<li>Sweep OSR</li>
-<li>
-<p>Verify 2nd-order noise shaping slope (~15 dB/octave)</p>
-</li>
-<li>
-<p>dem_on_off_compare</p>
-</li>
+<li><code>dem_compare</code><ul>
 <li>Compare spectra with DEM on vs off</li>
-<li>Verify harmonic reduction</li>
+<li>Verify harmonic reduction, even if minor (may need large capacitor mismatch)</li>
 </ul>
-<h2 id="4-mode-coverage-tests">4. Mode Coverage Tests</h2>
-<ul>
-<li>incremental_vs_continuous</li>
-<li>Compare both operating modes</li>
-<li>
-<p>Validate behavior vs theory</p>
+</li>
+</ol>
 </li>
 <li>
-<p>filter_coeff_sweep</p>
-</li>
-<li>Sweep 2nd-order filter coefficients</li>
-<li>Check stability and overflow</li>
+<p>Boundary/Stress Tests</p>
+<ol>
+<li><code>analog_digital_boundary_stress</code><ul>
+<li>Inject comparator offset and/or first conversion error</li>
+<li>Verify that output is still monotonic if using redundancy</li>
 </ul>
-<h2 id="5-boundary-stress-tests">5. Boundary &amp; Stress Tests</h2>
-<ul>
-<li>analog_digital_boundary_stress</li>
-<li>Inject jitter / metastability modeling</li>
-<li>
-<p>Verify no lockup or corruption</p>
 </li>
-<li>
-<p>spi_mid_conversion</p>
-</li>
+<li><code>spi_mid_conversion</code><ul>
 <li>Modify registers mid-conversion</li>
-<li>
-<p>Verify graceful handling</p>
-</li>
-<li>
-<p>warmup_behavior</p>
-</li>
-<li>Ensure warmup samples are discarded properly</li>
+<li>Verify graceful handling</li>
 </ul>
-<h2 id="6-randomized-tests">6. Randomized Tests</h2>
-<ul>
-<li>random_reg_sequence</li>
-<li>Randomized mode and OSR switching</li>
-<li>
-<p>Constrained random register access</p>
 </li>
-<li>
-<p>random_input_waveform</p>
+</ol>
 </li>
-<li>Random sine amplitude/frequency/phase</li>
-<li>Verify stability</li>
-</ul>
-<h2 id="7-long-run-stability">7. Long-Run Stability</h2>
-<ul>
-<li>long_run_stability</li>
-<li>Extended simulation duration</li>
-<li>Verify no drift or state corruption</li>
-</ul>
-<hr />
-<h1 id="regression-tiers">Regression Tiers</h1>
-<p>Per-Commit (Fast):
-- smoke_reset
-- smoke_reg_access
-- ramp_monotonicity
-- dc_levels</p>
-<p>Nightly:
-- snr_nominal
-- thd_nominal
-- osr_sweep
-- dem_on_off_compare
-- filter_coeff_sweep</p>
-<p>Weekly / Extended:
-- analog_digital_boundary_stress
-- random_reg_sequence
-- long_run_stability</p>
-<h2 id="fpga-implementation">FPGA Implementation</h2>
-<h3 id="timing">Timing</h3>
-<h3 id="fpga-resources">FPGA Resources</h3>
+</ol>
+<h3 id="axi-integration-testbench">AXI Integration Testbench</h3>
+<p>This is up in the air; if using an Arduino, this won't be used. However, if a Zynq dev board is available, then it would be best to integrate the analog board with the digital on Zynq.</p>
+<p>This would mean adding adapters for AXI/SPI, and also waveform generation, likely with an oversampled DAC off the shelf. The plus side is that all of the bringup could then be done in Python.</p>
+<p>The testbench will need AXI adapters to I2C and SPI, and then just a couple of sanity tests would be sufficient:</p>
+<ol>
+<li>SPI register read/write using AXI</li>
+<li>DAC waveform generation using AXI (reuse models from UVM tb + I2C and digital model of anti-aliasing filter)</li>
+<li>NFFT conversion test (could be small, just proof of concept)</li>
+</ol>
+<p>This would also require writing Linux drivers, so there would be a lot of learning in the bringup.</p>
               
             </div>
           </div><footer>
@@ -278,15 +237,14 @@ verification.</p>
     
   </span>
 </div>
-    <script src="../js/jquery-3.6.0.min.js"></script>
-    <script>var base_url = "..";</script>
-    <script src="../js/theme_extra.js"></script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/main.js"></script>
-    <script>
-        jQuery(function () {
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
             SphinxRtdTheme.Navigation.enable(true);
-        });
+        };
     </script>
 
 </body>
