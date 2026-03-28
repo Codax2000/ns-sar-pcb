@@ -161,8 +161,10 @@ module dig_core #(
     logic i_dwa_done;
 
     // TODO: pull these from SAR state machine
-    assign i_sar_done = 0;
-    assign i_dwa_done = 0;
+    always @(pll_clk) begin
+        std::randomize(i_sar_done);
+        std::randomize(i_dwa_done);
+    end
 
     main_state_machine i_main_state_machine (
         .i_clk(pll_clk),

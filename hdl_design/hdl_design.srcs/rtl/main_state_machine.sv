@@ -54,9 +54,9 @@ module main_state_machine (
     assign o_start_sar = state == SAR_CONVERT;
     assign o_start_dwa = state == SAR_DWA;
     assign hwif_rb.ADC_CTRL.START_CONVERSION.hwclr = state == DONE;
-    assign sh_counter_sum = hwif_read.SH_CTRL.N_ACTIVE_CYCLES.value + hwif_read.SH_CTRL.N_PASSIVE_CYCLES.value;
-    assign int1_counter_sum = hwif_read.INT1_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT1_CTRL.N_PASSIVE_CYCLES.value;
-    assign int2_counter_sum = hwif_read.INT2_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT2_CTRL.N_PASSIVE_CYCLES.value;
+    assign sh_counter_sum = hwif_read.SH_CTRL.N_ACTIVE_CYCLES.value     + hwif_read.SH_CTRL.N_PASSIVE_CYCLES.value - 1;
+    assign int1_counter_sum = hwif_read.INT1_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT1_CTRL.N_PASSIVE_CYCLES.value - 1;
+    assign int2_counter_sum = hwif_read.INT2_CTRL.N_ACTIVE_CYCLES.value + hwif_read.INT2_CTRL.N_PASSIVE_CYCLES.value - 1;
     
     always_ff @(posedge i_clk) begin
         if (i_rst) begin

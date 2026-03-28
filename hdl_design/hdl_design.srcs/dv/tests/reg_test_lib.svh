@@ -83,6 +83,7 @@ class main_sm_sar_convert_test extends base_test;
 
         do begin
             m_env.m_ral.ADC_CTRL.START_CONVERSION.read(status, data);
+            `uvm_info(get_full_name(), $sformatf("Read back value: %h", data), UVM_MEDIUM)
         end while (data == 1);
 
         phase.drop_objection(this);
