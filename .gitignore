@@ -26,6 +26,7 @@ nd_config/Working\ Data/
 docs/site
 docs/docs/img/
 img/
+.ipynb_checkpoints/
 scripts.txt
 hdl.txt
 docs.txt

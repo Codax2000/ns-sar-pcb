@@ -18,6 +18,8 @@ this project. This includes:
 import schemdraw
 import schemdraw.elements as elm
 from schemdraw import dsp
+from schemdraw import flow
+from schemdraw import logic
 
 
 '''
@@ -179,7 +181,7 @@ def draw_adc_loop(filename='adc_loop'):
         dsp.Arrow().right().tox(del2.W)
         dsp.Box(h=1,w=1.5).label(r'$z^{-1}$')
         dsp.Line().length(d.unit/4)
-        dsp.Arrow().to(s_quant.N, dx=-0.25, dy=-0.05)
+        dsp.Arrow().to(s_quant.NW)
     
     d.save(f'./docs/docs/img/{filename}')
 
@@ -251,12 +253,104 @@ def draw_uvm_db(filename='uvm_tb.png'):
     d.save(f'./docs/docs/img/{filename}')
 
 
+'''
+Function: draw_main_sm
+'''
+def draw_main_sm(filename='main_state_machine.png'):
+    with schemdraw.Drawing(show=False) as d:
+        flow.Arrow().down().length(d.unit/4).label('Reset', loc='right')
+        ready = flow.Box().label('Ready')
+        flow.Arrow().at(ready.E).right().label('Start = 1')
+        sh_active = flow.Box().label('SH')
+        flow.Arrow()
+        with d.container() as sar:
+            sq = flow.Box().label('SAR Quantize')
+            flow.Arrow(double=True).length(d.unit/2)
+            flow.Box().label(r'Shift Register\n$I^2C$')
+            sar.color('blue')
+            sar.linestyle('--')
+            sar.label('SAR Conversion', loc='N', halign='center', valign='top')
+        flow.Line().length(d.unit/2)
+        flow.Arrow().down().length(d.unit/2)
+        
+        ns_en = flow.Decision(W='No', S='Yes').label('Integration\nEnabled?')
+        arr1 = flow.Arrow().at(ns_en.W).left().tox(sh_active.E)
+        nfft_done = flow.Decision(N='No', W='Yes').anchor('E').label('NFFT\nDone')
+        flow.Arrow().at(nfft_done.N).up().toy(sh_active.S)
+        done = flow.Box().at((ready.E[0], nfft_done.W[1])).anchor('E').label('Done')
+        flow.Arrow().at(done.N).up().to(ready.S).label('Start = 0', loc='bottom')
+        flow.Arrow().at(nfft_done.W).left()
+
+        flow.Line().at(ns_en.S).down().length(d.unit/2)
+        flow.Arrow().left().length(d.unit/2)
+        flow.Box().label('INT1')
+        flow.Arrow()
+        flow.Box().label('INT2')
+        flow.Line().tox(nfft_done.S)
+        flow.Arrow().toy(nfft_done.S)
+    d.save(f'./docs/docs/img/{filename}')
+
+
+'''
+Function: draw_spi
+'''
+def draw_spi(filename='spi'):
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0.................'},
+                {'name': 'SCLK',             'wave': 'xln.................'},
+                {'name': 'MOSI',             'wave': 'x.322222224222222222', 
+                'data': ['RD', 'BC0', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6', 'P',
+                        'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'P']},
+                {'name': 'MISO',             'wave': 'z.........4z.......4', 'data': ['P', 'P']}
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_header.png')
+
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
+                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|32..|3x.',
+                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'WR DATA [0:7]', 'P']},
+                {'name': 'MISO',             'wave': 'z....|4z..|4z..|4z..|4z.', 'data': ['P'] * 4}
+            ],
+            'edge': [
+                '[2^:17]+[2^:22] Repeat $BC+1$ Times'
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_write_packet.png')
+
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
+                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|3x..|3x.',
+                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'P']},
+                {'name': 'MISO',             'wave': 'z....|4z..|4z..|42..|4z.', 'data': ['P'] * 3 + ['RD DATA [0:7]', 'P']}
+            ],
+            'edge': [
+                '[3^:17]+[3^:22] Repeat $BC+1$ Times'
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_read_packet.png')
+
 def main():
     draw_digital_architecture()
     draw_adc_loop()
     draw_digital_filter()
     draw_uvm_db()
-
+    draw_main_sm()
+    draw_spi()
 
 if __name__ == '__main__':
     main()

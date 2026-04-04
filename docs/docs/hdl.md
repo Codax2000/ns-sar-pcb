@@ -12,6 +12,32 @@ The incremental filters are implemented as simple up-counters, since they have a
 
 ![Digital Filters](./img/dig_filter.png)
 
+### Main State Machine
+
+The main state machine is responsible for enabling and disabling different parts of the analog at different times, signaling the data memory that it is being written to, and counting NFFT values.
+
+![Main State Machine](./img/main_state_machine.png)
+
+The tricky thing is to respect a large amount of control knobs and a SAR state machine that takes an arbitrary amount of time.
+
+### SPI Protocol
+
+I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved.
+
+![SPI Protocol](./img/spi_header.png)
+
+The first byte makes up the header byte, which determines how many bytes will be transmitted and whether the transaction is register read or write. The next 2 bytes make up the address. After than comes the data, either write data over the MOSI line or read data over the MISO line. After every byte, both MOSI and MISO transmit an odd parity bit. If the parity bit is not a match, the slave stops responding until the next chip select low event.
+
+For a write:
+
+![SPI Write](./img/spi_write_packet.png)
+
+For a read:
+
+![SPI Write](./img/spi_read_packet.png)
+
+One thing to note is that sent packets are **little-endian**. Since this is a burst protocol, it makes more sense that a counter would just be counting up the bits in memory, linearly.
+
 ## Verification
 
 There are two distinct and different verification environments used for this device.
