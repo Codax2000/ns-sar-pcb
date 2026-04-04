@@ -52,6 +52,12 @@
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">HDL</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#digital-architecture">Digital Architecture</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#main-state-machine">Main State Machine</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#spi-protocol">SPI Protocol</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
         <ul>
@@ -106,6 +112,18 @@
 <p><img alt="Toplevel Architecture" src="../img/digital.png" /></p>
 <p>The incremental filters are implemented as simple up-counters, since they have a reset.</p>
 <p><img alt="Digital Filters" src="../img/dig_filter.png" /></p>
+<h3 id="main-state-machine">Main State Machine</h3>
+<p>The main state machine is responsible for enabling and disabling different parts of the analog at different times, signaling the data memory that it is being written to, and counting NFFT values.</p>
+<p><img alt="Main State Machine" src="../img/main_state_machine.png" /></p>
+<p>The tricky thing is to respect a large amount of control knobs and a SAR state machine that takes an arbitrary amount of time.</p>
+<h3 id="spi-protocol">SPI Protocol</h3>
+<p>I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved.</p>
+<p><img alt="SPI Protocol" src="../img/spi_header.png" /></p>
+<p>The first byte makes up the header byte, which determines how many bytes will be transmitted and whether the transaction is register read or write. The next 2 bytes make up the address. After than comes the data, either write data over the MOSI line or read data over the MISO line. After every byte, both MOSI and MISO transmit an odd parity bit. If the parity bit is not a match, the slave stops responding until the next chip select low event.</p>
+<p>For a write:</p>
+<p><img alt="SPI Write" src="../img/spi_write_packet.png" /></p>
+<p>For a read:</p>
+<p><img alt="SPI Write" src="../img/spi_read_packet.png" /></p>
 <h2 id="verification">Verification</h2>
 <p>There are two distinct and different verification environments used for this device.</p>
 <ol>

@@ -98,8 +98,22 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="noise-shaping-adcs">Noise-Shaping ADCs</h1>
+<p>This project is meant to both build a SAR ADC and deal with all the surrounding logic for making it perform noise-shaping.</p>
+<p>The goal of noise shaping is to give up sampling speed for accuracy; that is, a noise shaping ADC takes multiple samples and averages the lot of them (in short).</p>
 <h2 id="motivation">Motivation</h2>
 <h2 id="controls">Controls</h2>
+<p>Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:</p>
+<p><img alt="Main State Machine" src="../img/main_state_machine.png" /></p>
+<p>This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls.</p>
+<p>The ADC has the following values controllable via SPI:</p>
+<ul>
+<li>Incremental mode enable/disable</li>
+<li>DEM enable/disable</li>
+<li>Number of FFT samples (NFFT)</li>
+<li>Oversampling ratio (OSR)</li>
+<li>SHA/Integration length and overlap times</li>
+<li>The number of bits in the SAR quantizer</li>
+</ul>
 <h2 id="additional-issues">Additional Issues</h2>
 <h2 id="results">Results</h2>
               
