@@ -124,6 +124,7 @@
 <p><img alt="SPI Write" src="../img/spi_write_packet.png" /></p>
 <p>For a read:</p>
 <p><img alt="SPI Write" src="../img/spi_read_packet.png" /></p>
+<p>One thing to note is that sent packets are <strong>little-endian</strong>. Since this is a burst protocol, it makes more sense that a counter would just be counting up the bits in memory, linearly.</p>
 <h2 id="verification">Verification</h2>
 <p>There are two distinct and different verification environments used for this device.</p>
 <ol>
