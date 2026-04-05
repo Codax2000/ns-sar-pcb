@@ -1,5 +1,9 @@
 # NaturalDocs
 
+I have documented my code using ![NaturalDocs](https://naturaldocs.org). I have found it excellent for readability and not super cumbersome to use, with little repetition. The unfortunate downside is that it's not very nice to include in other sites, so I've had to go with a somewhat clunky `iframe` approach. I've also had to disable linking, since that would entirely override the page.
+
+That said, it's mainly used for documentation while working with the code, not for use in a documentation website. However, I thought it would be interesting to include, since I already had it.
+
 <div class="iframe-container">
     <iframe 
         sandbox="allow-forms allow-scripts allow-same-origin" 
