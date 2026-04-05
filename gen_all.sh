@@ -1,3 +1,5 @@
+rm -rf ./docs/docs/img/*.png
+rm -rf ./docs/site
 
 conda activate hardware_analysis
 

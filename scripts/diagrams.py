@@ -344,6 +344,87 @@ def draw_spi(filename='spi'):
         )
     d.save(f'./docs/docs/img/{filename}_read_packet.png')
 
+
+'''
+Function: draw_overall_architecture
+'''
+def draw_overall_architecture(filename='toplevel.png'):
+    with schemdraw.Drawing(show=False) as d:
+        dsp.Box(w=2, h=1).label('AXI')
+        dsp.Line().length(d.unit/4)
+        dsp.Oscillator().label('Digital Signal\nGenerator', loc='top')
+        dsp.Line().length(d.unit/4)
+        dsp.Box(w=1, h=1).label(r'$\Delta\Sigma$')
+        dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().down().linestyle('--').color('gray')\
+                .label('FPGA', loc='right', ofst=(-2.5, -0.75))\
+                .label('PCB', loc='right', ofst=(-2.5, +0.75))
+        with d.hold():
+            dsp.Line().up().linestyle('--').color('gray')
+        elm.DataBusLine().length(d.unit/2).label('I2C')
+        dsp.Dac().label('5311')
+        dsp.Arrow().label(r'$V_{in}[k]$').length(d.unit/2)
+        sha = dsp.Box(h=1, w=1.5).label('SHA')
+        u = dsp.Line().label(r'$V[k]$').length(d.unit/2)
+        
+        # draw lines with capacitors
+        with d.hold():
+            c1 = elm.Capacitor().up().length(d.unit*3/4)
+        dsp.Line().length(d.unit/2)
+        with d.hold():
+            c2 = elm.Capacitor().up().length(d.unit*3/4)
+        a = dsp.Line().length(d.unit/4)
+        with d.hold():
+            elm.DotDotDot().at(a.end, dy=d.unit*3/8, dx=-d.unit*1/16)
+        dsp.Line().length(d.unit*3/4)
+        with d.hold():
+            c3 = elm.Capacitor().up().length(d.unit*3/4)
+
+        # draw comparator with summing node
+        dsp.Line().length(d.unit/2)
+        sum_node = dsp.Sum()
+        dsp.Line().length(d.unit/4)
+        comp = elm.Opamp(leads=True).anchor('in2').flip()
+        with d.hold():
+            dsp.Line().at(comp.in1).down().length(d.unit/4)
+            elm.Ground()
+
+        # draw feedback with shift registers
+        comp_out = dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().at(comp_out.start).up().linestyle('--').color('gray').length(d.unit*3/2+0.5)
+        with d.hold():
+            dsp.Line().at(comp_out.start).down().linestyle('--').color('gray')\
+                .label('PCB', loc='right', ofst=(-4.5, -0.75))\
+                .label('FPGA', loc='right', ofst=(-4.5, +0.75))
+        dsp.Line().length(d.unit/4).label(r'$U[k]$', loc='top', ofst=(-0.45, 0.1))
+        pl = dsp.Box(h=1, w=2).label('Zynq PL')
+        spi = elm.DataBusLine().length(d.unit/2).label('SPI')
+        dsp.Box(h=1).label('SPI to AXI')
+
+        elm.DataBusLine().up().at(pl.N).toy(c3.end).label('I2C')
+        dsp.Line().left().tox(comp_out.start)
+        dsp.Line().length(d.unit/4)
+        dsp.Box(h=1, w=3).label('Shift Register\n74HC595D')
+        elm.DataBusLine()
+        dsp.Line().tox(c1.end)
+
+        # draw integrators
+        dsp.Line().at(c1.start).down()
+        dsp.Line().right().length(d.unit/4)
+        dsp.Box(h=1, w=1.25).label('INT1')
+        dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().up().length(d.unit/2)
+            dsp.Arrow().to(sum_node.SW)
+        dsp.Line().length(d.unit/4)
+        dsp.Box(h=1, w=1.25).label('INT2')
+        dsp.Line().length(d.unit/4)
+        dsp.Arrow().to(sum_node.S)
+    d.save(f'./docs/docs/img/{filename}')
+        
+
 def main():
     draw_digital_architecture()
     draw_adc_loop()
@@ -351,6 +432,7 @@ def main():
     draw_uvm_db()
     draw_main_sm()
     draw_spi()
+    draw_overall_architecture()
 
 if __name__ == '__main__':
     main()

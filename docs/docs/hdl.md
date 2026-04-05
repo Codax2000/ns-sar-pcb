@@ -14,15 +14,24 @@ The incremental filters are implemented as simple up-counters, since they have a
 
 ### Main State Machine
 
-The main state machine is responsible for enabling and disabling different parts of the analog at different times, signaling the data memory that it is being written to, and counting NFFT values.
+Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:
 
 ![Main State Machine](./img/main_state_machine.png)
 
-The tricky thing is to respect a large amount of control knobs and a SAR state machine that takes an arbitrary amount of time.
+This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls; this controls the memory, oversampling, and clocking logic.
+
+The ADC has the following values controllable via SPI:
+
+- Incremental mode enable/disable
+- DEM enable/disable
+- Number of FFT samples (NFFT)
+- Oversampling ratio (OSR)
+- SHA/Integration length and overlap times
+- The number of bits in the SAR quantizer
 
 ### SPI Protocol
 
-I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved.
+I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved. This also only uses SPI mode 0, where data is shifted on the clock falling edge and captured on the rising edge.
 
 ![SPI Protocol](./img/spi_header.png)
 
