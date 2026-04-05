@@ -113,9 +113,18 @@
 <p>The incremental filters are implemented as simple up-counters, since they have a reset.</p>
 <p><img alt="Digital Filters" src="../img/dig_filter.png" /></p>
 <h3 id="main-state-machine">Main State Machine</h3>
-<p>The main state machine is responsible for enabling and disabling different parts of the analog at different times, signaling the data memory that it is being written to, and counting NFFT values.</p>
+<p>Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:</p>
 <p><img alt="Main State Machine" src="../img/main_state_machine.png" /></p>
-<p>The tricky thing is to respect a large amount of control knobs and a SAR state machine that takes an arbitrary amount of time.</p>
+<p>This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls; this controls the memory, oversampling, and clocking logic.</p>
+<p>The ADC has the following values controllable via SPI:</p>
+<ul>
+<li>Incremental mode enable/disable</li>
+<li>DEM enable/disable</li>
+<li>Number of FFT samples (NFFT)</li>
+<li>Oversampling ratio (OSR)</li>
+<li>SHA/Integration length and overlap times</li>
+<li>The number of bits in the SAR quantizer</li>
+</ul>
 <h3 id="spi-protocol">SPI Protocol</h3>
 <p>I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved.</p>
 <p><img alt="SPI Protocol" src="../img/spi_header.png" /></p>

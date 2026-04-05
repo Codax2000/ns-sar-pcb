@@ -47,11 +47,7 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">ADC Theory</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#motivation">Motivation</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#controls">Controls</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#additional-issues">Additional Issues</a>
+    <li class="toctree-l2"><a class="reference internal" href="#block-diagram">Block Diagram</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#results">Results</a>
     </li>
@@ -99,22 +95,12 @@
               
                 <h1 id="noise-shaping-adcs">Noise-Shaping ADCs</h1>
 <p>This project is meant to both build a SAR ADC and deal with all the surrounding logic for making it perform noise-shaping.</p>
-<p>The goal of noise shaping is to give up sampling speed for accuracy; that is, a noise shaping ADC takes multiple samples and averages the lot of them (in short).</p>
-<h2 id="motivation">Motivation</h2>
-<h2 id="controls">Controls</h2>
-<p>Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:</p>
-<p><img alt="Main State Machine" src="../img/main_state_machine.png" /></p>
-<p>This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls.</p>
-<p>The ADC has the following values controllable via SPI:</p>
-<ul>
-<li>Incremental mode enable/disable</li>
-<li>DEM enable/disable</li>
-<li>Number of FFT samples (NFFT)</li>
-<li>Oversampling ratio (OSR)</li>
-<li>SHA/Integration length and overlap times</li>
-<li>The number of bits in the SAR quantizer</li>
-</ul>
-<h2 id="additional-issues">Additional Issues</h2>
+<p>ADCs are typically implemented on-chip. This is done primarily for speed, since discrete capacitances are so much higher. However, for an educational project, there is nothing in theory that stops a discrete implementation from being possible.</p>
+<p>The analog frontend (the sampling circuit, comparator, CDAC, and integrators) of a noise-shaping SAR can be done relatively simply with discrete components, whereas the digital backend (SAR clocking, register interface, memory, etc.) can be done on an FPGA. Additionally, since many FPGA development boards have Arduino-compatible pinouts, the analog could be developed on an Arduino header and the digital done either on an FPGA or an Arduino.</p>
+<h2 id="block-diagram">Block Diagram</h2>
+<p>The overall goal is to split the design into discrete components as much as possible, which will leave some discrete design in the comparator and the integrators:</p>
+<p><img alt="Overall Block Diagram" src="../img/toplevel.png" /></p>
+<p>The integrators, sample and hold, and multi-tail comparator will all be implemented using discrete components. The CDAC, which using discrete components, will also use commercial shift registers to cut down on GPIO usage in the FPGA.</p>
 <h2 id="results">Results</h2>
               
             </div>
