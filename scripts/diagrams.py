@@ -11,230 +11,428 @@ this project. This includes:
 - Analog Comparator
 - SAR Logic
 - FPGA/PCB Floorplanning
+- SPI Packet structure
 
 '''
 
-import os
 import schemdraw
-import schemdraw.flow as flow
 import schemdraw.elements as elm
+from schemdraw import dsp
+from schemdraw import flow
+from schemdraw import logic
 
-
-# Function: draw_silva_steensgard_loop
-# Draws a high-level Silva-Steensgard noise-shaping SAR ADC loop.
-# Saves the schematic as img/silva_steensgard_loop.png.
-def draw_silva_steensgard_loop():
-    """Draw Silva-Steensgard ADC loop schematic and save to img/."""
-    os.makedirs("img", exist_ok=True)
-
-    with schemdraw.Drawing() as d:
-        d.config(unit=3)
-
-        # Input and DAC front-end
-        inp = d.add(blocks.Source().label("Vin"))
-        d.add(elm.Line().right())
-        summing = d.add(blocks.Sum().label("+ / -"))
-        d.add(elm.Line().right())
-        dac = d.add(blocks.Block().label("Cap DAC\n(SAR)"))
-        d.add(elm.Line().right())
-        quant = d.add(blocks.Block().label("Quantizer\n(Comparator)"))
-        d.add(elm.Line().right())
-        sar = d.add(blocks.Block().label("SAR Logic"))
-
-        # Feedback from SAR to DAC
-        d.add(elm.Line().down().length(3))
-        d.add(elm.Line().left().tox(dac.S))
-        d.add(elm.Line().up().toy(dac.S))
-
-        # Noise-shaping loop filter (Silva-Steensgard style)
-        d += summing
-        d.add(elm.Line().down().length(3))
-        loop_filt = d.add(blocks.Block().label("Loop Filter\n(SS Integrator)"))
-        d.add(elm.Line().left().tox(inp.S))
-        d.add(elm.Line().up().toy(inp.S))
-
-        d.save("img/silva_steensgard_loop.png")
-
-
-# Function: draw_block_level_adc
-# Draws a guessed block-level schematic of the overall ADC PCB design:
-# front-end, ADC core, digital backend, SPI, and clock/reset.
-# Saves the schematic as img/block_level_adc.png.
-def draw_block_level_adc():
-    """Draw block-level ADC PCB schematic and save to img/."""
-    os.makedirs("img", exist_ok=True)
-
-    with schemdraw.Drawing() as d:
-        d.config(unit=3)
-
-        # Analog front-end
-        ain = d.add(blocks.Source().label("Analog Input(s)"))
-        d.add(elm.Line().right())
-        afe = d.add(blocks.Block().label("Analog Front-End\n(Buffer / S&H)"))
-        d.add(elm.Line().right())
-        adc_core = d.add(blocks.Block().label("Noise-Shaping\nSAR ADC Core"))
-
-        # Digital backend
-        d.add(elm.Line().right())
-        dig = d.add(blocks.Block().label("Digital Backend\n(Decimation / Filter)"))
-        d.add(elm.Line().right())
-        mem = d.add(blocks.Block().label("ADC Output\nMemory"))
-
-        # SPI + control
-        d.add(elm.Line().down().length(3))
-        spi = d.add(blocks.Block().label("SPI Interface\n& Register Map"))
-        d.add(elm.Line().left().tox(adc_core.S))
-        d.add(elm.Line().up().toy(adc_core.S))
-
-        # Clock / reset
-        d.add(elm.Line().down().length(3))
-        clk = d.add(blocks.Block().label("Clock / Reset\n(PLL / CLKGEN)"))
-        d.add(elm.Line().left().tox(afe.S))
-        d.add(elm.Line().up().toy(afe.S))
-
-        d.save("img/block_level_adc.png")
-
-
-# Function: draw_digital_architecture
-# Draws the digital architecture of the ADC block, including:
-# - SPI + register map
-# - Control FSM
-# - CDC bridge between SPI clock domain and ADC clock domain
-# - NFFT controller and memory interface
-# Saves the schematic as img/digital_architecture.png.
-def draw_digital_architecture():
-    """Draw digital architecture with CDC bridge and save to img/."""
-    os.makedirs("img", exist_ok=True)
-
-    with schemdraw.Drawing() as d:
-        d.config(unit=3)
-
-        # Left: SPI domain
-        spi = d.add(blocks.Block().label("SPI Interface\n(SPI clk domain)"))
-        d.add(elm.Line().right())
-        ral = d.add(blocks.Block().label("Register Map\n(RAL View)"))
-
-        # CDC bridge
-        d.add(elm.Line().right())
-        cdc = d.add(blocks.Block().label("CDC Bridge\n(SPI clk → ADC clk)"))
-
-        # Right: ADC clock domain
-        d.add(elm.Line().right())
-        ctrl = d.add(blocks.Block().label("Main Control FSM\n(ADC clk domain)"))
-        d.add(elm.Line().right())
-        nfft = d.add(blocks.Block().label("NFFT Controller\n& Sample Counter"))
-        d.add(elm.Line().right())
-        memif = d.add(blocks.Block().label("ADC Output\nMemory Interface"))
-
-        # Feedback from FSM to registers (status)
-        d.add(elm.Line().down().length(3))
-        status = d.add(blocks.Block().label("Status / Readback\n(MAIN_STATE_RB,\nSYNC_RESET_RB,\nN_VALID_SAMPLES)"))
-        d.add(elm.Line().left().tox(ral.S))
-        d.add(elm.Line().up().toy(ral.S))
-
-        d.save("img/digital_architecture.png")
-
-
-# Function: draw_main_state_machine
-# Draws the main state machine for NFFT-based conversion:
-# IDLE → CONFIG → RUNNING → DONE, with early abort path.
-# Saves the schematic as img/main_state_machine.png.
-def draw_main_state_machine():
-    """Draw main state machine schematic and save to img/."""
-    os.makedirs("img", exist_ok=True)
-
-    with schemdraw.Drawing() as d:
-        d.config(unit=2.5)
-
-        idle = d.add(flow.Start().label("IDLE"))
-        d.add(elm.Line().right())
-        cfg = d.add(flow.Process().label("LOAD CONFIG\n(OSR, NFFT,\nMODES)"))
-        d.add(elm.Line().right())
-        runn = d.add(flow.Process().label("RUN NFFT\nCOLLECT SAMPLES"))
-        d.add(elm.Line().right())
-        done = d.add(flow.Terminator().label("DONE"))
-
-        # Arrows
-        d.add(elm.Arrow().at(idle.E).to(cfg.W).label("START_CONVERSION=1", loc="top"))
-        d.add(elm.Arrow().at(cfg.E).to(runn.W).label("CONFIG OK", loc="top"))
-        d.add(elm.Arrow().at(runn.E).to(done.W).label("N_SAMPLES == 2^NFFT", loc="top"))
-
-        # Early abort path
-        d.add(elm.Line().down().at(runn.S).length(2))
-        abort = d.add(flow.Decision().label("ABORT?\n(START_CONVERSION=0)"))
-        d.add(elm.Line().left().tox(idle.S))
-        d.add(elm.Arrow().to(idle.S))
-
-        d.save("img/main_state_machine.png")
-
-
-# Function: draw_dual_tail_strong_arm_latch
-# Draws a conceptual dual-tail strong-arm latch at block level:
-# differential input pair, first tail (preamp), second tail (regeneration),
-# and cross-coupled latch outputs. This is a conceptual block diagram,
-# not a transistor-accurate schematic.
-# Saves the schematic as img/dual_tail_strong_arm_latch.png.
-def draw_dual_tail_strong_arm_latch():
-    """Draw dual-tail strong-arm latch schematic (conceptual) and save to img/."""
-    os.makedirs("img", exist_ok=True)
-
-    with schemdraw.Drawing() as d:
-        d.config(unit=2.5)
-
-        # Differential inputs
-        vinp = d.add(blocks.Source().label("Vin+"))
-        d.add(elm.Line().right())
-        diffp = d.add(blocks.Block().label("Diff Pair\n(M1+)"))
-
-        d.add(elm.Line().down().at(vinp.S).length(2))
-        vinn = d.add(blocks.Source().label("Vin-"))
-        d.add(elm.Line().right())
-        diffn = d.add(blocks.Block().label("Diff Pair\n(M1-)"))
-
-        # First tail (preamp)
-        d.add(elm.Line().down().at(diffp.S).length(2))
-        tail1 = d.add(blocks.Block().label("Tail 1\n(Preamp)"))
-        d.add(elm.Line().down().length(1))
-        clk1 = d.add(blocks.Block().label("CLK1\n(Precharge / Eval)"))
-
-        # Second tail (regeneration)
-        d.add(elm.Line().right().at(diffp.E).length(2))
-        regen = d.add(blocks.Block().label("Regeneration\nCross-Coupled\nLatch"))
-        d.add(elm.Line().right().length(2))
-        outp = d.add(blocks.Block().label("Vout+"))
-
-        d.add(elm.Line().down().at(diffn.E).length(2))
-        d.add(elm.Line().right().tox(regen.S))
-
-        d.add(elm.Line().down().at(outp.S).length(2))
-        outn = d.add(blocks.Block().label("Vout-"))
-
-        # Second tail clock
-        d.add(elm.Line().down().at(regen.S).length(2))
-        tail2 = d.add(blocks.Block().label("Tail 2\n(Regeneration)"))
-        d.add(elm.Line().down().length(1))
-        clk2 = d.add(blocks.Block().label("CLK2\n(Regeneration Phase)"))
-
-        d.save("img/dual_tail_strong_arm_latch.png")
 
 '''
-Function: test_schemdraw
+Function: draw_digital_architecture
 
-Tests that schemdraw is working properly by pulling an example from their
-website
+Draw and saves the ADC digital architecture
+
+Parameters:
+    filename - the name of the PNG file in ./docs/docs/img that will be saved
 '''
-def test_schemdraw():
-    pass
+def draw_digital_architecture(filename='digital.png'):
+    with schemdraw.Drawing(show=False) as d:
+        elm.DataBusLine().dot()
+        with d.hold():
+            elm.Line().length(d.unit/4)
+            spi = dsp.Box(w=2, h=2).anchor('W').label('SPI')
+        dsp.Line().down()
+        dsp.Line().right().label('SCL').dot().length(d.unit*2/3)
+        
+        # add SCL line to data memory
+        with d.hold():
+            dsp.Line().down()
+            dsp.Line().right().length(d.unit*2.15)
+            datamem = elm.Ic(
+                pins=[elm.IcPin(name='>', side='left', slot='1/3'),
+                    elm.IcPin(name='RD', side='left', slot='3/3'),
+                    elm.IcPin(name='WR', side='right', slot='3/3')]
+            ).anchor('>').label('MEM')
+
+        dsp.Line().right().length(d.unit/3)
+        reset = dsp.Box(w=1,h=1).label('RST')
+
+        # create registers
+        dbl = elm.DataBusLine().at(spi.E, dy=0.5).label('REG IF')
+        reg = dsp.Box(w=2, h=2).at(dbl.end, dy=-0.5).label('REG')
+
+        dsp.Line().at(spi.E, dy=-0.5).tox(reset.N)
+        elm.DataBusLine().length(d.unit/2).down()
+        dsp.Arrow().toy(reset.N).length(d.unit/2)
+        dsp.Line().at(reset.E).length(d.unit/4).right()
+        dsp.Line().up().toy(reg.W - 0.5).label('Reg reset', rotate=True)
+        dsp.Arrow().right().tox(reg.W)
+
+        # connect registers to synchronizers and memory
+        dsp.Arrow().at(reg.E, dy=0.5).length(d.unit/2)
+        sysclk_sync = dsp.Box(h=1,w=2).label('Sync to\nPLL clock')
+        spiclk_sync = dsp.Box(h=1,w=2).at(sysclk_sync.S).anchor('N').label('Sync to\nSPI clock')
+        dsp.Arrow().tox(reg.E).at(spiclk_sync.W)
+        dsp.Line().at(datamem.RD).up().toy(spiclk_sync.W-0.1*d.unit).label('Mem read', rotate=True)
+        dsp.Arrow().left().tox(reg.E)
+
+        # create main state machine and connect it up
+        dsp.Line().at(sysclk_sync.E).right().length(d.unit/2).dot()
+        arr1 = dsp.Arrow().right().length(d.unit/2)
+        main_sm = dsp.Box(h=3).at(arr1.end, dy=-1).label('Main State\nMachine')
+        dsp.Arrow().at(main_sm.W).tox(spiclk_sync.E)
+
+        # create and connect PLL
+        dsp.Line().at(main_sm.S).length(d.unit/4).down()
+        pll = dsp.Box(h=1,w=1).label('PLL').anchor('N')
+        dsp.Line().at(pll.W, dy=0.25).left().length(d.unit/2)
+        dsp.Line().up().toy(spiclk_sync.E).dot()
+        dsp.Line().at(arr1.start).down().toy(pll.W-0.25)
+        dsp.Line().tox(pll.W)
+        dsp.Line().at(pll.E).right().label('Ref clock', loc='right').length(d.unit*2)
+
+        # create dividing lines
+        dsp.Line().at(datamem.RD, dx=0.2).up().toy(reg.N + 0.5).style(color='gray', ls='--')
+        dsp.Line().at(datamem.RD, dx=0.2).down().style(color='gray', ls='--').length(d.unit*3/4)
+        dsp.Line().at(datamem.WR, dx=-0.2).up().toy(reg.N + 0.5).style(color='gray', ls='--')
+        dsp.Line().at(datamem.WR, dx=-0.2).down().style(color='gray', ls='--').length(d.unit*3/4)\
+            .label('SPI Clock Domain', halign='right', ofst=(1.25, -3.5))\
+            .label('CDC', halign='center', ofst=(1.25, -1.5))\
+            .label('PLL Clock Domain', halign='left', ofst=(1.25, 0.5))
+        
+        # create DSP mux into memory
+        dsp.Line().at(datamem.WR).right().length(d.unit/2)
+        dmux = elm.intcircuits.Multiplexer(
+            demux=True, 
+            size=(0.5,1),
+            pins=[elm.IcPin(anchorname='D', side='left'),
+                elm.IcPin(anchorname='A', side='right'),
+                elm.IcPin(anchorname='B', side='right')],
+            edgepadH=0,
+            edgepadW=0,
+            lsize=0).anchor('D')
+        dsp.Box(h=0.5, w=4).label('Incremental Filters').at(dmux.A)
+        dsp.Line().length(d.unit/8)
+        fl = dsp.Line().up().length(d.unit/6).dot()
+        dsp.Line().at(dmux.B).tox(fl.end).right()
+        dsp.Line().down().toy(fl.end)
+
+        # main state machine to SAR state machine
+        dsp.Line().at(main_sm.E).length(d.unit).right().dot()
+        with d.hold():
+            dsp.Line().length(d.unit/4)
+            sar_sm = dsp.Box().anchor('W').label('SAR State\nMachine')
+            dsp.Arrow().at(sar_sm.E, dx=1).left().tox(sar_sm.E).label('Comparator Input', loc='right')
+            dsp.Line().at(sar_sm.N).up().length(d.unit/4)
+            elm.DataBusLine().right().length(d.unit/2)
+            dsp.Arrow().length(d.unit/2 - 0.5).label(r'$I^2C$ to Shift Registers', loc='right')
+        elm.DataBusLine().down().toy(fl.end)
+        dsp.Line().left().tox(fl.end)
+    
+    d.save(f'./docs/docs/img/{filename}')
+
 
 '''
-Function: main
+Function: draw_adc_loop
 
-If the img directory does not exist, creates it. Then runs schematic creation
-functions.
+Draws the Silva-Steensgard ADC loop used in the design
 '''
+def draw_adc_loop(filename='adc_loop'):
+    with schemdraw.Drawing(show=False) as d:
+        d.unit = 1
+        dsp.Line().length(d.unit/2).dot().label(r'$V_{in}$')
+        
+        with d.hold():
+            # draw sum and first filter
+            dsp.Arrow().length(d.unit/2)
+            sum_err = dsp.Sum().anchor('W')
+            dsp.Arrow().length(d.unit/2)
+            filt1 = dsp.Box(h=1.5,w=2).label(r'$\frac{1}{1-z^{-1}}$', fontsize=18)
+
+            # draw second filter
+            f1_out = dsp.Line().length(d.unit/2).dot()
+            dsp.Arrow().length(d.unit/2)
+            filt2 = dsp.Box(h=1.5,w=2).label(r'$\frac{1}{1-z^{-1}}$', fontsize=18)
+
+            # draw final delay and quantizer
+            dsp.Arrow().length(d.unit/2)
+            del2 = dsp.Box(h=1,w=1.5).label(r'$z^{-1}$')
+            dsp.Arrow().length(d.unit/2)
+            s_quant = dsp.Sum().anchor('W')
+            dsp.Arrow().length(d.unit/2)
+
+            dsp.Adc().label('SAR')
+            elm.DataBusLine().length(d.unit*3/2).dot()
+
+            with d.hold():
+                dsp.Arrow().label('To Digital', loc='right').length(d.unit)
+
+            # draw feedback
+            dsp.Line().down().length(d.unit*2)
+            dsp.Line().left()
+            dsp.Box(h=1,w=1.5).label('DWA')
+            dsp.Line().tox(filt1.E)
+            dsp.Dac().label('CDAC')
+            dsp.Line().tox(sum_err.S)
+            dsp.Arrow().toy(sum_err.S).up()\
+                .label('-', ofst=(0.6,0.25), fontsize=24)
+            
+        # now that we're back at start, draw feedforward
+        dsp.Line().up().length(d.unit*2.5)
+        dsp.Line().right().tox(s_quant.N)
+        dsp.Arrow().to(s_quant.N)
+
+        dsp.Line().up().length(d.unit*3/2).at(f1_out.end)
+        dsp.Arrow().right().tox(del2.W)
+        dsp.Box(h=1,w=1.5).label(r'$z^{-1}$')
+        dsp.Line().length(d.unit/4)
+        dsp.Arrow().to(s_quant.NW)
+    
+    d.save(f'./docs/docs/img/{filename}')
+
+'''
+Function: draw_digital_filter
+
+Draw incremental filters (implemented as up-counters with resets)
+'''
+def draw_digital_filter(filename='dig_filter.png'):
+    with schemdraw.Drawing(show=False) as d:
+        d.unit=1
+        dsp.Arrow().length(d.unit).label(r'$D_1$', loc='left')
+        filt1 = dsp.Box(h=1.5,w=2).label(r'$\frac{1}{1-z^{-1}}$', fontsize=18)
+        dsp.Arrow().length(d.unit)
+        filt2 = dsp.Box(h=1.5,w=2).label(r'$\frac{1}{1-z^{-1}}$', fontsize=18)
+        dsp.Arrow().length(d.unit)
+        ds = dsp.Box(h=1.5,w=2).label(r'$\downarrow OSR$', fontsize=18)
+        dsp.Arrow().length(d.unit).label('To Data Mem', loc='right')
+
+        dsp.Arrow().at(filt1.S, dy=-d.unit/2).to(filt1.S).label('RST', loc='left')
+        dsp.Arrow().at(filt2.S, dy=-d.unit/2).to(filt2.S).label('RST', loc='left')
+    
+    d.save(f'./docs/docs/img/{filename}')
+
+
+'''
+Function: draw_uvm_tb
+'''
+def draw_uvm_db(filename='uvm_tb.png'):
+    with schemdraw.Drawing(show=False) as d:
+        dsp.Box().label('VIN Agent').fill('navajowhite')
+        dsp.Arrow().label(r'$V_{in}[k]$')
+        ana = dsp.Box().label('SV Analog\n(Model)')
+        dsp.Arrow().label('Comparator\nOutput')
+        dut = dsp.Box().label('ADC RTL\n(DUT)')
+        elm.DataBusLine().label('SPI')
+        spi = dsp.Box().label('SPI Agent').fill('navajowhite')
+        dsp.Arrow(double=True).length(d.unit/2)
+        dsp.Box().label("UVM RAL").fill('lightblue')
+
+        with d.hold():
+            dsp.Line().length(d.unit/2).at(dut.N).up().label(r'$I^2C$')
+            dsp.Line().left().length(d.unit/3)
+            cpsr = dsp.Box(h=1).label('CP Shift Register\n(Model)')
+            elm.DataBusLine().tox(ana.N)
+            dsp.Arrow().toy(ana.N).label(r'CP $V_{DAC}$')
+
+        with d.hold():
+            dsp.Line().length(d.unit/2).at(dut.S).down().label(r'$I^2C$')
+            dsp.Line().left().length(d.unit/3)
+            cnsr = dsp.Box(h=1).label('CN Shift Register\n(Model)')
+            elm.DataBusLine().tox(ana.S)
+            dsp.Arrow().toy(ana.S).label(r'CN $V_{DAC}$')
+
+        clkgen = dsp.Box(h=1).anchor('N').at(dut.S, dx=0.5, dy=-d.unit).label('CLKGEN Agent').fill('navajowhite')
+        dsp.Arrow().at(clkgen.N).up().toy(dut.S)
+        rst = dsp.Box(h=1).anchor('N').at(clkgen.S, dx=0.65).label('RESET Agent').fill('navajowhite')
+        dsp.Line().at(rst.N).up().toy(clkgen.N).linestyle(':')
+        dsp.Arrow().toy(dut.S)
+
+        # boundary lines
+        b = 0.35
+        dsp.Line().at(ana.W, dx=-b).up().toy(cpsr.N + b).linestyle('--').color('gray')
+        dsp.Line().right().tox(dut.E + b).linestyle('--').color('gray')\
+            .label('Planned PCB')
+        dsp.Line().down().toy(cnsr.S - b).linestyle('--').color('gray')
+        dsp.Line().left().tox(ana.W - b).linestyle('--').color('gray')
+        dsp.Line().up().toy(ana.W).linestyle('--').color('gray')
+    d.save(f'./docs/docs/img/{filename}')
+
+
+'''
+Function: draw_main_sm
+'''
+def draw_main_sm(filename='main_state_machine.png'):
+    with schemdraw.Drawing(show=False) as d:
+        flow.Arrow().down().length(d.unit/4).label('Reset', loc='right')
+        ready = flow.Box().label('Ready')
+        flow.Arrow().at(ready.E).right().label('Start = 1')
+        sh_active = flow.Box().label('SH')
+        flow.Arrow()
+        with d.container() as sar:
+            sq = flow.Box().label('SAR Quantize')
+            flow.Arrow(double=True).length(d.unit/2)
+            flow.Box().label(r'Shift Register\n$I^2C$')
+            sar.color('blue')
+            sar.linestyle('--')
+            sar.label('SAR Conversion', loc='N', halign='center', valign='top')
+        flow.Line().length(d.unit/2)
+        flow.Arrow().down().length(d.unit/2)
+        
+        ns_en = flow.Decision(W='No', S='Yes').label('Integration\nEnabled?')
+        arr1 = flow.Arrow().at(ns_en.W).left().tox(sh_active.E)
+        nfft_done = flow.Decision(N='No', W='Yes').anchor('E').label('NFFT\nDone')
+        flow.Arrow().at(nfft_done.N).up().toy(sh_active.S)
+        done = flow.Box().at((ready.E[0], nfft_done.W[1])).anchor('E').label('Done')
+        flow.Arrow().at(done.N).up().to(ready.S).label('Start = 0', loc='bottom')
+        flow.Arrow().at(nfft_done.W).left()
+
+        flow.Line().at(ns_en.S).down().length(d.unit/2)
+        flow.Arrow().left().length(d.unit/2)
+        flow.Box().label('INT1')
+        flow.Arrow()
+        flow.Box().label('INT2')
+        flow.Line().tox(nfft_done.S)
+        flow.Arrow().toy(nfft_done.S)
+    d.save(f'./docs/docs/img/{filename}')
+
+
+'''
+Function: draw_spi
+'''
+def draw_spi(filename='spi'):
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0.................'},
+                {'name': 'SCLK',             'wave': 'xln.................'},
+                {'name': 'MOSI',             'wave': 'x.322222224222222222', 
+                'data': ['RD', 'BC0', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6', 'P',
+                        'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'P']},
+                {'name': 'MISO',             'wave': 'z.........4z.......4', 'data': ['P', 'P']}
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_header.png')
+
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
+                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|32..|3x.',
+                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'WR DATA [0:7]', 'P']},
+                {'name': 'MISO',             'wave': 'z....|4z..|4z..|4z..|4z.', 'data': ['P'] * 4}
+            ],
+            'edge': [
+                '[2^:17]+[2^:22] Repeat $BC+1$ Times'
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_write_packet.png')
+
+    with schemdraw.Drawing(show=False) as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
+                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|3x..|3x.',
+                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'P']},
+                {'name': 'MISO',             'wave': 'z....|4z..|4z..|42..|4z.', 'data': ['P'] * 3 + ['RD DATA [0:7]', 'P']}
+            ],
+            'edge': [
+                '[3^:17]+[3^:22] Repeat $BC+1$ Times'
+            ]},
+            grid=False,
+            ygap=0.4
+        )
+    d.save(f'./docs/docs/img/{filename}_read_packet.png')
+
+
+'''
+Function: draw_overall_architecture
+'''
+def draw_overall_architecture(filename='toplevel.png'):
+    with schemdraw.Drawing(show=False) as d:
+        dsp.Box(w=2, h=1).label('AXI')
+        dsp.Line().length(d.unit/4)
+        dsp.Oscillator().label('Digital Signal\nGenerator', loc='top')
+        dsp.Line().length(d.unit/4)
+        dsp.Box(w=1, h=1).label(r'$\Delta\Sigma$')
+        dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().down().linestyle('--').color('gray')\
+                .label('FPGA', loc='right', ofst=(-2.5, -0.75))\
+                .label('PCB', loc='right', ofst=(-2.5, +0.75))
+        with d.hold():
+            dsp.Line().up().linestyle('--').color('gray')
+        elm.DataBusLine().length(d.unit/2).label('I2C')
+        dsp.Dac().label('5311')
+        dsp.Arrow().label(r'$V_{in}[k]$').length(d.unit/2)
+        sha = dsp.Box(h=1, w=1.5).label('SHA')
+        u = dsp.Line().label(r'$V[k]$').length(d.unit/2)
+        
+        # draw lines with capacitors
+        with d.hold():
+            c1 = elm.Capacitor().up().length(d.unit*3/4)
+        dsp.Line().length(d.unit/2)
+        with d.hold():
+            c2 = elm.Capacitor().up().length(d.unit*3/4)
+        a = dsp.Line().length(d.unit/4)
+        with d.hold():
+            elm.DotDotDot().at(a.end, dy=d.unit*3/8, dx=-d.unit*1/16)
+        dsp.Line().length(d.unit*3/4)
+        with d.hold():
+            c3 = elm.Capacitor().up().length(d.unit*3/4)
+
+        # draw comparator with summing node
+        dsp.Line().length(d.unit/2)
+        sum_node = dsp.Sum()
+        dsp.Line().length(d.unit/4)
+        comp = elm.Opamp(leads=True).anchor('in2').flip()
+        with d.hold():
+            dsp.Line().at(comp.in1).down().length(d.unit/4)
+            elm.Ground()
+
+        # draw feedback with shift registers
+        comp_out = dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().at(comp_out.start).up().linestyle('--').color('gray').length(d.unit*3/2+0.5)
+        with d.hold():
+            dsp.Line().at(comp_out.start).down().linestyle('--').color('gray')\
+                .label('PCB', loc='right', ofst=(-4.5, -0.75))\
+                .label('FPGA', loc='right', ofst=(-4.5, +0.75))
+        dsp.Line().length(d.unit/4).label(r'$U[k]$', loc='top', ofst=(-0.45, 0.1))
+        pl = dsp.Box(h=1, w=2).label('Zynq PL')
+        spi = elm.DataBusLine().length(d.unit/2).label('SPI')
+        dsp.Box(h=1).label('SPI to AXI')
+
+        elm.DataBusLine().up().at(pl.N).toy(c3.end).label('I2C')
+        dsp.Line().left().tox(comp_out.start)
+        dsp.Line().length(d.unit/4)
+        dsp.Box(h=1, w=3).label('Shift Register\n74HC595D')
+        elm.DataBusLine()
+        dsp.Line().tox(c1.end)
+
+        # draw integrators
+        dsp.Line().at(c1.start).down()
+        dsp.Line().right().length(d.unit/4)
+        dsp.Box(h=1, w=1.25).label('INT1')
+        dsp.Line().length(d.unit/4)
+        with d.hold():
+            dsp.Line().up().length(d.unit/2)
+            dsp.Arrow().to(sum_node.SW)
+        dsp.Line().length(d.unit/4)
+        dsp.Box(h=1, w=1.25).label('INT2')
+        dsp.Line().length(d.unit/4)
+        dsp.Arrow().to(sum_node.S)
+    d.save(f'./docs/docs/img/{filename}')
+        
+
 def main():
-    test_schemdraw()
-
+    draw_digital_architecture()
+    draw_adc_loop()
+    draw_digital_filter()
+    draw_uvm_db()
+    draw_main_sm()
+    draw_spi()
+    draw_overall_architecture()
 
 if __name__ == '__main__':
     main()

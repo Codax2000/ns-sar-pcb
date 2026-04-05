@@ -1,3 +1,0 @@
-# NaturalDocs
-
-Placeholder
