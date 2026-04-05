@@ -44,10 +44,6 @@
                 <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
                 </li>
               </ul>
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../theory/">ADC Theory</a>
-                </li>
-              </ul>
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="./">HDL</a>
     <ul class="current">
@@ -126,7 +122,7 @@
 <li>The number of bits in the SAR quantizer</li>
 </ul>
 <h3 id="spi-protocol">SPI Protocol</h3>
-<p>I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved.</p>
+<p>I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved. This also only uses SPI mode 0, where data is shifted on the clock falling edge and captured on the rising edge.</p>
 <p><img alt="SPI Protocol" src="../img/spi_header.png" /></p>
 <p>The first byte makes up the header byte, which determines how many bytes will be transmitted and whether the transaction is register read or write. The next 2 bytes make up the address. After than comes the data, either write data over the MOSI line or read data over the MISO line. After every byte, both MOSI and MISO transmit an odd parity bit. If the parity bit is not a match, the slave stops responding until the next chip select low event.</p>
 <p>For a write:</p>
@@ -234,7 +230,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../theory/" class="btn btn-neutral float-left" title="ADC Theory"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../pcb/" class="btn btn-neutral float-right" title="PCB">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -258,7 +254,7 @@
   <span class="rst-current-version" data-toggle="rst-current-version">
     
     
-      <span><a href="../theory/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../pcb/" style="color: #fcfcfc">Next &raquo;</a></span>

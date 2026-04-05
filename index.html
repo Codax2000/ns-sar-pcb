@@ -43,17 +43,15 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#theory">Theory</a>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#adc-architecture">ADC Architecture</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#block-diagram">Block Diagram</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#results">Results</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#technology">Technology</a>
     </li>
     </ul>
-                </li>
-              </ul>
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="theory/">ADC Theory</a>
                 </li>
               </ul>
               <ul>
@@ -106,12 +104,54 @@
 <li>Design an analog/mixed-signal circuit using LTSpice, instead of my usual Spectre.</li>
 <li>Implement a system that includes some kind of bus communication protocol, likely I2C or SPI.</li>
 </ol>
-<h2 id="theory">Theory</h2>
-<p>TODO: insert simulations here</p>
 <h2 id="adc-architecture">ADC Architecture</h2>
 <p>The ADC will use a Silva-Steensgard topology with optional reset for incremental operation.</p>
 <p><img alt="Silva-Steensgard Topology" src="img/adc_loop.png" /></p>
 <p>This should give fine results on a PCB while also presenting a decent challenge for this project.</p>
+<h2 id="block-diagram">Block Diagram</h2>
+<p>ADCs are typically implemented on-chip. This is done primarily for speed, since discrete capacitances are so much higher. However, for an educational project, there is nothing in theory that stops a discrete implementation from being possible.</p>
+<p>The analog frontend (the sampling circuit, comparator, CDAC, and integrators) of a noise-shaping SAR can be done relatively simply with discrete components, whereas the digital backend (SAR clocking, register interface, memory, etc.) can be done on an FPGA. Additionally, since many FPGA development boards have Arduino-compatible pinouts, the analog could be developed on an Arduino header and the digital done either on an FPGA or an Arduino. The current plan is to use a Zynq-7000 dev board like the Arty-Z7 and integrate the ADC into the Linux OS via AXI, so that the testing can be done natively in Python.</p>
+<p><img alt="Overall Block Diagram" src="img/toplevel.png" /></p>
+<p>The integrators, sample and hold, and multi-tail comparator will all be implemented using discrete components. The CDAC, which using discrete components, will also use commercial shift registers to cut down on GPIO usage in the FPGA.</p>
+<h2 id="results">Results</h2>
+<p>There are many layers of simulation results, with varying levels of utility.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Simulation Type</th>
+<th style="text-align: left;">Domain</th>
+<th style="text-align: left;">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Ideal ADC</td>
+<td style="text-align: left;">Python</td>
+<td style="text-align: left;">Determine design boundaries</td>
+</tr>
+<tr>
+<td style="text-align: left;">Non-ideal CDAC, integrator op-amps</td>
+<td style="text-align: left;">Python</td>
+<td style="text-align: left;">Assess effects of DWA, integrator non-linearity, things that can be modeled as LTI or similar</td>
+</tr>
+<tr>
+<td style="text-align: left;">Digital RTL/GLS</td>
+<td style="text-align: left;">SystemVerilog + RNM</td>
+<td style="text-align: left;">Determine timing impact of digital, optimal digital architecture</td>
+</tr>
+<tr>
+<td style="text-align: left;">Analog SPICE</td>
+<td style="text-align: left;">LTSpice/NgSpice</td>
+<td style="text-align: left;">Design PCB, refine SystemVerilog model (block-level only, since no AMS simulator)</td>
+</tr>
+</tbody>
+</table>
+<p>The Python simulation results are like so:</p>
+<p><img alt="Python DSM Simulation" src="img/TODO.jfif" /></p>
+<p>These have a fixed OSR and FFT for comparison. In incremental mode, the output is similar, but already downsampled and filtered:</p>
+<p><img alt="Python Incremental Simulation" src="img/TODO.jfif" /></p>
+<p>The SystemVerilog simulation results, with the same parameters:</p>
+<p><img alt="SystemVerilog Incremental Simulation" src="img/TODO.jfif" /></p>
 <h2 id="technology">Technology</h2>
 <p>The ultimate goal of this is to add the PCB onto a Zynq dev board with the form factor of an Arduino shield. The goal there would be to have an all-in-one testbench, where the Zynq would act as signal generator, test prober (using onboard ADCs) and the digital part of the DUT, while also running Python in Linux for easy interaction with the board. In lieu of that, the same should be possible using an Arduino as the testbed, but the bringup would potentially be more difficult.</p>
 <p>Here is a summary of the technology used:</p>
@@ -153,7 +193,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="theory/" class="btn btn-neutral float-right" title="ADC Theory">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="hdl/" class="btn btn-neutral float-right" title="HDL">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -177,7 +217,7 @@
     
     
     
-      <span><a href="theory/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="hdl/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
@@ -196,5 +236,5 @@
 
 <!--
 MkDocs version : 1.3.0
-Build Date UTC : 2026-04-05 05:55:41.359474+00:00
+Build Date UTC : 2026-04-05 06:14:23.330133+00:00
 -->
