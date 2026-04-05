@@ -31,3 +31,4 @@ Given that this project is being written in Windows with no native Makefile supp
 | Generate register RTL/UVM, etc | `python ./scripts/registers.py` | Runs the registers script, which generates RTL, website information, and UVM stuff. |
 | Build website | `cd docs; mkdocs build` | Build website, which can then be opened using `index.html` in browser. |
 | Deploy website | `cd docs; mkdocs gh-deploy` | Deploy website to GitHub Pages |
+| Dump all source files to text | `source ./scripts/dump.sh` | Dump all Python files, HDL files, Git log, and documentation to text files. Nice for giving to LLMs for analysis. |
