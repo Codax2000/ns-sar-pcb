@@ -2,7 +2,10 @@
 Alex Knowlton
 3/24/2025
 
-Simulation for a noise-shaping 2nd order SAR ADC with 1st-order DEM
+Simulation for a noise-shaping 2nd order SAR ADC with 1st-order DEM.
+
+**Deprecated**. This script was used for early prototyping only. The <NSSAR>
+and <nssar_test> are the updated version.
 '''
 
 
