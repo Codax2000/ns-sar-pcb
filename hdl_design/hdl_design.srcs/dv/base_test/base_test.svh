@@ -81,6 +81,7 @@ class base_test extends uvm_test;
     virtual function void end_of_elaboration_phase(uvm_phase phase);
         uvm_top.print_topology();
         uvm_factory::get().print();
+        m_env.m_ral.print();
     endfunction
 
     virtual task main_phase(uvm_phase phase);

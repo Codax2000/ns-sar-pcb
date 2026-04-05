@@ -218,4 +218,69 @@ class adc_env extends uvm_env;
 
     endfunction
 
+    virtual task burst_update_all_registers();
+        bit            registers_need_update [$];
+        uvm_reg        current_register;
+        int            n_registers;
+        uvm_reg        ral_registers         [$];
+        uvm_reg_data_t desired_values        [$];
+        int            current_index;
+        uvm_status_e   status;
+        logic [7:0]    current_data;
+
+        spi_packet_reg_extension ext;
+
+        m_ral.get_registers(ral_registers);
+        n_registers = ral_registers.size();
+
+        ral_registers.delete();
+        for (int i = 0; i < n_registers; i++)
+            ral_registers.push_back(m_ral.default_map.get_reg_by_offset(i*2));
+
+        if (ral_registers.size() > 0) begin
+            while (!(ral_registers[0].needs_update()))
+                ral_registers.pop_front();
+        end
+
+        if (ral_registers.size() > 0) begin
+            while (!(ral_registers[ral_registers.size() - 1].needs_update()))
+                ral_registers.pop_back();
+        end
+
+        if (ral_registers.size() > 0) begin
+            ext = spi_packet_reg_extension::type_id::create("ext");
+            for (int i = 1; i < ral_registers.size(); i++) begin
+                current_data = ral_registers[i].get();
+                ext.additional_write_data.push_back(current_data);
+                current_data = ral_registers[i].get() >> 8;
+                ext.additional_write_data.push_back(current_data);
+            end
+            ral_registers[0].update(status, .extension(ext));
+        end
+
+        if (status != UVM_IS_OK)
+            `uvm_error(get_full_name(),
+                       $sformatf("Burst update failed, status = %s", status.name()))
+    endtask
+
+    virtual task burst_mirror_all_registers(uvm_check_e check = UVM_NO_CHECK);
+        bit            registers_need_update [$];
+        uvm_reg_data_t desired_values        [$];
+        uvm_reg        ral_registers         [$];
+        int            current_index;
+        uvm_status_e   status;
+
+        spi_packet_reg_extension ext;
+
+        m_ral.get_registers(ral_registers);
+        
+        ext = spi_packet_reg_extension::type_id::create("ext");
+        ext.n_additional_reads = (ral_registers.size() - 1) * 2;
+        m_ral.default_map.get_reg_by_offset(0).mirror(status, check, .extension(ext));
+
+        if (status != UVM_IS_OK)
+            `uvm_error(get_full_name(),
+                       $sformatf("Burst update failed, status = %s", status.name()))
+    endtask
+
 endclass

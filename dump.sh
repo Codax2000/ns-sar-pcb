@@ -14,7 +14,7 @@ find ./scripts -type f -name "*.py" \
   | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
   >> scripts.txt
 
-find . -maxdepth 2 -type f -name "*.md" \
+find . -maxdepth 4 -type f -name "*.md" \
   | xargs -I{} sh -c 'echo "===== Contents of {} =====" && cat "{}"' \
   >> docs.txt
 

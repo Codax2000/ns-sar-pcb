@@ -36,10 +36,7 @@ class reg_env #(
     // subscriber instead of auto prediction.
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
-
-        // set type override so volatile fields don't need updates
-        uvm_factory::get().set_type_override_by_type(uvm_reg_field::get_type(), adc_reg_field::get_type());
-
+        
         adapter = ADAPTER::type_id::create("adapter");
         ral     = REG_BLOCK::type_id::create("ral");
         
