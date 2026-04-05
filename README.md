@@ -23,7 +23,9 @@ There will soon be a bash script that will run the digital regression and show p
 
 ## Building Documentation
 
-Given that this project is being written in Windows with no native Makefile support, everything is done via bash script. The plus side of this is that scripts could be added into commits
+Given that this project is being written in Windows with no native Makefile support, everything is done via bash script. The plus side of this is that scripts could be added into commits.
+
+All scripts should be run **from the toplevel of the source directory**. The file paths are relative and depend on that behavior.
 
 | Action | Terminal Command | Behavior |
 | :--- | :--- | :--- |
