@@ -60,8 +60,7 @@ Here is a summary of the technology used:
 | Purpose | Program |
 | :--- | :--- |
 | System Design | Python `numpy`, `scipy`, `matplotlib` |
-| Documentation | Python `mkdocs` |
-| Technical Diagrams | Python `schemdraw` |
+| Documentation | Python `mkdocs`, `schemdraw` |
 | Digital Logic Design | Xilinx Vivado |
 | Analog Circuit Design | LTSpice, NGSpice |
 | PCB Design | KiCAD |
