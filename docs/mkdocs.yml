@@ -1,5 +1,7 @@
 site_name: Noise-Shaping SAR PCB
-
+repo_url: https://github.com/Codax2000/ns-sar-pcb
+repo_name: GitHub
+edit_uri: ""
 theme: readthedocs
 
 nav:
