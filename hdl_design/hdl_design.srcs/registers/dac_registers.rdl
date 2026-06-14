@@ -1,0 +1,80 @@
+addrmap dac_regs {
+
+    desc = "DAC sine gen register map";
+    default regwidth=16;
+    default accesswidth=8;
+    default sw=rw;
+    default hw=r;
+    default reset=0x0;
+
+    enum frequency_mode_e {
+        DC = 0;
+        AC = 1;
+    };
+
+    reg {
+        field {
+            desc = "Frequency setting of the DAC sine gen. Describes a power of 2, so increase of 1 in this field will generate a frequency twice as high as the previous.";
+        } frequency [3:0];
+        field {
+            desc = "Amplitude setting of the DAC. Describes a power of 2, so increase of 1 in this field will generate an amplitude twice as large as the previous code. 4'hF translates to full-scale.";
+            reset=0xF;
+        } amplitude [7:4];
+        // bits [15:8] reserved
+    } AC_CONFIG;
+
+    reg {
+        field {
+            desc = "Enable for DACP.";
+        } dacp_enable [0:0];
+        field {
+            desc = "Mode for DACP.";
+            encode = frequency_mode_e;
+            reset = frequency_mode_e::DC;
+        } dacp_mode [1:1];
+        field {
+            desc = "Enable for DACN.";
+        } dacn_enable [2:2];
+        field {
+            desc = "Mode for DACN.";
+            encode = frequency_mode_e;
+            reset = frequency_mode_e::DC;
+        } dacn_mode [3:3];
+        field {
+            desc = "Enable for DAC delta-sigma modulator. Used to reduce quantization noise in AC mode.";
+        } dsm_enable [4:4];
+        // bits [15:5] reserved
+    } ENABLE;
+
+    reg dc_value_reg {
+        field {
+            desc = "DAC output value in DC mode.";
+        } dc_value [7:0];
+        // bits [15:8] reserved
+    };
+
+    dc_value_reg DACP_DC_VALUE;
+    dc_value_reg DACN_DC_VALUE;
+
+    reg {
+        field {
+            desc = "Global DAC clock divider value. Describes a power of 2; 0 means no clock division from system clock, F means 1 << 16 division from system clock.";
+        } clk_div_value [7:0];
+        // bits [15:8] reserved
+    } CLK_DIV;
+
+    reg {
+        field {
+            desc="DACP power value, as described by DAC5311 datasheet.";
+        } dacp_power [1:0];
+        field {
+            desc="DACN power value, as described by DAC5311 datasheet.";
+        } dacn_power [3:2];
+        field {
+            desc="If 1, means delta-sigma modulator is warmed up after enable.";
+            sw=r;
+            hw=w;
+        } dsm_locked [4:4];
+        // bits [15:5] reserved
+    } STATUS;
+};

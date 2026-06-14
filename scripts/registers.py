@@ -1,16 +1,20 @@
 '''
-Script: gen_registers.py
+Script: registers.py
 
-Generates the following for the ADC registers:
+Generates the following outputs:
 
-- HTML description page
-- UVM register package
-- SystemVerilog RTL using <OBI: https://github.com/openhwgroup/obi> as a
-  register interface
-- A synchronizer that goes from the SPI clock to the system clock, if necessary
+DAC registers (AXI4-Lite, on-fabric):
+  - RTL via peakrdl-regblock with AXI4-Lite CPUIF
+
+ADC registers + conversion memory (SPI passthrough, external device):
+  - RTL via peakrdl-regblock with passthrough CPUIF
+  - Clock-domain synchronizer RTL
+
+Unified chip_top (DAC + ADC composed):
+  - UVM register package (single RAL model covering both sub-maps)
+  - HTML documentation (top-level only)
 '''
 
-import pdb
 import sys
 import argparse
 from systemrdl import RDLCompiler, RDLCompileError
@@ -18,83 +22,121 @@ from peakrdl_uvm import UVMExporter
 from peakrdl_html import HTMLExporter
 from peakrdl_regblock import RegblockExporter
 from peakrdl_regblock.cpuif.passthrough import PassthroughCpuif
+from peakrdl_regblock.cpuif.axi4lite import AXI4Lite_Cpuif
 from peakrdl_regblock.udps import ALL_UDPS
 from synchronizer_exporter import RTLSyncExporter
+from peakrdl_cheader.exporter import CHeaderExporter
 
 
-# Variable: DEFAULT_RDL_SPEC
-# Defines the default path to the RDL register spec file
-DEFAULT_RDL_SPEC = './hdl_design/hdl_design.srcs/registers/registers.rdl'
+# ---------------------------------------------------------------------------
+# Default paths
+# ---------------------------------------------------------------------------
 
-# Variable: DEFAULT_HTML_PATH
-# Defines the default path to the directory in which the HTML documentation
-# will be stored
-DEFAULT_HTML_PATH = './docs/docs/adc_regs'
+# RDL source files
+DEFAULT_UDP_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/regblock_udps.rdl'
+DEFAULT_DAC_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/dac_registers.rdl'
+DEFAULT_ADC_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/adc_registers.rdl'
+DEFAULT_TOP_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/chip_top.rdl'
 
-# Variable: DEFAULT_UVM_PKG_PATH
-# Defines the default path to the file which will contain UVM registers
-DEFAULT_UVM_PKG_PATH = \
-    './hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_dv_pkg.sv'
+# HTML documentation directory (top-level only)
+DEFAULT_TOP_HTML_PATH = './docs/docs/chip_top'
 
-# Variable: DEFAULT_REG_RTL_PATH
-# Path to the directory in which the RTL package and path will be stored
-DEFAULT_REG_RTL_PATH = './hdl_design/hdl_design.srcs/rtl/registers'
+# UVM register package (generated from chip_top for the full RAL model)
+DEFAULT_UVM_PKG_PATH  = \
+    './hdl_design/hdl_design.srcs/dv/axi_top_env/chip_regs_dv_pkg.sv'
 
-# Variable: DEFAULT_REG_SYNC_PATH
-# Path to the file in which the ADC register synchronizer will be stored,
-# if it's used
+# RTL output directories (one per independently compiled block)
+DEFAULT_DAC_RTL_PATH  = './hdl_design/hdl_design.srcs/rtl/registers/dac'
+DEFAULT_ADC_RTL_PATH  = './hdl_design/hdl_design.srcs/rtl/registers/adc'
+
+# ADC register synchronizer output file
 DEFAULT_REG_SYNC_PATH = \
-    './hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv'
+    './hdl_design/hdl_design.srcs/rtl/registers/adc/adc_reg_sync.sv'
 
+# C header output file (generated from chip_top for software driver use)
+DEFAULT_CHEADER_PATH = \
+    './software/firmware/src/registers/chip_top_registers.h'
 
-'''
-Function: parse_input_arguments
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
 
-Parse the given keyword arguments using argparse. Use
-
---- Code
-python registers.py --help
----
-
-for more information about keyword args.
-'''
 def parse_input_arguments():
-    parser = argparse.ArgumentParser()
+    '''
+    Function: parse_input_arguments
 
-    parser.add_argument('-s', '--spec', type=str, default=DEFAULT_RDL_SPEC,
-                        help=f"RDL Spec path, default {DEFAULT_RDL_SPEC}")
-    parser.add_argument('--html', type=str, default=DEFAULT_HTML_PATH,
-                        help=f"Output HTML directory, default {DEFAULT_HTML_PATH}")
-    parser.add_argument('--uvmpkg', type=str, default=DEFAULT_UVM_PKG_PATH,
-                        help=f'Output UVM register package path, default {DEFAULT_UVM_PKG_PATH}')
-    parser.add_argument('--rtl', type=str, default=DEFAULT_REG_RTL_PATH,
-                        help=f'Output register RTL path, default {DEFAULT_REG_RTL_PATH}')
-    parser.add_argument('--sync', type=str, default=DEFAULT_REG_SYNC_PATH,
-                        help=f'Output synchronizer path, default {DEFAULT_REG_SYNC_PATH}')
+    Parse keyword arguments. Use
+
+    --- Code
+    python registers.py --help
+    ---
+
+    for full usage.
+    '''
+    parser = argparse.ArgumentParser(
+        description='Generate RTL, UVM, and HTML from PeakRDL register specs.')
+
+    parser.add_argument('--udp-spec',  type=str, default=DEFAULT_UDP_RDL_SPEC,
+                        help=f'regblock UDPs RDL spec, default {DEFAULT_UDP_RDL_SPEC}')
+    parser.add_argument('--dac-spec',  type=str, default=DEFAULT_DAC_RDL_SPEC,
+                        help=f'DAC RDL spec, default {DEFAULT_DAC_RDL_SPEC}')
+    parser.add_argument('--adc-spec',  type=str, default=DEFAULT_ADC_RDL_SPEC,
+                        help=f'ADC RDL spec, default {DEFAULT_ADC_RDL_SPEC}')
+    parser.add_argument('--top-spec',  type=str, default=DEFAULT_TOP_RDL_SPEC,
+                        help=f'Top-level RDL spec, default {DEFAULT_TOP_RDL_SPEC}')
+
+    parser.add_argument('--top-html',  type=str, default=DEFAULT_TOP_HTML_PATH,
+                        help=f'HTML output dir (top-level only), default {DEFAULT_TOP_HTML_PATH}')
+
+    parser.add_argument('--uvmpkg',    type=str, default=DEFAULT_UVM_PKG_PATH,
+                        help=f'UVM register package path, default {DEFAULT_UVM_PKG_PATH}')
+
+    parser.add_argument('--dac-rtl',   type=str, default=DEFAULT_DAC_RTL_PATH,
+                        help=f'DAC RTL output dir, default {DEFAULT_DAC_RTL_PATH}')
+    parser.add_argument('--adc-rtl',   type=str, default=DEFAULT_ADC_RTL_PATH,
+                        help=f'ADC RTL output dir, default {DEFAULT_ADC_RTL_PATH}')
+
+    parser.add_argument('--sync',      type=str, default=DEFAULT_REG_SYNC_PATH,
+                        help=f'ADC synchronizer output file, default {DEFAULT_REG_SYNC_PATH}')
+    
+    parser.add_argument('--cheader',    type=str, default=DEFAULT_CHEADER_PATH,
+                        help=f'C header output file, default {DEFAULT_CHEADER_PATH}')
 
     return parser.parse_args()
 
 
-'''
-Function: compile_rdl
+# ---------------------------------------------------------------------------
+# RDL compilation
+# ---------------------------------------------------------------------------
 
-Compile the RDL from the given RDL spec file and return the RDL Compiler object
-that can be used for export.
+def compile_rdl(udp_spec, *paths):
+    '''
+    Function: compile_rdl
 
-Parameters:
-    path - relative path from invocation to the RDL spec file
+    Compile one or more RDL files into an elaborated root node.
 
-Returns:
-    The elaborated RDL Compiler
-'''
-def compile_rdl(path):
+    regblock_udps.rdl is always compiled first so that UDP property
+    definitions (e.g. `activehigh`, `activelow`, `intr`, `nonsticky`) are
+    in scope when the register specs are parsed. The ALL_UDPS list registers
+    the corresponding Python-side UDP handlers with the compiler so that
+    peakrdl-regblock knows how to generate RTL for each one.
+
+    Parameters:
+        udp_spec - path to regblock_udps.rdl (compiled before all others)
+        *paths   - one or more RDL source file paths, compiled in order
+
+    Returns:
+        Elaborated RDL root node
+    '''
     rdlc = RDLCompiler()
 
     for udp in ALL_UDPS:
         rdlc.register_udp(udp)
 
     try:
-        rdlc.compile_file(path)
+        rdlc.compile_file(udp_spec)
+        for path in paths:
+            rdlc.compile_file(path)
         root = rdlc.elaborate()
     except RDLCompileError:
         sys.exit(1)
@@ -102,77 +144,159 @@ def compile_rdl(path):
     return root
 
 
-'''
-Function: gen_uvm_pkg
+# ---------------------------------------------------------------------------
+# Export helpers
+# ---------------------------------------------------------------------------
 
-Generate UVM register model for the given RDL.
-
-Parameters:
-    root - the RDL compiler elaborated object used for export
-    filename - the path to the desired file
-'''
 def gen_uvm_pkg(root, filename, **kwargs):
+    '''
+    Function: gen_uvm_pkg
+
+    Generate a UVM register package from the given elaborated root.
+
+    Parameters:
+        root     - elaborated RDL root node
+        filename - output .sv file path
+    '''
     exporter = UVMExporter(**kwargs)
     exporter.export(root, filename, use_uvm_factory=True)
 
 
-'''
-Function: gen_html
+def gen_html(root, path, **kwargs):
+    '''
+    Function: gen_html
 
-Generate HTML documentation for the given RDL.
+    Generate HTML register documentation.
 
-Parameters:
-    root - the RDL compiler elaborated object used for export
-    filename - the path to the desired HTML directory
-'''
-def gen_html(root, filename, **kwargs):
+    Parameters:
+        root - elaborated RDL root node
+        path - output directory path
+    '''
     exporter = HTMLExporter(**kwargs)
-    exporter.export(root, filename, home_url='../')
+    exporter.export(root, path, home_url='../')
 
 
-'''
-Function: gen_rtl
+def gen_dac_rtl(root, path, **kwargs):
+    '''
+    Function: gen_dac_rtl
 
-Generate SystemVerilog RTL for the given RTL
+    Generate SystemVerilog RTL for the DAC register block using an AXI4-Lite
+    CPUIF. The DAC lives on the Zynq PL fabric and is accessed directly over
+    AXI from the PS.
 
-Parameters:
-    root - the RDL compiler elaborated object used for export
-    filename - the path to the desired RTL directory
-'''
-def gen_rtl(root, filename, **kwargs):
+    Parameters:
+        root - elaborated RDL root node (dac_regs)
+        path - output directory path
+    '''
     exporter = RegblockExporter(**kwargs)
-    exporter.export(root, filename, cpuif_cls=PassthroughCpuif,
-                    generate_hwif_report=True, module_name='adc_regs_mod',
-                    retime_read_response=True)
+    exporter.export(
+        root, path,
+        cpuif_cls=AXI4Lite_Cpuif,
+        generate_hwif_report=True,
+        module_name='dac_regs_mod',
+        retime_read_response=True,
+    )
 
 
-'''
-Function: gen_sync
+def gen_adc_rtl(root, path, **kwargs):
+    '''
+    Function: gen_adc_rtl
 
-Generate SystemVerilog RTL for synchronizers to the interface clock
+    Generate SystemVerilog RTL for the ADC register block using a passthrough
+    CPUIF. The passthrough signals are wired to an external SPI master that
+    communicates with the off-fabric device housing the ADC registers and
+    conversion memory.
 
-Parameters:
-    root - the RDL compiler elaborated object used for export
-    filename - the path to the desired RTL directory. Must end in .sv
-'''
+    Parameters:
+        root - elaborated RDL root node (adc_regs)
+        path - output directory path
+    '''
+    exporter = RegblockExporter(**kwargs)
+    exporter.export(
+        root, path,
+        cpuif_cls=PassthroughCpuif,
+        generate_hwif_report=True,
+        module_name='adc_regs_mod',
+        retime_read_response=True,
+    )
+
+
 def gen_sync(root, filename, **kwargs):
+    '''
+    Function: gen_sync
+
+    Generate SystemVerilog clock-domain synchronizer RTL for the ADC register
+    interface (SPI clock -> system clock).
+
+    Parameters:
+        root     - elaborated RDL root node (adc_regs)
+        filename - output .sv file path
+    '''
     exporter = RTLSyncExporter(**kwargs)
     exporter.export(root, filename)
 
 
-'''
-Function: main
+def gen_cheader(root, filename, **kwargs):
+    '''
+    Function: gen_cheader
 
-Runs RDL compiler and generates register export files.
-'''
+    Generate a C header file containing register offsets and bitfield macros for
+    software driver use.
+
+    Parameters:
+        root     - elaborated RDL root node (chip_top)
+        filename - output .h file path
+    '''
+    exporter = CHeaderExporter(**kwargs)
+    exporter.export(root, filename)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
 def main():
+    '''
+    Function: main
+
+    Orchestrates all compilation and export steps:
+
+    1. DAC  — compile dac_registers.rdl  -> AXI4-Lite RTL
+    2. ADC  — compile adc_registers.rdl  -> passthrough RTL + synchronizer
+    3. Top  — compile chip_top.rdl       -> unified UVM RAL package + HTML
+    '''
     args = parse_input_arguments()
-    root = compile_rdl(args.spec)
-    gen_uvm_pkg(root, args.uvmpkg,
+
+    # ------------------------------------------------------------------
+    # 1. DAC: AXI4-Lite RTL
+    # ------------------------------------------------------------------
+    print('[registers.py] Compiling DAC registers...')
+    dac_root = compile_rdl(args.udp_spec, args.dac_spec)
+    gen_dac_rtl(dac_root, args.dac_rtl)
+
+    # ------------------------------------------------------------------
+    # 2. ADC: passthrough RTL + synchronizer
+    # ------------------------------------------------------------------
+    print('[registers.py] Compiling ADC registers...')
+    adc_root = compile_rdl(args.udp_spec, args.adc_spec)
+    gen_adc_rtl(adc_root, args.adc_rtl)
+    gen_sync(adc_root, args.sync)
+
+    # ------------------------------------------------------------------
+    # 3. Top: unified UVM RAL + HTML
+    #    chip_top.rdl `include`s both sub-maps, so we only need to pass
+    #    the top file; the RDL compiler resolves the includes itself.
+    #    The UDPs file must still be compiled first in a fresh RDLCompiler
+    #    instance — `include` does not pull in the Python UDP registrations.
+    # ------------------------------------------------------------------
+    print('[registers.py] Compiling chip_top for UVM RAL...')
+    top_root = compile_rdl(args.udp_spec, args.top_spec)
+    gen_uvm_pkg(top_root, args.uvmpkg,
                 user_template_dir='./scripts/peakrdl_templates')
-    gen_html(root, args.html)
-    gen_rtl(root, args.rtl)
-    gen_sync(root, args.sync)
+    gen_html(top_root, args.top_html)
+    gen_cheader(top_root, args.cheader)
+
+    print('[registers.py] Done.')
 
 
 if __name__ == '__main__':

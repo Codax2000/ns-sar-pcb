@@ -1,3 +1,0 @@
-class adc_exact_scoreboard extends uvm_scoreboard;
-
-endclass
