@@ -1,8 +1,3 @@
-property norand {
-    type = boolean;
-    component = field;
-};
-
 addrmap adc_regs {
     desc = "SAR ADC PCB register map";
     default regwidth=16;
@@ -16,6 +11,18 @@ addrmap adc_regs {
         DIFFERENTIAL = 1;
     };
 
+    // ADC conversion result memory.
+    // Declared external so peakrdl-regblock emits only the CPUIF passthrough
+    // interface and does not generate internal flop storage. The actual SRAM
+    // lives on the remote SPI device; the SPI master bridges accesses at
+    // runtime. 15-bit address space -> 32 Ki entries of 16 bits each (64 KB).
+    mem {
+        sw=r;
+        memwidth=16;
+        
+        mementries=0x4000;
+    } external ADC_OUTPUT_MEM;
+
     // describe "active" and "passive" cycles of some ADC operation
     reg active_passive_reg {
         field {
@@ -26,12 +33,10 @@ addrmap adc_regs {
             desc="Number of ADC clock cycles during which target will be inactive.";
         } N_PASSIVE_CYCLES [15:8];
     };
-    
+
     active_passive_reg SH_CTRL;
     active_passive_reg INT1_CTRL;
     active_passive_reg INT2_CTRL;
-
-    
 
     reg {
         field {
@@ -89,8 +94,8 @@ addrmap adc_regs {
         } PREVIOUS_CONVERSION_CORRUPTED [15:15];
     } CONVERSION_FLAGS;
 
-    `ifdef XILINX
-    // xilinx CLKGEN DRP registers
+    // xilinx CLKGEN DRP registers, not used in tapeout
+    /**
     reg {
         donttest;
 
@@ -125,13 +130,5 @@ addrmap adc_regs {
             desc="Data output for CLKGEN xip";
         } data [15:0];
     } CLKGEN_DO;
-    `endif
-
-    mem {
-        sw=r;
-        memwidth=16;
-        
-        mementries=0x4000;
-    } external adc_output_mem @ 0x8000;
-
+    */
 };
