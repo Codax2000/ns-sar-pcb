@@ -19,8 +19,10 @@ hdl_design/hdl_design.srcs/rtl/registers/adc_regs_mod.sv
 
 hdl_design/hdl_design.srcs/dv/waveforms
 
+software/firmware/src/registers/chip_top_registers.h
+
 freq_adapter/
-docs/docs/adc_regs/
+docs/docs/chip_top/
 docs/docs/ndocs/
 nd_config/Working\ Data/
 docs/site

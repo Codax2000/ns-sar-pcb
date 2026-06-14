@@ -1,0 +1,13 @@
+hwif_in.STATUS.dsm_locked.next
+hwif_out.AC_CONFIG.frequency.value[3:0]
+hwif_out.AC_CONFIG.amplitude.value[3:0]
+hwif_out.ENABLE.dacp_enable.value
+hwif_out.ENABLE.dacp_mode.value
+hwif_out.ENABLE.dacn_enable.value
+hwif_out.ENABLE.dacn_mode.value
+hwif_out.ENABLE.dsm_enable.value
+hwif_out.DACP_DC_VALUE.dc_value.value[7:0]
+hwif_out.DACN_DC_VALUE.dc_value.value[7:0]
+hwif_out.CLK_DIV.clk_div_value.value[7:0]
+hwif_out.STATUS.dacp_power.value[1:0]
+hwif_out.STATUS.dacn_power.value[1:0]
