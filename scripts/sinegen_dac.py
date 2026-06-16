@@ -170,3 +170,38 @@ class SineGenDAC:
             e[k] = v[k] - q[k]
             
         return v, e
+
+def main():
+    # Test 1: DAC output without Delta-Sigma Modulation
+    print("Running SineGenDAC test without DSM...")
+    dac_test_no_dsm = SineGenDAC()
+    dac_test_no_dsm.set_frequency(0xC)
+    dac_test_no_dsm.set_dac_mode(dac_number=0, mode='AC')
+    
+    n_cycles = 10000
+    
+    fig, ax = plt.subplots(figsize=(12, 7))
+    dac_test_no_dsm.plot_output(n_cycles, ax=ax)
+    ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
+    ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
+
+    # Test 2: DAC output with Delta-Sigma Modulation
+    print("Running SineGenDAC test with DSM...")
+    dac_test_with_dsm = SineGenDAC()
+    dac_test_with_dsm.set_frequency(0xC)
+    dac_test_with_dsm.set_dac_mode(dac_number=0, mode='AC')
+    dac_test_with_dsm.set_dsm_enable(enable=True)
+    
+    dac_test_with_dsm.plot_output(n_cycles, ax=ax)
+    ax.lines[-2].set_label('DACP Output (With DSM)')
+    ax.lines[-1].set_label('DACN Output (With DSM)')
+
+    ax.set_title(f'Sine Wave Generator DAC Output (Freq=0xC, {n_cycles} cycles)')
+    ax.legend()
+    ax.grid(True)
+    plt.tight_layout()
+    plt.show()
+    print("Test complete.")
+
+if __name__ == "__main__":
+    main()
