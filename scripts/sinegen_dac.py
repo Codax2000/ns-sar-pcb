@@ -64,8 +64,8 @@ class SineGenDAC:
         self._calculate_cordic()
 
         if self._reg['dsm_enable']:
-            self._quant, self._error = _run_dsm_loop(self._cos, 
-                                                     self._n_cordic_bits - self._n_dac_bits)
+            self._quant, self._error = self._run_dsm_loop(self._cos, 
+                                                          self._n_cordic_bits - self._n_dac_bits)
         else:
             self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
             self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
@@ -170,7 +170,7 @@ class SineGenDAC:
                 e_r = e[k - 1]
                 e_rr = e[k - 2]
 
-            q[k] = u_arr[k] - e_rr + (2 * e_r)
+            q[k] = u[k] - e_rr + (2 * e_r)
             v[k] = int(q[k]) >> shift
             e[k] = v[k] - q[k]
             
