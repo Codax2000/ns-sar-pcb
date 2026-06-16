@@ -153,8 +153,8 @@ class SineGenDAC:
         self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**16))
 
     @njit
-    def _run_dsm_loop(u, shift)
-        N = len(u_arr)
+    def _run_dsm_loop(u, shift):
+        N = len(u)
         q = np.zeros(N)
         e = np.zeros(N)
         v = np.zeros(N, dtype=np.int64)
