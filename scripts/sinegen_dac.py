@@ -6,6 +6,9 @@ Class definition for modeling a differential AC/DC sine wave generator with a DA
 This includes a delta-sigma modulator to reduce quantization noise in AC mode and
 differential outputs that can be either in AC or DC mode.
 '''
+import numpy as np
+import pandas as pd
+from numba import njit
 
 class SineGenDAC:
     def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6):
@@ -19,8 +22,13 @@ class SineGenDAC:
             'dacp_mode': 'DC',
             'dacn_mode': 'DC',
             'dsm_enable': False,
-            'dc_value': 0x0,
+            'dacp_dc_value': 0x0,
+            'dacn_dc_value': 0x0,
+            'warmup_cycles': 1000
         }
+        self._n_dac_bits = n_dac_bits
+        self._n_cordic_bits = n_cordic_bits
+        self._fs = fs
     
     def set_frequency(self, frequency):
         if frequency < 0 or frequency > 2**4 - 1:
@@ -47,16 +55,42 @@ class SineGenDAC:
 
     def convert(self, n_samples):
         '''
-        Runs DAC conversion using the set registers and returns the output data. in
-        a pandas DataFrame with time-series index.
+        Runs DAC conversion using the set registers and returns the output data in
+        a pandas DataFrame.
         '''
-        pass
+        self._t = np.arange(n_samples) / self._fs
+        self._calculate_phase(n_samples)
+        self._calculate_cordic()
+
+        if self._reg['dsm_enable']:
+            self._quant, self._error = _run_dsm_loop(self._cos, 
+                                                     self._n_cordic_bits - self._n_dac_bits)
+        else:
+            self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
+            self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
+        self._quant_bar = (1 << self._n_dac_bits) - 1 - self._quant
+        results = pd.DataFrame({
+            'time_seconds': self._t
+        })
+
+        has_ac_mode = self._reg['dacp_mode'] == 'AC' or self._reg['dacn_mode'] == 'AC'
+
+        results['phase']      = self._phase if has_ac_mode else 0
+        results['cordic_sin'] = self._sin if has_ac_mode else 0
+        results['cordic_cos'] = self._cos if has_ac_mode else 0
+        results['dacp_output'] = self._quant if self._reg['dacp_mode'] == 'AC' else self._reg['dacp_dc_value']
+        results['dacn_output'] = self._quant_bar if self._reg['dacn_mode'] == 'AC' else self._reg['dacn_dc_value']
+        results['error'] = self._error if has_ac_mode else 0
+
+        return results
 
     def plot_output(self, n_samples, ax=None):
         '''
-        Plots the DAC output data in the interval (n_offset, n_offset + n_samples)
+        Plots the DAC output data in the interval (n_offset, n_offset + reg['warmup_cycles']
         on the given axis and returns a handle to the figure on which it is
-        plotted
+        plotted. If ax is provided, plots on that axis and does nothing else.
+
+        If ax is not provided, plots DAC output, labels axes, and returns a new figure.
         '''
         pass
 
@@ -82,17 +116,37 @@ class SineGenDAC:
         Calculation done in rotations (i.e. 0 to 1) and is used to generate the
         inputs to the CORDIC. Stores in the class variable _phase.
         '''
-        pass
+        self._phase = np.arange(n_samples) * (1 << self._reg['frequency'])
 
-    def _calculate_cordic(self, phase):
+    def _calculate_cordic(self):
         '''
         Calculates the sine and cosine of the _phase using the CORDIC algorithm.
         Stores in the class variables _sin and _cos.
         '''
-        pass
+        # TODO: use fixed-point CORDIC to calculate the sine and cosine
+        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**16))
+        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**16))
 
-    def _calculate_delta_sigma(self):
-        '''
-        Calculates the delta-sigma output for the _cos output of the CORDIC.
-        '''
-        pass
+    @njit
+    def _run_dsm_loop(u, shift)
+        N = len(u_arr)
+        q = np.zeros(N)
+        e = np.zeros(N)
+        v = np.zeros(N, dtype=np.int64)
+
+        for k in range(N):
+            if k == 0:
+                e_r = 0
+                e_rr = 0
+            elif k == 1:
+                e_r = e[k - 1]
+                e_rr = 0
+            else:
+                e_r = e[k - 1]
+                e_rr = e[k - 2]
+
+            q[k] = u_arr[k] - e_rr + (2 * e_r)
+            v[k] = int(q[k]) >> shift
+            e[k] = v[k] - q[k]
+            
+        return v, e
