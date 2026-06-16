@@ -9,6 +9,7 @@ differential outputs that can be either in AC or DC mode.
 import numpy as np
 import pandas as pd
 from numba import njit
+import matplotlib.pyplot as plt
 
 class SineGenDAC:
     def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6):
@@ -92,7 +93,31 @@ class SineGenDAC:
 
         If ax is not provided, plots DAC output, labels axes, and returns a new figure.
         '''
-        pass
+        # Generate enough samples, including warmup cycles, then slice for plotting
+        total_samples = n_samples + self._reg['warmup_cycles']
+        data = self.convert(total_samples)
+        plot_data = data.iloc[self._reg['warmup_cycles']:]
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            return_fig = True
+        else:
+            fig = ax.figure
+            return_fig = False
+
+        ax.plot(plot_data['time_seconds'], plot_data['dacp_output'], label='DACP Output')
+        ax.plot(plot_data['time_seconds'], plot_data['dacn_output'], label='DACN Output')
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('DAC Output Value')
+        ax.set_title('Sine Wave Generator DAC Output')
+        ax.legend()
+        ax.grid(True)
+
+        if return_fig:
+            return fig
+        else:
+            return None # If ax was provided, we just modify it, no new figure to return
 
     def plot_output_fft(self, n_samples, ax=None):
         '''
