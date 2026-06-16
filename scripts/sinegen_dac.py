@@ -100,10 +100,8 @@ class SineGenDAC:
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
-            return_fig = True
         else:
             fig = ax.figure
-            return_fig = False
 
         ax.plot(plot_data['time_seconds'], plot_data['dacp_output'], label='DACP Output')
         ax.plot(plot_data['time_seconds'], plot_data['dacn_output'], label='DACN Output')
@@ -112,12 +110,9 @@ class SineGenDAC:
         ax.set_ylabel('DAC Output Value')
         ax.set_title('Sine Wave Generator DAC Output')
         ax.legend()
-        ax.grid(True)
+        ax.grid()
 
-        if return_fig:
-            return fig
-        else:
-            return None # If ax was provided, we just modify it, no new figure to return
+        return fig
 
     def plot_output_fft(self, n_samples, ax=None):
         '''
