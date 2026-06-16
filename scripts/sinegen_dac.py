@@ -10,9 +10,10 @@ import numpy as np
 import pandas as pd
 from numba import njit
 import matplotlib.pyplot as plt
+import pdb
 
 class SineGenDAC:
-    def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6):
+    def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6, vdd=3.3):
         '''
         set class with hardware constraints and initialize register fields
         with default functions
@@ -30,6 +31,7 @@ class SineGenDAC:
         self._n_dac_bits = n_dac_bits
         self._n_cordic_bits = n_cordic_bits
         self._fs = fs
+        self._vdd = vdd
     
     def set_frequency(self, frequency):
         if frequency < 0 or frequency > 2**4 - 1:
@@ -59,31 +61,34 @@ class SineGenDAC:
         Runs DAC conversion using the set registers and returns the output data in
         a pandas DataFrame.
         '''
-        self._t = np.arange(n_samples) / self._fs
-        self._calculate_phase(n_samples)
+        self._t = np.arange(n_samples + self._reg['warmup_cycles']) / self._fs
+        self._calculate_phase(n_samples + self._reg['warmup_cycles'])
         self._calculate_cordic()
 
         if self._reg['dsm_enable']:
-            self._quant, self._error = self._run_dsm_loop(self._cos, 
+            self._quant, self._error = _run_dsm_loop(self._cos, 
                                                           self._n_cordic_bits - self._n_dac_bits)
         else:
             self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
             self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
+        self._quant    += (1 << (self._n_dac_bits - 1))
         self._quant_bar = (1 << self._n_dac_bits) - 1 - self._quant
-        results = pd.DataFrame({
+        self._results = pd.DataFrame({
             'time_seconds': self._t
         })
 
         has_ac_mode = self._reg['dacp_mode'] == 'AC' or self._reg['dacn_mode'] == 'AC'
 
-        results['phase']      = self._phase if has_ac_mode else 0
-        results['cordic_sin'] = self._sin if has_ac_mode else 0
-        results['cordic_cos'] = self._cos if has_ac_mode else 0
-        results['dacp_output'] = self._quant if self._reg['dacp_mode'] == 'AC' else self._reg['dacp_dc_value']
-        results['dacn_output'] = self._quant_bar if self._reg['dacn_mode'] == 'AC' else self._reg['dacn_dc_value']
-        results['error'] = self._error if has_ac_mode else 0
+        self._results['phase']      = self._phase if has_ac_mode else 0
+        self._results['cordic_sin'] = self._sin if has_ac_mode else 0
+        self._results['cordic_cos'] = self._cos if has_ac_mode else 0
+        self._results['dacp_output'] = self._quant     if self._reg['dacp_mode'] == 'AC' else self._reg['dacp_dc_value']
+        # self._results['dacp_output'] *= self._vdd / ((1 << self._n_dac_bits) - 1) 
+        self._results['dacn_output'] = self._quant_bar if self._reg['dacn_mode'] == 'AC' else self._reg['dacn_dc_value']
+        # self._results['dacn_output'] *= self._vdd / ((1 << self._n_dac_bits) - 1) 
+        self._results['error'] = self._error if has_ac_mode else 0
 
-        return results
+        return self._results.copy()
 
     def plot_output(self, n_samples, ax=None):
         '''
@@ -95,8 +100,12 @@ class SineGenDAC:
         '''
         # Generate enough samples, including warmup cycles, then slice for plotting
         total_samples = n_samples + self._reg['warmup_cycles']
-        data = self.convert(total_samples)
-        plot_data = data.iloc[self._reg['warmup_cycles']:]
+
+        if not hasattr(self, '_results'):
+            raise ValueError('Must run conversion before plotting is attempted')
+
+        data = self._results
+        plot_data = data.iloc[self._reg['warmup_cycles']:total_samples]
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
@@ -144,63 +153,64 @@ class SineGenDAC:
         Stores in the class variables _sin and _cos.
         '''
         # TODO: use fixed-point CORDIC to calculate the sine and cosine
-        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**16))
-        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**16))
+        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**16)).astype(int)
+        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**16)).astype(int)
 
-    @njit
-    def _run_dsm_loop(u, shift):
-        N = len(u)
-        q = np.zeros(N)
-        e = np.zeros(N)
-        v = np.zeros(N, dtype=np.int64)
+@njit
+def _run_dsm_loop(u, shift):
+    N = len(u)
+    q = np.zeros(N)
+    e = np.zeros(N)
+    v = np.zeros(N, dtype=np.int64)
 
-        for k in range(N):
-            if k == 0:
-                e_r = 0
-                e_rr = 0
-            elif k == 1:
-                e_r = e[k - 1]
-                e_rr = 0
-            else:
-                e_r = e[k - 1]
-                e_rr = e[k - 2]
+    for k in range(N):
+        if k == 0:
+            e_r = 0
+            e_rr = 0
+        elif k == 1:
+            e_r = e[k - 1]
+            e_rr = 0
+        else:
+            e_r = e[k - 1]
+            e_rr = e[k - 2]
 
-            q[k] = u[k] - e_rr + (2 * e_r)
-            v[k] = int(q[k]) >> shift
-            e[k] = v[k] - q[k]
-            
-        return v, e
+        q[k] = u[k] - e_rr + (2 * e_r)
+        v[k] = int(q[k]) >> shift
+        e[k] = v[k] - q[k]
+        
+    return v, e
 
 def main():
     # Test 1: DAC output without Delta-Sigma Modulation
     print("Running SineGenDAC test without DSM...")
-    dac_test_no_dsm = SineGenDAC()
-    dac_test_no_dsm.set_frequency(0xC)
-    dac_test_no_dsm.set_dac_mode(dac_number=0, mode='AC')
+    dac = SineGenDAC()
+    dac.set_frequency(0xC)
+    dac.set_dac_mode(dac_number=0, mode='AC')
+    dac.set_dac_mode(dac_number=1, mode='AC')
     
     n_cycles = 10000
-    
+    n_plot_cycles = 100
+    results = dac.convert(n_cycles)
+
     fig, ax = plt.subplots(figsize=(12, 7))
-    dac_test_no_dsm.plot_output(n_cycles, ax=ax)
-    ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
-    ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
+    dac.plot_output(n_plot_cycles, ax=ax)
+    # ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
+    # ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
 
     # Test 2: DAC output with Delta-Sigma Modulation
     print("Running SineGenDAC test with DSM...")
-    dac_test_with_dsm = SineGenDAC()
-    dac_test_with_dsm.set_frequency(0xC)
-    dac_test_with_dsm.set_dac_mode(dac_number=0, mode='AC')
-    dac_test_with_dsm.set_dsm_enable(enable=True)
+    dac.set_dsm_enable(enable=True)
+    dac.convert(n_cycles)
     
-    dac_test_with_dsm.plot_output(n_cycles, ax=ax)
-    ax.lines[-2].set_label('DACP Output (With DSM)')
-    ax.lines[-1].set_label('DACN Output (With DSM)')
+    # dac.plot_output(n_plot_cycles, ax=ax)
+    # ax.lines[-2].set_label('DACP Output (With DSM)')
+    # ax.lines[-1].set_label('DACN Output (With DSM)')
 
     ax.set_title(f'Sine Wave Generator DAC Output (Freq=0xC, {n_cycles} cycles)')
     ax.legend()
     ax.grid(True)
-    plt.tight_layout()
-    plt.show()
+    fig.tight_layout()
+    fig.savefig('./dac_dsm_tseries.png')
     print("Test complete.")
 
 if __name__ == "__main__":
