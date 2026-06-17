@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 class SineGenDAC:
-    def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6, vdd=3.3):
+    def __init__(self, n_dac_bits=1, n_cordic_bits=16, fs=100e6, vdd=3.3):
         '''
         set class with hardware constraints and initialize register fields
         with default functions
@@ -26,7 +26,8 @@ class SineGenDAC:
             'dsm_enable': False,
             'dacp_dc_value': 0x0,
             'dacn_dc_value': 0x0,
-            'warmup_cycles': 1000
+            'warmup_cycles': 1000,
+            'osr': 8
         }
         self._n_dac_bits = n_dac_bits
         self._n_cordic_bits = n_cordic_bits
@@ -129,7 +130,7 @@ class SineGenDAC:
 
         return fig
 
-    def plot_output_fft(self, ax=None):
+    def plot_output_fft(self, ax=None, add_osrline=False):
         '''
         Plots the FFT of the DAC output data in the interval (n_offset, n_offset + n_samples)
         on the given axis and returns a handle to the figure on which it is
@@ -144,20 +145,20 @@ class SineGenDAC:
         # Extract data after warmup cycles
         data_for_fft = self._results.iloc[self._reg['warmup_cycles']:]
         
-        # Apply Blackman window
-        window = np.blackman(n_samples_for_fft)
-        windowed_dacp = data_for_fft['dacp_output'] * window
-
         # Subtract DC offset (full-scale / 2) before FFT
         # Full scale is 2^n_dac_bits
-        full_scale = 2**self._n_dac_bits
+        full_scale = 2**(self._n_dac_bits - 1)
         dc_offset = full_scale / 2.0
-        
-        windowed_dacp_no_dc = windowed_dacp - dc_offset
+        dacp_no_dc = data_for_fft['dacp_output'] - dc_offset
+
+        # Apply Blackman window
+        window = np.blackman(n_samples_for_fft)
+        windowed_dacp = dacp_no_dc * window
 
         # Perform FFT
-        fft_output_dacp = np.fft.fft(windowed_dacp_no_dc)
-        
+        fft_output_dacp = np.fft.fft(windowed_dacp)
+        self._fft_data = fft_output_dacp
+
         # Calculate frequency bins
         fs = self._fs
         freq_bins = np.fft.fftfreq(n_samples_for_fft, d=1/fs)
@@ -174,18 +175,70 @@ class SineGenDAC:
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
+            ax.set_xscale('log') # Set x-axis to log scale for new figures
         else:
             fig = ax.figure
 
-        ax.plot(freq_bins, fft_magnitude_dacp_db, label='DACP FFT (dBFS)')
+        ax.plot(freq_bins, fft_magnitude_dacp_db, label='DACP FFT')
+
+        if add_osrline:
+            osr = self._reg.get('osr', 64)
+            cutoff_freq = (fs / 2) / osr
+            ax.axvline(
+                x=cutoff_freq, 
+                color='r', 
+                linestyle='--', 
+                linewidth=1.5,
+                label=f'$OSR={self._reg['osr']}$, $f_{{max}}={np.round(self._fs / 2 / self._reg['osr'] / 1e6, 3)}$ MHz'
+            )
         
-        ax.set_xlabel('Frequency (Hz)')
-        ax.set_ylabel('Magnitude (dBFS)')
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('Magnitude [dBFS]')
         ax.set_title('Sine Wave Generator DAC Output FFT')
         ax.legend()
         ax.grid(True, which="both", ls="-") # Use both major and minor grids
 
         return fig
+
+    def get_sqnr_db(self):
+        '''
+        Calculates the Signal-to-Quantization-Noise Ratio (SQNR) in dB from the 
+        calculated FFT data. Captures window smearing across 5 bins (peak +/- 2).
+        '''
+        # TODO: Break out calculating the FFT from plot_output_fft into a standalone helper function.
+        if not hasattr(self, '_fft_data'):
+            raise ValueError("plot_output_fft must be run first to populate FFT data.")
+
+        # 1. Get the raw full FFT data (including negative frequencies)
+        fft_data = self._fft_data
+        N = len(fft_data)
+        
+        # 2. Only look at the positive frequencies (excluding DC at index 0)
+        # Starting at index 3 prevents a high DC offset from being picked up as the signal peak
+        # Want to avoid DC smearing as well
+        pos_fft = fft_data[3:N//2]
+        
+        # 3. Find the peak bin location in the positive frequency spectrum
+        # We add 1 to offset back to the original fft_data indexing
+        peak_idx = np.argmax(np.abs(pos_fft)) + 1
+        
+        # 4. Calculate power spectrum (magnitude squared)
+        power_spectrum = np.abs(fft_data) ** 2
+        
+        # 5. Extract Signal Power: Sum the peak bin and 2 bins on either side
+        signal_bins = np.arange(peak_idx - 2, peak_idx + 3)
+        signal_power = np.sum(power_spectrum[signal_bins])
+        
+        # 6. Extract Noise Power: Sum all positive frequencies, excluding DC and the signal bins
+        all_pos_bins = np.arange(4, N//(2*self._reg['osr']))
+        noise_power = np.sum(power_spectrum[all_pos_bins]) - signal_power
+        
+        # 7. Calculate SQNR in decibels
+        if noise_power == 0:
+            return float('inf') # Perfect quantization/no noise edge case
+            
+        sqnr_db = 10 * np.log10(signal_power / noise_power)
+        return sqnr_db
 
     def get_filtered_output(self):
         '''
@@ -201,7 +254,7 @@ class SineGenDAC:
         Calculation done in rotations (i.e. 0 to 1) and is used to generate the
         inputs to the CORDIC. Stores in the class variable _phase.
         '''
-        self._phase = np.arange(n_samples) * (1 << self._reg['frequency'])
+        self._phase = np.arange(n_samples) * (1 << self._reg['frequency']) * 17
 
     def _calculate_cordic(self):
         '''
@@ -240,40 +293,45 @@ def main():
     # Test 1: DAC output without Delta-Sigma Modulation
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0xA)
+    dac.set_frequency(0x7)
     dac.set_amplitude(0xC)
     dac.set_dac_mode(dac_number=0, mode='AC')
     dac.set_dac_mode(dac_number=1, mode='AC')
     
     n_cycles = 2**12
     n_plot_cycles = 250
-    results = dac.convert(n_cycles)
+    dac.convert(n_cycles)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
     dac.plot_output(n_plot_cycles, ax=ax1)
     dac.plot_output_fft(ax=ax2)
+    sqnr_no_dsm = dac.get_sqnr_db()
     ax1.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
     ax1.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
 
     # Test 2: DAC output with Delta-Sigma Modulation
     print("Running SineGenDAC test with DSM...")
     dac.set_dsm_enable(enable=True)
-    results = dac.convert(n_cycles)
+    dac.convert(n_cycles)
     
     dac.plot_output(n_plot_cycles, ax=ax1)
-    dac.plot_output_fft(ax=ax2)
+    dac.plot_output_fft(ax=ax2, add_osrline=True)
+    sqnr_dsm = dac.get_sqnr_db()
     ax1.lines[-2].set_label('DACP Output (With DSM)')
     ax1.lines[-1].set_label('DACN Output (With DSM)')
 
+    ax2.lines[-3].set_label(f'SQNR={np.round(sqnr_no_dsm, 3)}, NO DSM')
+    ax2.lines[-2].set_label(f'SQNR={np.round(sqnr_dsm, 3)}, WITH DSM')
+
     ax1.set_title(f'Sine Wave Generator DAC Output ({n_cycles} cycles)')
     ax1.legend()
+    ax2.legend()
     ax1.grid()
     ax2.grid()
+    ax2.set_xscale('log') # Set x-axis to log scale for new figures
     fig.tight_layout()
     fig.savefig('./dac_dsm_tseries.png')
     print("Test complete.")
-
-    print(results.head())
 
 
 if __name__ == "__main__":
