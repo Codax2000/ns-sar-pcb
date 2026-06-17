@@ -135,30 +135,20 @@ class SineGenDAC:
         on the given axis and returns a handle to the figure on which it is
         plotted. If it the axis is None, a new figure is created and returned.
         '''
-        Plots the FFT of the DAC output data.
-        '''
         if not hasattr(self, '_results'):
             raise ValueError('Must run conversion before plotting is attempted')
 
         # Use a reasonable number of FFT points, e.g., 1024 or 2048
-        n_fft_samples = 1024  
+        n_fft_samples = len(self._results) - self._reg['warmup_cycles']  
         
         # Ensure we have enough samples for the FFT, pad with zeros if necessary
         # We use the full available data for FFT, excluding warmup cycles
         data_for_fft = self._results.iloc[self._reg['warmup_cycles']:]
         
-        if len(data_for_fft) < n_fft_samples:
-            # Pad with zeros if not enough samples
-            padding = np.zeros(n_fft_samples - len(data_for_fft))
-            fft_input_dacp = np.concatenate((data_for_fft['dacp_output'].values, padding))
-            fft_input_dacn = np.concatenate((data_for_fft['dacn_output'].values, padding))
-        else:
-            # Take the first n_fft_samples if more are available
-            fft_input_dacp = data_for_fft['dacp_output'].values[:n_fft_samples]
-            fft_input_dacn = data_for_fft['dacn_output'].values[:n_fft_samples]
+        # Take the first n_fft_samples if more are available
+        fft_input_dacp = data_for_fft['dacp_output']
 
         fft_output_dacp = np.fft.fft(fft_input_dacp)
-        fft_output_dacn = np.fft.fft(fft_input_dacn)
         
         # Calculate frequency bins
         fs = self._fs
@@ -166,12 +156,10 @@ class SineGenDAC:
 
         # Take the magnitude and select the positive frequencies
         fft_magnitude_dacp = np.abs(fft_output_dacp) / n_fft_samples
-        fft_magnitude_dacn = np.abs(fft_output_dacn) / n_fft_samples
         
         positive_freq_mask = freq_bins >= 0
         freq_bins = freq_bins[positive_freq_mask]
         fft_magnitude_dacp = fft_magnitude_dacp[positive_freq_mask]
-        fft_magnitude_dacn = fft_magnitude_dacn[positive_freq_mask]
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
@@ -179,7 +167,6 @@ class SineGenDAC:
             fig = ax.figure
 
         ax.semilogy(freq_bins, fft_magnitude_dacp, label='DACP FFT')
-        ax.semilogy(freq_bins, fft_magnitude_dacn, label='DACN FFT')
         
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Magnitude')
@@ -188,7 +175,6 @@ class SineGenDAC:
         ax.grid()
 
         return fig
-
 
     def get_filtered_output(self):
         '''
@@ -243,7 +229,7 @@ def main():
     # Test 1: DAC output without Delta-Sigma Modulation
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0x8)
+    dac.set_frequency(0xA)
     dac.set_amplitude(0xC)
     dac.set_dac_mode(dac_number=0, mode='AC')
     dac.set_dac_mode(dac_number=1, mode='AC')
@@ -254,6 +240,7 @@ def main():
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
     dac.plot_output(n_plot_cycles, ax=ax1)
+    dac.plot_output_fft(ax=ax2)
     ax1.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
     ax1.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
 
@@ -263,12 +250,14 @@ def main():
     results = dac.convert(n_cycles)
     
     dac.plot_output(n_plot_cycles, ax=ax1)
+    dac.plot_output_fft(ax=ax2)
     ax1.lines[-2].set_label('DACP Output (With DSM)')
     ax1.lines[-1].set_label('DACN Output (With DSM)')
 
     ax1.set_title(f'Sine Wave Generator DAC Output ({n_cycles} cycles)')
     ax1.legend()
-    ax1.grid(True)
+    ax1.grid()
+    ax2.grid()
     fig.tight_layout()
     fig.savefig('./dac_dsm_tseries.png')
     print("Test complete.")
