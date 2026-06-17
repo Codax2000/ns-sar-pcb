@@ -67,12 +67,17 @@ class SineGenDAC:
 
         if self._reg['dsm_enable']:
             self._quant, self._error = _run_dsm_loop(self._cos, 
-                                                          self._n_cordic_bits - self._n_dac_bits)
+                                                     self._n_cordic_bits - self._n_dac_bits)
+            self._quant_bar = ((2**self._n_dac_bits) - 1) - self._quant
         else:
             self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
             self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
-        self._quant    += (1 << (self._n_dac_bits - 1))
-        self._quant_bar = (1 << self._n_dac_bits) - 1 - self._quant
+            self._quant_bar = -self._quant
+            
+            # set to unsigned by adding Qrange / 2
+            self._quant     += (2 ** (self._n_dac_bits - 1))
+            self._quant_bar += (2 ** (self._n_dac_bits - 1))
+
         self._results = pd.DataFrame({
             'time_seconds': self._t
         })
@@ -153,8 +158,8 @@ class SineGenDAC:
         Stores in the class variables _sin and _cos.
         '''
         # TODO: use fixed-point CORDIC to calculate the sine and cosine
-        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**16)).astype(int)
-        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**16)).astype(int)
+        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**15)).astype(int)
+        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**15)).astype(int)
 
 @njit
 def _run_dsm_loop(u, shift):
@@ -165,16 +170,16 @@ def _run_dsm_loop(u, shift):
 
     for k in range(N):
         if k == 0:
-            e_r = 0
+            e_r  = 0
             e_rr = 0
         elif k == 1:
-            e_r = e[k - 1]
+            e_r = -e[k - 1]
             e_rr = 0
         else:
-            e_r = e[k - 1]
-            e_rr = e[k - 2]
+            e_r  = -e[k - 1]
+            e_rr =  e[k - 2]
 
-        q[k] = u[k] - e_rr + (2 * e_r)
+        q[k] = u[k] + e_rr + (2 * e_r)
         v[k] = int(q[k]) >> shift
         e[k] = v[k] - q[k]
         
@@ -184,27 +189,27 @@ def main():
     # Test 1: DAC output without Delta-Sigma Modulation
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0xC)
+    dac.set_frequency(0x8)
     dac.set_dac_mode(dac_number=0, mode='AC')
     dac.set_dac_mode(dac_number=1, mode='AC')
     
     n_cycles = 10000
-    n_plot_cycles = 100
+    n_plot_cycles = 6000
     results = dac.convert(n_cycles)
 
     fig, ax = plt.subplots(figsize=(12, 7))
     dac.plot_output(n_plot_cycles, ax=ax)
-    # ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
-    # ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
+    ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
+    ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
 
     # Test 2: DAC output with Delta-Sigma Modulation
     print("Running SineGenDAC test with DSM...")
     dac.set_dsm_enable(enable=True)
-    dac.convert(n_cycles)
+    results = dac.convert(n_cycles)
     
-    # dac.plot_output(n_plot_cycles, ax=ax)
-    # ax.lines[-2].set_label('DACP Output (With DSM)')
-    # ax.lines[-1].set_label('DACN Output (With DSM)')
+    dac.plot_output(n_plot_cycles, ax=ax)
+    ax.lines[-2].set_label('DACP Output (With DSM)')
+    ax.lines[-1].set_label('DACN Output (With DSM)')
 
     ax.set_title(f'Sine Wave Generator DAC Output (Freq=0xC, {n_cycles} cycles)')
     ax.legend()
@@ -212,6 +217,10 @@ def main():
     fig.tight_layout()
     fig.savefig('./dac_dsm_tseries.png')
     print("Test complete.")
+
+    print(results.head())
+    pdb.set_trace()
+
 
 if __name__ == "__main__":
     main()
