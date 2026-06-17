@@ -289,9 +289,6 @@ def _run_dsm_loop(u, shift):
     final_error = e - (v << shift)
         
     return v, final_error
-    dac = SineGenDAC()
-    dac.set_frequency(0x8)
-    dac.set_dac_mode(dac_number=0, mode='AC')
     dac.set_dac_mode(dac_number=1, mode='AC')
     
     n_cycles = 10000
