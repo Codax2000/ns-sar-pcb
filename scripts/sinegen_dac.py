@@ -138,41 +138,64 @@ class SineGenDAC:
         if not hasattr(self, '_results'):
             raise ValueError('Must run conversion before plotting is attempted')
 
-        # Use a reasonable number of FFT points, e.g., 1024 or 2048
-        n_fft_samples = len(self._results) - self._reg['warmup_cycles']  
+        '''
+        Plots the FFT of the DAC output data.
+        '''
+        if not hasattr(self, '_results'):
+            raise ValueError('Must run conversion before plotting is attempted')
+
+        # Use the number of samples available after warmup for FFT
+        n_samples_for_fft = len(self._results) - self._reg['warmup_cycles']
         
-        # Ensure we have enough samples for the FFT, pad with zeros if necessary
-        # We use the full available data for FFT, excluding warmup cycles
+        # Extract data after warmup cycles
         data_for_fft = self._results.iloc[self._reg['warmup_cycles']:]
         
-        # Take the first n_fft_samples if more are available
-        fft_input_dacp = data_for_fft['dacp_output']
+        # Apply Blackman window
+        window = np.blackman(n_samples_for_fft)
+        windowed_dacp = data_for_fft['dacp_output'] * window
+        windowed_dacn = data_for_fft['dacn_output'] * window
 
-        fft_output_dacp = np.fft.fft(fft_input_dacp)
+        # Subtract DC offset (full-scale / 2) before FFT
+        # Full scale is 2^n_dac_bits
+        full_scale = 2**self._n_dac_bits
+        dc_offset = full_scale / 2.0
+        
+        windowed_dacp_no_dc = windowed_dacp - dc_offset
+        windowed_dacn_no_dc = windowed_dacn - dc_offset
+
+        # Perform FFT
+        fft_output_dacp = np.fft.fft(windowed_dacp_no_dc)
+        fft_output_dacn = np.fft.fft(windowed_dacn_no_dc)
         
         # Calculate frequency bins
         fs = self._fs
-        freq_bins = np.fft.fftfreq(n_fft_samples, d=1/fs)
+        freq_bins = np.fft.fftfreq(n_samples_for_fft, d=1/fs)
 
-        # Take the magnitude and select the positive frequencies
-        fft_magnitude_dacp = np.abs(fft_output_dacp) / n_fft_samples
+        # Convert to dB-full-scale
+        # Scale by 2/N for two-sided spectrum magnitude, then convert to dBFS
+        # dBFS = 20 * log10(Magnitude / FullScale)
+        fft_magnitude_dacp_db = 20 * np.log10(np.abs(fft_output_dacp) * 2 / (full_scale * n_samples_for_fft))
+        fft_magnitude_dacn_db = 20 * np.log10(np.abs(fft_output_dacn) * 2 / (full_scale * n_samples_for_fft))
         
+        # Select positive frequencies
         positive_freq_mask = freq_bins >= 0
         freq_bins = freq_bins[positive_freq_mask]
-        fft_magnitude_dacp = fft_magnitude_dacp[positive_freq_mask]
+        fft_magnitude_dacp_db = fft_magnitude_dacp_db[positive_freq_mask]
+        fft_magnitude_dacn_db = fft_magnitude_dacn_db[positive_freq_mask]
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
         else:
             fig = ax.figure
 
-        ax.semilogy(freq_bins, fft_magnitude_dacp, label='DACP FFT')
+        ax.semilogx(freq_bins, fft_magnitude_dacp_db, label='DACP FFT (dBFS)')
+        ax.semilogx(freq_bins, fft_magnitude_dacn_db, label='DACN FFT (dBFS)')
         
         ax.set_xlabel('Frequency (Hz)')
-        ax.set_ylabel('Magnitude')
+        ax.set_ylabel('Magnitude (dBFS)')
         ax.set_title('Sine Wave Generator DAC Output FFT')
         ax.legend()
-        ax.grid()
+        ax.grid(True, which="both", ls="-") # Use both major and minor grids
 
         return fig
 
