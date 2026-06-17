@@ -138,12 +138,6 @@ class SineGenDAC:
         if not hasattr(self, '_results'):
             raise ValueError('Must run conversion before plotting is attempted')
 
-        '''
-        Plots the FFT of the DAC output data.
-        '''
-        if not hasattr(self, '_results'):
-            raise ValueError('Must run conversion before plotting is attempted')
-
         # Use the number of samples available after warmup for FFT
         n_samples_for_fft = len(self._results) - self._reg['warmup_cycles']
         
@@ -153,7 +147,6 @@ class SineGenDAC:
         # Apply Blackman window
         window = np.blackman(n_samples_for_fft)
         windowed_dacp = data_for_fft['dacp_output'] * window
-        windowed_dacn = data_for_fft['dacn_output'] * window
 
         # Subtract DC offset (full-scale / 2) before FFT
         # Full scale is 2^n_dac_bits
@@ -161,11 +154,9 @@ class SineGenDAC:
         dc_offset = full_scale / 2.0
         
         windowed_dacp_no_dc = windowed_dacp - dc_offset
-        windowed_dacn_no_dc = windowed_dacn - dc_offset
 
         # Perform FFT
         fft_output_dacp = np.fft.fft(windowed_dacp_no_dc)
-        fft_output_dacn = np.fft.fft(windowed_dacn_no_dc)
         
         # Calculate frequency bins
         fs = self._fs
@@ -175,21 +166,18 @@ class SineGenDAC:
         # Scale by 2/N for two-sided spectrum magnitude, then convert to dBFS
         # dBFS = 20 * log10(Magnitude / FullScale)
         fft_magnitude_dacp_db = 20 * np.log10(np.abs(fft_output_dacp) * 2 / (full_scale * n_samples_for_fft))
-        fft_magnitude_dacn_db = 20 * np.log10(np.abs(fft_output_dacn) * 2 / (full_scale * n_samples_for_fft))
         
         # Select positive frequencies
         positive_freq_mask = freq_bins >= 0
         freq_bins = freq_bins[positive_freq_mask]
         fft_magnitude_dacp_db = fft_magnitude_dacp_db[positive_freq_mask]
-        fft_magnitude_dacn_db = fft_magnitude_dacn_db[positive_freq_mask]
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(10, 6))
         else:
             fig = ax.figure
 
-        ax.semilogx(freq_bins, fft_magnitude_dacp_db, label='DACP FFT (dBFS)')
-        ax.semilogx(freq_bins, fft_magnitude_dacn_db, label='DACN FFT (dBFS)')
+        ax.plot(freq_bins, fft_magnitude_dacp_db, label='DACP FFT (dBFS)')
         
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Magnitude (dBFS)')
