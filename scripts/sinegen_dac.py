@@ -66,7 +66,6 @@ class SineGenDAC:
         self._calculate_cordic()
 
         if self._reg['dsm_enable']:
-        if self._reg['dsm_enable']:
             self._quant, self._error = _run_dsm_loop(self._cos, 
                                                      self._n_cordic_bits - self._n_dac_bits)
             self._quant_bar = ((2**self._n_dac_bits) - 1) - self._quant
