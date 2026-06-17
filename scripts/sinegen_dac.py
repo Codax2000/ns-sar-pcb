@@ -135,7 +135,60 @@ class SineGenDAC:
         on the given axis and returns a handle to the figure on which it is
         plotted. If it the axis is None, a new figure is created and returned.
         '''
-        pass
+        Plots the FFT of the DAC output data.
+        '''
+        if not hasattr(self, '_results'):
+            raise ValueError('Must run conversion before plotting is attempted')
+
+        # Use a reasonable number of FFT points, e.g., 1024 or 2048
+        n_fft_samples = 1024  
+        
+        # Ensure we have enough samples for the FFT, pad with zeros if necessary
+        # We use the full available data for FFT, excluding warmup cycles
+        data_for_fft = self._results.iloc[self._reg['warmup_cycles']:]
+        
+        if len(data_for_fft) < n_fft_samples:
+            # Pad with zeros if not enough samples
+            padding = np.zeros(n_fft_samples - len(data_for_fft))
+            fft_input_dacp = np.concatenate((data_for_fft['dacp_output'].values, padding))
+            fft_input_dacn = np.concatenate((data_for_fft['dacn_output'].values, padding))
+        else:
+            # Take the first n_fft_samples if more are available
+            fft_input_dacp = data_for_fft['dacp_output'].values[:n_fft_samples]
+            fft_input_dacn = data_for_fft['dacn_output'].values[:n_fft_samples]
+
+        fft_output_dacp = np.fft.fft(fft_input_dacp)
+        fft_output_dacn = np.fft.fft(fft_input_dacn)
+        
+        # Calculate frequency bins
+        fs = self._fs
+        freq_bins = np.fft.fftfreq(n_fft_samples, d=1/fs)
+
+        # Take the magnitude and select the positive frequencies
+        fft_magnitude_dacp = np.abs(fft_output_dacp) / n_fft_samples
+        fft_magnitude_dacn = np.abs(fft_output_dacn) / n_fft_samples
+        
+        positive_freq_mask = freq_bins >= 0
+        freq_bins = freq_bins[positive_freq_mask]
+        fft_magnitude_dacp = fft_magnitude_dacp[positive_freq_mask]
+        fft_magnitude_dacn = fft_magnitude_dacn[positive_freq_mask]
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+        else:
+            fig = ax.figure
+
+        ax.semilogy(freq_bins, fft_magnitude_dacp, label='DACP FFT')
+        ax.semilogy(freq_bins, fft_magnitude_dacn, label='DACN FFT')
+        
+        ax.set_xlabel('Frequency (Hz)')
+        ax.set_ylabel('Magnitude')
+        ax.set_title('Sine Wave Generator DAC Output FFT')
+        ax.legend()
+        ax.grid()
+
+        return fig
+
 
     def get_filtered_output(self):
         '''
