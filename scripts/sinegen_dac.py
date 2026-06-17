@@ -66,6 +66,7 @@ class SineGenDAC:
         self._calculate_cordic()
 
         if self._reg['dsm_enable']:
+        if self._reg['dsm_enable']:
             self._quant, self._error = _run_dsm_loop(self._cos, 
                                                      self._n_cordic_bits - self._n_dac_bits)
             self._quant_bar = ((2**self._n_dac_bits) - 1) - self._quant
@@ -289,10 +290,6 @@ def _run_dsm_loop(u, shift):
     final_error = e - (v << shift)
         
     return v, final_error
-
-def main():
-    # Test 1: DAC output without Delta-Sigma Modulation
-    print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
     dac.set_frequency(0x8)
     dac.set_dac_mode(dac_number=0, mode='AC')
