@@ -128,13 +128,55 @@ class SineGenDAC:
 
         return fig
 
-    def plot_output_fft(self, n_samples, ax=None):
+    def plot_output_fft(self, n_samples, ax=None, n_fft_samples=None):
         '''
-        Plots the FFT of the DAC output data in the interval (n_offset, n_offset + n_samples)
+        Plots the FFT of the DAC output data in the interval (warmup_cycles, warmup_cycles + n_samples)
         on the given axis and returns a handle to the figure on which it is
         plotted. If it the axis is None, a new figure is created and returned.
+        If n_fft_samples is not provided, it defaults to n_samples.
         '''
-        pass
+        if n_fft_samples is None:
+            n_fft_samples = n_samples
+
+        if not hasattr(self, '_results'):
+            raise ValueError('Must run conversion before plotting is attempted')
+
+        data = self._results
+        # Slice data to exclude warmup cycles and take n_samples for FFT
+        plot_data = data.iloc[self._reg['warmup_cycles'] : self._reg['warmup_cycles'] + n_samples]
+
+        # Use n_fft_samples for FFT calculation, zero-padding if necessary
+        fft_input_dacp = np.fft.fft(plot_data['dacp_output'], n=n_fft_samples)
+        fft_input_dacn = np.fft.fft(plot_data['dacn_output'], n=n_fft_samples)
+        
+        # Calculate frequency bins
+        fs = self._fs
+        freq_bins = np.fft.fftfreq(n_fft_samples, d=1/fs)
+
+        # Take the magnitude and select the positive frequencies
+        fft_output_dacp = np.abs(fft_input_dacp) / n_samples
+        fft_output_dacn = np.abs(fft_input_dacn) / n_samples
+        
+        positive_freq_mask = freq_bins >= 0
+        freq_bins = freq_bins[positive_freq_mask]
+        fft_output_dacp = fft_output_dacp[positive_freq_mask]
+        fft_output_dacn = fft_output_dacn[positive_freq_mask]
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+        else:
+            fig = ax.figure
+
+        ax.semilogy(freq_bins, fft_output_dacp, label='DACP FFT')
+        ax.semilogy(freq_bins, fft_output_dacn, label='DACN FFT')
+        
+        ax.set_xlabel('Frequency (Hz)')
+        ax.set_ylabel('Amplitude')
+        ax.set_title('Sine Wave Generator DAC Output FFT')
+        ax.legend()
+        ax.grid()
+
+        return fig
 
     def get_filtered_output(self, n_samples):
         '''
@@ -166,24 +208,87 @@ def _run_dsm_loop(u, shift):
     N = len(u)
     q = np.zeros(N)
     e = np.zeros(N)
-    v = np.zeros(N, dtype=np.int64)
+    e_prev = 0.0 # Initialize previous error
+    e_prev_prev = 0.0 # Initialize previous-previous error
 
     for k in range(N):
-        if k == 0:
-            e_r  = 0
-            e_rr = 0
-        elif k == 1:
-            e_r = -e[k - 1]
-            e_rr = 0
-        else:
-            e_r  = -e[k - 1]
-            e_rr =  e[k - 2]
+        # Second-order error-feedback delta-sigma modulator
+        # q[k] = u[k] + e[k-1] + e[k-2] -- for non-error feedback
+        # For error feedback, error is signal - quantized_signal
+        # e[k] = q[k] - v[k] (where v[k] is quantized output)
+        # To make it second order error feedback, we integrate the error twice.
+        # The integrator output is fed back.
+        # x[k] = u[k] - y[k]
+        # i1[k] = i1[k-1] + x[k]
+        # i2[k] = i2[k-1] + i1[k]
+        # y[k] = i2[k] 
+        # In our case, u is the input signal, and we want to quantize it.
+        # Let's use the standard formulation for error feedback:
+        # error_integrator1[k] = error_integrator1[k-1] + input_signal[k] - quantized_output[k-1]
+        # error_integrator2[k] = error_integrator2[k-1] + error_integrator1[k]
+        # quantized_output[k] = error_integrator2[k]
 
-        q[k] = u[k] + e_rr + (2 * e_r)
-        v[k] = int(q[k]) >> shift
-        e[k] = v[k] - q[k]
+        # Let's simplify and use the structure from common second-order DSM implementations.
+        # The general form for a second-order error feedback loop:
+        # y[k] = input[k] - feedback[k]
+        # integrator1[k] = integrator1[k-1] + y[k]
+        # integrator2[k] = integrator2[k-1] + integrator1[k]
+        # quantized_output[k] = integrator2[k]
+        # The feedback is typically related to the quantized output.
+        # A common structure for second-order error feedback is:
+        # integrator1[k] = integrator1[k-1] + input_signal[k] - quantized_output[k-1]
+        # integrator2[k] = integrator2[k-1] + integrator1[k]
+        # quantized_output[k] = integrator2[k]
+
+        # Let's stick to a simpler formulation that can be derived from the first-order one
+        # by adding another integrator for the error.
+        # error_signal = u[k] - (v[k] << shift)
+        # q[k] represents the input to the quantizer.
+        # In a second order error feedback:
+        # input_to_integrator1 = u[k] - (v[k-1] << shift)  <- error from previous step
+        # integrator1_output = integrator1_output_prev + input_to_integrator1
+        # input_to_integrator2 = integrator1_output
+        # integrator2_output = integrator2_output_prev + input_to_integrator2
+        # v[k] = integrator2_output >> shift (this is the quantized output)
+        # e[k] = integrator2_output - (v[k] << shift) # This definition of error might be tricky
+
+        # A more direct implementation of a second-order error feedback loop:
+        # Let e1 be the output of the first integrator and e2 be the output of the second.
+        # Input to first integrator: u[k] - quantized_output[k-1] (error from previous quantizer output)
+        # Output of first integrator: e1[k] = e1[k-1] + (u[k] - quantized_output[k-1])
+        # Input to second integrator: e1[k]
+        # Output of second integrator: e2[k] = e2[k-1] + e1[k]
+        # Quantized output: quantized_output[k] = floor(e2[k] / (1 << shift))
         
-    return v, e
+        # Let's use the 'e' array to store the output of the second integrator (which is the input to the quantizer)
+        # and 'e_r' to store the output of the first integrator.
+        # We need to keep track of the previous quantized output.
+        
+        prev_quantized = v[k-1] if k > 0 else 0
+
+        # Calculate the current error term to be fed into the first integrator
+        current_error_term = u[k] - (prev_quantized << shift)
+        
+        # Update the first integrator's state
+        e_r = e_prev + current_error_term
+        
+        # Update the second integrator's state
+        e[k] = e_prev_prev + e_r
+        
+        # Quantize the output of the second integrator
+        v[k] = int(e[k]) >> shift
+        
+        # Store current states for the next iteration
+        e_prev = e_r
+        e_prev_prev = e[k]
+
+    # The error calculation needs to be consistent with the quantized output 'v'.
+    # If v[k] is the quantized value, then the overall error fed back should be related to e[k].
+    # For simulation purposes, we can define the error as the difference between the input to the quantizer (e[k])
+    # and the actual quantized output (v[k] << shift).
+    final_error = e - (v << shift)
+        
+    return v, final_error
 
 def main():
     # Test 1: DAC output without Delta-Sigma Modulation
@@ -197,29 +302,41 @@ def main():
     n_plot_cycles = 6000
     results = dac.convert(n_cycles)
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    dac.plot_output(n_plot_cycles, ax=ax)
-    ax.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
-    ax.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
+    fig_tseries, ax_tseries = plt.subplots(figsize=(12, 7))
+    dac.plot_output(n_plot_cycles, ax=ax_tseries)
+    ax_tseries.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
+    ax_tseries.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
 
-    # Test 2: DAC output with Delta-Sigma Modulation
-    print("Running SineGenDAC test with DSM...")
+    # Test 2: DAC output with Delta-Sigma Modulation (Second Order)
+    print("Running SineGenDAC test with DSM (Second Order)...")
     dac.set_dsm_enable(enable=True)
     results = dac.convert(n_cycles)
     
-    dac.plot_output(n_plot_cycles, ax=ax)
-    ax.lines[-2].set_label('DACP Output (With DSM)')
-    ax.lines[-1].set_label('DACN Output (With DSM)')
+    dac.plot_output(n_plot_cycles, ax=ax_tseries)
+    ax_tseries.lines[-2].set_label('DACP Output (With DSM)')
+    ax_tseries.lines[-1].set_label('DACN Output (With DSM)')
 
-    ax.set_title(f'Sine Wave Generator DAC Output (Freq=0xC, {n_cycles} cycles)')
-    ax.legend()
-    ax.grid(True)
-    fig.tight_layout()
-    fig.savefig('./dac_dsm_tseries.png')
-    print("Test complete.")
+    ax_tseries.set_title(f'Sine Wave Generator DAC Output (Freq=0xC, {n_cycles} cycles)')
+    ax_tseries.legend()
+    ax_tseries.grid(True)
+    fig_tseries.tight_layout()
+    fig_tseries.savefig('./dac_dsm_tseries.png')
+    print("Time series plot complete.")
 
+    # Test 3: FFT plot
+    print("Running SineGenDAC test for FFT plot...")
+    # Use the same DAC object with DSM enabled
+    n_fft_samples = 1024 # Number of samples for FFT
+    fig_fft, ax_fft = plt.subplots(figsize=(10, 6))
+    dac.plot_output_fft(n_samples=n_cycles, ax=ax_fft, n_fft_samples=n_fft_samples)
+    ax_fft.set_title(f'Sine Wave Generator DAC Output FFT (Freq=0xC, {n_cycles} cycles, {n_fft_samples} FFT points)')
+    fig_fft.tight_layout()
+    fig_fft.savefig('./dac_dsm_fft.png')
+    print("FFT plot complete.")
+
+    print("All tests complete.")
     print(results.head())
-    pdb.set_trace()
+    # pdb.set_trace()
 
 
 if __name__ == "__main__":
