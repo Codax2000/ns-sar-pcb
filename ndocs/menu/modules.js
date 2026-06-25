@@ -1,1 +1,0 @@
-﻿NDMenu.OnSectionLoaded("modules.js",[[1,"adc_regs_reg_sync"],[1,"sine_ms_bridge"],[1,"sine_ms_bridge_core"],[1,"uvm_tb_top"]]);

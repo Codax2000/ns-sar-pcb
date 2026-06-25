@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:sine_monitor","sine_monitor");NDSummary.OnSummaryLoaded("SystemVerilogClass:sine_monitor",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[128,0,0,"sine_monitor"]]);

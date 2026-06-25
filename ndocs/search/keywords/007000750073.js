@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("pus",["Function"],[["push",,[["sine_proxy",,,,0,"File:dv/agents/sine_agent/sine_proxy.svh:sine_proxy.push","SystemVerilogClass:sine_proxy:push"]]]]);

@@ -8,7 +8,7 @@
     <title>Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,12 +17,11 @@
         var mkdocs_page_url = null;
       </script>
     
-    <script src="js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -34,14 +33,14 @@
           <a href="." class="icon icon-home"> Noise-Shaping SAR PCB
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#adc-architecture">ADC Architecture</a>
     </li>
@@ -63,7 +62,7 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="chip_top/">Register Map</a>
+                <li class="toctree-l1"><a class="" href="chip_top/index.html">Register Map</a>
                 </li>
               </ul>
               <ul>
@@ -83,13 +82,13 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Home</li>
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
-
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
@@ -106,12 +105,12 @@
 </ol>
 <h2 id="adc-architecture">ADC Architecture</h2>
 <p>The ADC will use a Silva-Steensgard topology with optional reset for incremental operation.</p>
-<p><img alt="Silva-Steensgard Topology" src="img/adc_loop.png" /></p>
+<p><img alt="Silva-Steensgard Topology" src="./img/adc_loop.png" /></p>
 <p>This should give fine results on a PCB while also presenting a decent challenge for this project.</p>
 <h2 id="block-diagram">Block Diagram</h2>
 <p>ADCs are typically implemented on-chip. This is done primarily for speed, since discrete capacitances are so much higher. However, for an educational project, there is nothing in theory that stops a discrete implementation from being possible.</p>
 <p>The analog frontend (the sampling circuit, comparator, CDAC, and integrators) of a noise-shaping SAR can be done relatively simply with discrete components, whereas the digital backend (SAR clocking, register interface, memory, etc.) can be done on an FPGA. Additionally, since many FPGA development boards have Arduino-compatible pinouts, the analog could be developed on an Arduino header and the digital done either on an FPGA or an Arduino. The current plan is to use a Zynq-7000 dev board like the Arty-Z7 and integrate the ADC into the Linux OS via AXI, so that the testing can be done natively in Python.</p>
-<p><img alt="Overall Block Diagram" src="img/toplevel.png" /></p>
+<p><img alt="Overall Block Diagram" src="./img/toplevel.png" /></p>
 <p>The integrators, sample and hold, and multi-tail comparator will all be implemented using discrete components. The CDAC, which using discrete components, will also use commercial shift registers to cut down on GPIO usage in the FPGA.</p>
 <h2 id="results">Results</h2>
 <p>There are many layers of simulation results, with varying levels of utility.</p>
@@ -147,11 +146,11 @@
 </tbody>
 </table>
 <p>The Python simulation results are like so:</p>
-<p><img alt="Python DSM Simulation" src="img/TODO.jfif" /></p>
+<p><img alt="Python DSM Simulation" src="./img/TODO.jfif" /></p>
 <p>These have a fixed OSR and FFT for comparison. In incremental mode, the output is similar, but already downsampled and filtered:</p>
-<p><img alt="Python Incremental Simulation" src="img/TODO.jfif" /></p>
+<p><img alt="Python Incremental Simulation" src="./img/TODO.jfif" /></p>
 <p>The SystemVerilog simulation results, with the same parameters:</p>
-<p><img alt="SystemVerilog Incremental Simulation" src="img/TODO.jfif" /></p>
+<p><img alt="SystemVerilog Incremental Simulation" src="./img/TODO.jfif" /></p>
 <h2 id="technology">Technology</h2>
 <p>The ultimate goal of this is to add the PCB onto a Zynq dev board with the form factor of an Arduino shield. The goal there would be to have an all-in-one testbench, where the Zynq would act as signal generator, test prober (using onboard ADCs) and the digital part of the DUT, while also running Python in Linux for easy interaction with the board. In lieu of that, the same should be possible using an Arduino as the testbed, but the bringup would potentially be more difficult.</p>
 <p>Here is a summary of the technology used:</p>
@@ -169,11 +168,7 @@
 </tr>
 <tr>
 <td style="text-align: left;">Documentation</td>
-<td style="text-align: left;">Python <code>mkdocs</code></td>
-</tr>
-<tr>
-<td style="text-align: left;">Technical Diagrams</td>
-<td style="text-align: left;">Python <code>schemdraw</code></td>
+<td style="text-align: left;">Python <code>mkdocs</code>, <code>schemdraw</code></td>
 </tr>
 <tr>
 <td style="text-align: left;">Digital Logic Design</td>
@@ -225,20 +220,21 @@
     
   </span>
 </div>
-    <script>var base_url = '.';</script>
-    <script src="js/theme_extra.js" defer></script>
-    <script src="js/theme.js" defer></script>
-      <script src="search/main.js" defer></script>
-    <script defer>
-        window.onload = function () {
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
-        };
+        });
     </script>
 
 </body>
 </html>
 
 <!--
-MkDocs version : 1.3.0
-Build Date UTC : 2026-06-14 06:33:15.059694+00:00
+MkDocs version : 1.6.1
+Build Date UTC : 2026-06-25 06:42:24.465608+00:00
 -->

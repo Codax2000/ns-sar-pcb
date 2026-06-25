@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("dia",["File"],[["diagrams",,[[,,,,0,"File2:diagrams.py:diagrams"]]]]);

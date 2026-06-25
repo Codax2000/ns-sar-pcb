@@ -8,7 +8,7 @@
     <title>Code - Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,12 +17,11 @@
         var mkdocs_page_url = null;
       </script>
     
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -34,7 +33,7 @@
           <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -53,11 +52,11 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../chip_top/">Register Map</a>
+                <li class="toctree-l1"><a class="" href="../chip_top/index.html">Register Map</a>
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">Code</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Code</a>
     <ul class="current">
     </ul>
                 </li>
@@ -75,17 +74,19 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Code</li>
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Code</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
-
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
                 <h1 id="naturaldocs">NaturalDocs</h1>
+<p>I have documented my code using <a href="https://naturaldocs.org">NaturalDocs</a>. I have found it excellent for readability and not super cumbersome to use, with little repetition. The unfortunate downside is that it's not very nice to include in other sites, so I've had to go with a somewhat clunky <code>iframe</code> approach. I've also had to disable linking, since that would entirely override the page.</p>
+<p>That said, it's mainly used for documentation while working with the code, not for use in a documentation website. However, I thought it would be interesting to include, since I already had it.</p>
 <div class="iframe-container">
     <iframe 
         sandbox="allow-forms allow-scripts allow-same-origin" 
@@ -125,7 +126,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../chip_top/" class="btn btn-neutral float-left" title="Register Map"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../pcb/" class="btn btn-neutral float-left" title="PCB"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -152,19 +153,20 @@
         </span>
     
     
-      <span><a href="../chip_top/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../pcb/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
   </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
-    <script defer>
-        window.onload = function () {
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
-        };
+        });
     </script>
 
 </body>

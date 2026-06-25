@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("del",["Variable"],[["DELAY_LINE_CTRL",,[["adc_regs.FFT_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.FFT_CTRL.DELAY_LINE_CTRL"]]]]);

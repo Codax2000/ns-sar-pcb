@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/sine_agent/max_amp_packet.svh","max_amp_packet.svh");NDSummary.OnSummaryLoaded("File:dv/agents/sine_agent/max_amp_packet.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[148,0,0,"max_amp_packet","max_amp_packet"]]);

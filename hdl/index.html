@@ -8,7 +8,7 @@
     <title>HDL - Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,12 +17,11 @@
         var mkdocs_page_url = null;
       </script>
     
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -34,7 +33,7 @@
           <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
         </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -45,7 +44,7 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">HDL</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">HDL</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#digital-architecture">Digital Architecture</a>
         <ul>
@@ -71,7 +70,7 @@
                 </li>
               </ul>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../chip_top/">Register Map</a>
+                <li class="toctree-l1"><a class="" href="../chip_top/index.html">Register Map</a>
                 </li>
               </ul>
               <ul>
@@ -91,13 +90,13 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>HDL</li>
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">HDL</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
-
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
@@ -105,12 +104,12 @@
 <p>ADCs need digital logic. This means a register interface for CSRs (control and status registers) and a main state machine to control the conversion. It therefore means closing timing and rigorous verification.</p>
 <h2 id="digital-architecture">Digital Architecture</h2>
 <p>The digital architecture is mainly a SPI interface that connects to a state machine. The state machine manages the NFFT conversion using control/status registers from the SPI clock domain and writes data from the SAR ADC to the data memory, which can be read from the SPI domain.</p>
-<p><img alt="Toplevel Architecture" src="../img/digital.png" /></p>
+<p><img alt="Toplevel Architecture" src="./img/digital.png" /></p>
 <p>The incremental filters are implemented as simple up-counters, since they have a reset.</p>
-<p><img alt="Digital Filters" src="../img/dig_filter.png" /></p>
+<p><img alt="Digital Filters" src="./img/dig_filter.png" /></p>
 <h3 id="main-state-machine">Main State Machine</h3>
 <p>Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:</p>
-<p><img alt="Main State Machine" src="../img/main_state_machine.png" /></p>
+<p><img alt="Main State Machine" src="./img/main_state_machine.png" /></p>
 <p>This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls; this controls the memory, oversampling, and clocking logic.</p>
 <p>The ADC has the following values controllable via SPI:</p>
 <ul>
@@ -122,23 +121,24 @@
 <li>The number of bits in the SAR quantizer</li>
 </ul>
 <h3 id="spi-protocol">SPI Protocol</h3>
-<p>I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved. This also only uses SPI mode 0, where data is shifted on the clock falling edge and captured on the rising edge.</p>
-<p><img alt="SPI Protocol" src="../img/spi_header.png" /></p>
-<p>The first byte makes up the header byte, which determines how many bytes will be transmitted and whether the transaction is register read or write. The next 2 bytes make up the address. After than comes the data, either write data over the MOSI line or read data over the MISO line. After every byte, both MOSI and MISO transmit an odd parity bit. If the parity bit is not a match, the slave stops responding until the next chip select low event.</p>
+<p>SPI works in SPI mode 0, with a 15-bit address, which accesses 2 bytes at a time. That way, even though the RTL accesses using
+a 16-bit address, SPI still works with 15 bit, and just retrieves the registers at address and address + 1, from
+the RTL point of view. From the user's perspective, it's just a 15-bit address with 16-bit registers.</p>
+<p>The SDO pin is tri-stated unless it is actively sending data.</p>
 <p>For a write:</p>
-<p><img alt="SPI Write" src="../img/spi_write_packet.png" /></p>
+<p><img alt="SPI Write" src="./img/spi_write.png" /></p>
 <p>For a read:</p>
-<p><img alt="SPI Write" src="../img/spi_read_packet.png" /></p>
-<p>One thing to note is that sent packets are <strong>little-endian</strong>. Since this is a burst protocol, it makes more sense that a counter would just be counting up the bits in memory, linearly.</p>
+<p><img alt="SPI Read" src="./img/spi_read.png" /></p>
+<p>It also supports burst read and write, with the address incrementing by 1 after each byte.</p>
+<p><img alt="SPI Burst Write" src="./img/spi_burst_write.png" /></p>
+<p><img alt="SPI Burst Read" src="./img/spi_burst_read.png" /></p>
 <h2 id="verification">Verification</h2>
-<p>There are two distinct and different verification environments used for this device.</p>
-<ol>
-<li>A UVM-MS testbench for verifying the digital RTL. This is robust and focuses on coverage of the digital IP.</li>
-<li>A Vivado testbench for integrating everything into Linux using AXI. As I have no testbench, no oscilloscope, etc., this will serve as the main bring-up platform.</li>
-</ol>
+<p>Verification for this device will be done with UVM, using a combination of AXI and SPI.
+The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
+work, and repurpose a SPI agent to check the buses for shift registers and DACs.</p>
 <h3 id="uvm-ms-testbench">UVM-MS Testbench</h3>
-<p>The UVM testbench is meant as a learning opportunity for UVM-MS and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
-<p><img alt="Digital Testbench" src="../img/uvm_tb.png" /></p>
+<p>The UVM testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
+<p><img alt="Digital Testbench" src="./img/uvm_tb.png" /></p>
 <p>The test list is as follows:</p>
 <ol>
 <li>
@@ -265,14 +265,15 @@
     
   </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
-    <script defer>
-        window.onload = function () {
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
             SphinxRtdTheme.Navigation.enable(true);
-        };
+        });
     </script>
 
 </body>

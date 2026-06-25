@@ -1,1 +1,0 @@
-﻿NDSummary.OnToolTipsLoaded("SystemVerilogClass:reg_rw_test",{221:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype221\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">reg_rw_test</div></div></div><div class=\"TTSummary\">Reads and writes all registers single-address and burst reads/writes.</div></div>"});
