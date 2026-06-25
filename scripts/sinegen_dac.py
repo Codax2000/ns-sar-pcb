@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 from CORDIC import CORDIC
+from fp_logic import fp_quantize # Import fp_quantize
 
 class SineGenDAC:
     def __init__(self, n_dac_bits=1, n_cordic_bits=16, fs=100e6, vdd=3.3):
@@ -70,8 +71,9 @@ class SineGenDAC:
         self._calculate_cordic()
 
         if self._reg['dsm_enable']:
-            self._quant, self._error = _run_dsm_loop(self._cos, 
-                                                     self._n_cordic_bits - self._n_dac_bits)
+            # The _run_dsm_loop function expects the input signal and the shift value.
+            # _cos is the input signal, and (self._n_cordic_bits - self._n_dac_bits) is the shift value.
+            self._quant, self._error = _run_dsm_loop(self._cos, self._n_cordic_bits - self._n_dac_bits)
         else:
             self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
             self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
@@ -398,6 +400,19 @@ class SineGenDAC:
         
         self._sin = y_rotated[-1, :]
         self._cos = x_rotated[-1, :]
+
+@njit
+def _run_dsm_loop(u, shift):
+    '''
+    Runs the delta-sigma modulator loop to decimate the input signal.
+    Args:
+        u (np.array): The input signal (quantized values).
+        shift (int): The number of bits to shift for decimation.
+    Returns:
+        tuple: A tuple containing:
+            - v (np.array): The decimated output signal.
+            - e (np.array): The quantization error.
+    '''
     N = len(u)
     q = np.zeros(N)
     e = np.zeros(N)
