@@ -31,32 +31,36 @@ The ADC has the following values controllable via SPI:
 
 ### SPI Protocol
 
-I've implemented a different SPI protocol that is reminiscent of byte-based protocols like I2C and RFFE. So register read/write works much like I2C, but instead of an ACK, the slave and the master are expected to send odd parity bits over the MISO/MOSI lines respectively. This confirms to both parties that parity has been achieved. This also only uses SPI mode 0, where data is shifted on the clock falling edge and captured on the rising edge.
+SPI works in SPI mode 0, with a 15-bit address, which accesses 2 bytes at a time. That way, even though the RTL accesses using
+a 16-bit address, SPI still works with 15 bit, and just retrieves the registers at address and address + 1, from
+the RTL point of view. From the user's perspective, it's just a 15-bit address with 16-bit registers.
 
-![SPI Protocol](./img/spi_header.png)
-
-The first byte makes up the header byte, which determines how many bytes will be transmitted and whether the transaction is register read or write. The next 2 bytes make up the address. After than comes the data, either write data over the MOSI line or read data over the MISO line. After every byte, both MOSI and MISO transmit an odd parity bit. If the parity bit is not a match, the slave stops responding until the next chip select low event.
+The SDO pin is tri-stated unless it is actively sending data.
 
 For a write:
 
-![SPI Write](./img/spi_write_packet.png)
+![SPI Write](./img/spi_write.png)
 
 For a read:
 
-![SPI Write](./img/spi_read_packet.png)
+![SPI Read](./img/spi_read.png)
 
-One thing to note is that sent packets are **little-endian**. Since this is a burst protocol, it makes more sense that a counter would just be counting up the bits in memory, linearly.
+It also supports burst read and write, with the address incrementing by 1 after each byte.
+
+![SPI Burst Write](./img/spi_burst_write.png)
+
+![SPI Burst Read](./img/spi_burst_read.png)
+
 
 ## Verification
 
-There are two distinct and different verification environments used for this device.
-
-1. A UVM-MS testbench for verifying the digital RTL. This is robust and focuses on coverage of the digital IP.
-1. A Vivado testbench for integrating everything into Linux using AXI. As I have no testbench, no oscilloscope, etc., this will serve as the main bring-up platform.
+Verification for this device will be done with UVM, using a combination of AXI and SPI.
+The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
+work, and repurpose a SPI agent to check the buses for shift registers and DACs.
 
 ### UVM-MS Testbench
 
-The UVM testbench is meant as a learning opportunity for UVM-MS and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
+The UVM testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
 
 ![Digital Testbench](./img/uvm_tb.png)
 
