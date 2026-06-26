@@ -10,12 +10,6 @@ interface spi_if ();
     logic csb;
     logic miso;
 
-    initial begin
-        scl = 1'b0;
-        mosi = 1'b0;
-        csb = 1'b1;
-    end
-
     modport dut_input (
         input csb,
         input scl,
