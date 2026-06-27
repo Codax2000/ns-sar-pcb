@@ -33,7 +33,7 @@ The ADC has the following values controllable via SPI:
 
 SPI works in SPI mode 0, with a 15-bit address, which accesses 2 bytes at a time. That way, even though the RTL accesses using
 a 16-bit address, SPI still works with 15 bit, and just retrieves the registers at address and address + 1, from
-the RTL point of view. From the user's perspective, it's just a 15-bit address with 16-bit registers.
+the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit address, and the SPI interface just reads back two data words.
 
 The SDO pin is tri-stated unless it is actively sending data.
 

@@ -218,7 +218,7 @@ def draw_uvm_db(filename='uvm_tb.png'):
         axi_agent = dsp.Box(h=2, w=3).label('AXI Agent').fill(agent_color)
 
         dsp.Arrow(arrow='<->').length(d.unit/4)
-        axi_entry = dsp.Box().label('AXI Slave')
+        axi_entry = dsp.Box().label('AXI Slave +\nInterconnect')
 
         axi_bus = dsp.Line().length(d.unit/4).dot()
         dsp.Line().length(d.unit/2)
@@ -391,7 +391,7 @@ def draw_spi(filename='spi'):
                 {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
                 {'name': 'SCLK',             'wave': 'xln....|....|.lx'},
                 {'name': 'MOSI',             'wave': 'x.32...|2...|.lx', 
-                'data': ['0', 'ADDR[14:0]', 'WR DATA[15:0]']}
+                'data': ['0', 'ADDR[15:1]', 'WR DATA[15:0]']}
             ]},
             grid=False,
             ygap=0.4
@@ -403,7 +403,7 @@ def draw_spi(filename='spi'):
                 {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
                 {'name': 'SCLK',             'wave': 'xln....|....|.lx'},
                 {'name': 'MOSI',             'wave': 'x.32...|x...|...', 
-                'data': ['1', 'ADDR[14:0]']},
+                'data': ['1', 'ADDR[15:1]']},
                 {'name': 'MISO',             'wave': 'z......|2...|.z..', 'data': ['RD DATA[15:0]']}
             ]},
             grid=False,
@@ -416,7 +416,7 @@ def draw_spi(filename='spi'):
                 {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
                 {'name': 'SCLK',             'wave': 'xln...|...|....|lx'},
                 {'name': 'MOSI',             'wave': 'x.32..|2..|2...|lx', 
-                'data': ['0', 'ADDR[14:0]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']}
+                'data': ['0', 'ADDR[15:1]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']}
             ]},
             grid=False,
             ygap=0.4
@@ -428,7 +428,7 @@ def draw_spi(filename='spi'):
                 {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
                 {'name': 'SCLK',             'wave': 'xln...|...|....|lx'},
                 {'name': 'MOSI',             'wave': 'x.32..|x..|....|..', 
-                'data': ['1', 'ADDR[14:0]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']},
+                'data': ['1', 'ADDR[15:1]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']},
                 {'name': 'MISO',             'wave': 'z.....|2..|2...|z.', 'data': ['RD DATA[15:0]', 'RD DATA, ADDR + 1']}
             ]},
             grid=False,
