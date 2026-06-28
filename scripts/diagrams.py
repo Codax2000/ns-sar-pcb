@@ -211,46 +211,166 @@ def draw_digital_filter(filename='dig_filter.png'):
 Function: draw_uvm_tb
 '''
 def draw_uvm_db(filename='uvm_tb.png'):
-    with schemdraw.Drawing(show=False) as d:
-        dsp.Box().label('VIN Agent').fill('navajowhite')
-        dsp.Arrow().label(r'$V_{in}[k]$')
-        ana = dsp.Box().label('SV Analog\n(Model)')
-        dsp.Arrow().label('Comparator\nOutput')
-        dut = dsp.Box().label('ADC RTL\n(DUT)')
-        elm.DataBusLine().label('SPI')
-        spi = dsp.Box().label('SPI Agent').fill('navajowhite')
-        dsp.Arrow(double=True).length(d.unit/2)
-        dsp.Box().label("UVM RAL").fill('lightblue')
+    agent_color='#ffeeee'
+    model_color='#eeffff'
+
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+        axi_agent = dsp.Box().label('SPI Agent').fill(agent_color)
+
+        axi_bus = dsp.Line().length(d.unit*3/4).dot().linestyle('--')
+        dsp.Line().length(d.unit/2)
+
+        with d.container() as c:
+            dac_spi = dsp.Box().label('SPI Slave')
+            dsp.Line().length(d.unit/4)
+            dac_registers = dsp.Box().label('DAC Registers')
+            dsp.Line().length(d.unit/4).dot()
+
+            with d.hold():
+                dsp.Line().down().length(d.unit/2)
+                dsp.Line().right().label('Sine Path', color='b')
+                dsp.Box(w=2, h=1).label(r'$\Sigma\phi$')
+                dsp.Line().right().length(d.unit/4)
+                dsp.Box(w=2, h=1).label('CORDIC')
+                dsp.Line().right().length(d.unit/4).dot()
+                mline = dsp.Line().right().length(d.unit/4)
+                dsp.Box(w=3, h=1).label(r'$\Delta\Sigma$ Modulator')
+                dsp.Line().right().length(d.unit/4)
+
+                dsm_mux = elm.intcircuits.Multiplexer(
+                    size=(0.5,1),
+                    pins=[elm.IcPin(anchorname='D', side='right'),
+                        elm.IcPin(anchorname='A', side='left'),
+                        elm.IcPin(anchorname='B', side='left')],
+                    edgepadH=0,
+                    edgepadW=0,
+                    lsize=0).anchor('A')
+                
+                dsp.Line().up().toy(dsm_mux.B).at(mline.start)
+                dsp.Line().tox(dsm_mux.B).right()
+
+                dc_mux = elm.intcircuits.Multiplexer(
+                    size=(0.5,1),
+                    pins=[elm.IcPin(anchorname='D', side='right'),
+                        elm.IcPin(anchorname='A', side='left'),
+                        elm.IcPin(anchorname='B', side='left')],
+                    edgepadH=0,
+                    edgepadW=0,
+                    lsize=0).anchor('A').at(dsm_mux.D)
+                
+            dsp.Line().up().length(d.unit/4)
+            dsp.Line().right().tox(dc_mux.B).label('DC Path', color='b')
+            dsp.Line().down().toy(dc_mux.B)
+
+            c.linestyle('--')
+            c.color('gray')
+            c.label('DAC Path, on Arty SoC')
+
+        dac_spiline = dsp.Line().right().length(d.unit/2).at(dc_mux.D).dot()
 
         with d.hold():
-            dsp.Line().length(d.unit/2).at(dut.N).up().label(r'$I^2C$')
-            dsp.Line().left().length(d.unit/3)
-            cpsr = dsp.Box(h=1).label('CP Shift Register\n(Model)')
-            elm.DataBusLine().tox(ana.N)
-            dsp.Arrow().toy(ana.N).label(r'CP $V_{DAC}$')
+            dsp.Line().up().linestyle('--')
+            dsp.Box().label('SPI Agent').fill(agent_color)
+        dsp.Line().right().length(d.unit/4).dot()
 
         with d.hold():
-            dsp.Line().length(d.unit/2).at(dut.S).down().label(r'$I^2C$')
-            dsp.Line().left().length(d.unit/3)
-            cnsr = dsp.Box(h=1).label('CN Shift Register\n(Model)')
-            elm.DataBusLine().tox(ana.S)
-            dsp.Arrow().toy(ana.S).label(r'CN $V_{DAC}$')
+            dsp.Line().up().length(d.unit/4)
+            dsp.Line().right().length(d.unit/4)
+            dacp = dsp.Dac().label('DACP').label('DAC5311', loc='top', color='b').fill(model_color)
+            
+        with d.hold():
+            dsp.Line().down().length(d.unit/4)
+            dsp.Line().right().length(d.unit/4)
+            dacn = dsp.Dac().label('DACN').fill(model_color)
 
-        clkgen = dsp.Box(h=1).anchor('N').at(dut.S, dx=0.5, dy=-d.unit).label('CLKGEN Agent').fill('navajowhite')
-        dsp.Arrow().at(clkgen.N).up().toy(dut.S)
-        rst = dsp.Box(h=1).anchor('N').at(clkgen.S, dx=0.65).label('RESET Agent').fill('navajowhite')
-        dsp.Line().at(rst.N).up().toy(clkgen.N).linestyle(':')
-        dsp.Arrow().toy(dut.S)
+        dsp.Line().down().at(axi_bus.end).length(d.unit*2.5).dot()
+        dsp.Line().right().length(d.unit/2)
 
-        # boundary lines
-        b = 0.35
-        dsp.Line().at(ana.W, dx=-b).up().toy(cpsr.N + b).linestyle('--').color('gray')
-        dsp.Line().right().tox(dut.E + b).linestyle('--').color('gray')\
-            .label('Planned PCB')
-        dsp.Line().down().toy(cnsr.S - b).linestyle('--').color('gray')
-        dsp.Line().left().tox(ana.W - b).linestyle('--').color('gray')
-        dsp.Line().up().toy(ana.W).linestyle('--').color('gray')
-    d.save(f'./docs/docs/img/{filename}')
+        with d.container() as c:
+            adc_spi = dsp.Box(h=2, w=3).label(r'SPI Slave')
+            elm.Line().length(d.unit/4)
+            dsp.Box().label('ADC Registers')
+            dsp.Line().length(d.unit/4)
+            adc = dsp.Box().label('ADC State\nMachine')
+
+            c.linestyle('--')
+            c.label('ADC RTL')
+            c.color('gray')
+
+        with d.hold():
+            dsp.Line().left().length(d.unit*3/4).linestyle('--').at(adc_spi.W, dx=-d.unit/2)
+            dsp.Box().fill(agent_color).label('SPI Agent')
+
+        dsp.Arrow(arrow='<-').length(d.unit*6/4).label('Comparator')
+
+        with d.container() as c:
+            sv_model = dsp.Box().label('Cap Array\n(SV-RNM Model)').fill(model_color)
+            dsp.Line().right().length(d.unit/4)
+            sha = dsp.Box().label('SHA + Anti-\nalias filter\n(SV-RNM Model)').fill(model_color)
+            dsp.Arrow(arrow='<-').up().length(d.unit/2).at(sv_model.N)
+            dsp.Line().left().length(d.unit/4)
+            shregp = dsp.Box(h=1, w=3).label('Shift Register').fill(model_color)
+            
+            dsp.Arrow(arrow='<-').down().length(d.unit/2).at(sv_model.S)
+            dsp.Line().left().length(d.unit/4)
+            shregn = dsp.Box(h=1, w=3).label('Shift Register').fill(model_color)
+
+            c.linestyle('--')
+            c.label('PCB Model (SV-RNM)')
+            c.color('gray')
+
+        elm.DataBusLine().left().at(shregp.W).tox(adc.N)
+        dsp.Line().toy(adc.N).down()
+        elm.DataBusLine().left().at(shregn.W).tox(adc.N).label('SPI', color='b').dot()
+        with d.hold():
+            dsp.Line().down().length(d.unit/2).linestyle('--')
+            dsp.Box().label('SPI Agent').fill(agent_color)
+        dsp.Line().toy(adc.S).up()
+
+        dsp.Line().at(sha.E, dy=0.5).right(d.unit*4/2-0.5)
+        dsp.Line().up().toy(dacn.out)
+        dsp.Line().left().tox(dacn.out)
+
+        dsp.Line().at(sha.E, dy=-0.5).right(d.unit*4/2+0.5)
+        dsp.Line().up().toy(dacp.out)
+        dsp.Line().left().tox(dacp.out)
+
+        # Add legend
+        behav_legend = dsp.Box(h=1).at(axi_agent.W, dy=d.unit*1.5).right().label('Behavioral\nModel').anchor('W').fill(model_color)
+        dsp.Box(h=1).at(behav_legend.S).label('UVM Agent').anchor('N').fill(agent_color)
+
+
+def draw_axi_integration_tb(filename='axi_integration_tb.png'):
+    agent_color='#ffeeee'
+    model_color='#eeffff'
+
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+        dsp.Box().label('AXI4-Lite Agent').fill(agent_color)
+        dsp.Line().length(d.unit/4).dot()
+        arr1 = dsp.Arrow().length(d.unit/4)
+        dsp.Box(w=3.5).label(r'AXI $\leftrightarrow$ Dual SPI')
+        dsp.Line().length(d.unit/4).dot()
+
+        with d.hold():
+            dsp.Line().up().length(d.unit/2)
+            dsp.Line().right().length(d.unit/4)
+            spi1 = dsp.Box().label('SPI Agent').fill(agent_color)
+        
+        with d.hold():
+            dsp.Line().down().length(d.unit/2)
+            dsp.Line().right().length(d.unit/4)
+            spi2 = dsp.Box().label('SPI Agent').fill(agent_color)
+
+        dsp.Line().up().at(arr1.start).length(d.unit*1.5)
+        dsp.Arrow().right().length(d.unit*3)
+        sb = dsp.Box().label('Scoreboard').fill(model_color)
+
+        dsp.Line().at(spi1.E).right().tox(sb.S - 0.5)
+        dsp.Arrow().up().toy(sb.S)
+
+        dsp.Line().at(spi2.E).right().tox(sb.S + 0.5)
+        dsp.Arrow().up().toy(sb.S)
+
 
 
 '''
@@ -295,54 +415,55 @@ def draw_main_sm(filename='main_state_machine.png'):
 Function: draw_spi
 '''
 def draw_spi(filename='spi'):
-    with schemdraw.Drawing(show=False) as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_write.png') as d:
         logic.TimingDiagram(
             {'signal': [
-                {'name': r'$\overline{CS}$', 'wave': '1.0.................'},
-                {'name': 'SCLK',             'wave': 'xln.................'},
-                {'name': 'MOSI',             'wave': 'x.322222224222222222', 
-                'data': ['RD', 'BC0', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6', 'P',
-                        'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'P']},
-                {'name': 'MISO',             'wave': 'z.........4z.......4', 'data': ['P', 'P']}
+                {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
+                {'name': 'SCLK',             'wave': 'xln....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.32...|2...|.lx', 
+                'data': ['0', 'ADDR[15:1]', 'WR DATA[15:0]']}
             ]},
             grid=False,
             ygap=0.4
         )
-    d.save(f'./docs/docs/img/{filename}_header.png')
 
-    with schemdraw.Drawing(show=False) as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_read.png') as d:
         logic.TimingDiagram(
             {'signal': [
-                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
-                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
-                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|32..|3x.',
-                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'WR DATA [0:7]', 'P']},
-                {'name': 'MISO',             'wave': 'z....|4z..|4z..|4z..|4z.', 'data': ['P'] * 4}
-            ],
-            'edge': [
-                '[2^:17]+[2^:22] Repeat $BC+1$ Times'
+                {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
+                {'name': 'SCLK',             'wave': 'xln....|....|.lx'},
+                {'name': 'MOSI',             'wave': 'x.32...|x...|...', 
+                'data': ['1', 'ADDR[15:1]']},
+                {'name': 'MISO',             'wave': 'z......|2...|.z..', 'data': ['RD DATA[15:0]']}
             ]},
             grid=False,
             ygap=0.4
         )
-    d.save(f'./docs/docs/img/{filename}_write_packet.png')
 
-    with schemdraw.Drawing(show=False) as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_burst_write.png') as d:
         logic.TimingDiagram(
             {'signal': [
-                {'name': r'$\overline{CS}$', 'wave': '1.0..|....|....|....|..1'},
-                {'name': 'SCLK',             'wave': 'xln..|....|....|....|.lx'},
-                {'name': 'MOSI',             'wave': 'x.2..|32..|32..|3x..|3x.',
-                'data': ['HEADER', 'P', 'ADDR[0:7]', 'P', 'ADDR[8:15]', 'P', 'P']},
-                {'name': 'MISO',             'wave': 'z....|4z..|4z..|42..|4z.', 'data': ['P'] * 3 + ['RD DATA [0:7]', 'P']}
-            ],
-            'edge': [
-                '[3^:17]+[3^:22] Repeat $BC+1$ Times'
+                {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
+                {'name': 'SCLK',             'wave': 'xln...|...|....|lx'},
+                {'name': 'MOSI',             'wave': 'x.32..|2..|2...|lx', 
+                'data': ['0', 'ADDR[15:1]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']}
             ]},
             grid=False,
             ygap=0.4
         )
-    d.save(f'./docs/docs/img/{filename}_read_packet.png')
+    
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_burst_read.png') as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
+                {'name': 'SCLK',             'wave': 'xln...|...|....|lx'},
+                {'name': 'MOSI',             'wave': 'x.32..|x..|....|..', 
+                'data': ['1', 'ADDR[15:1]', 'WR DATA[15:0]', 'WR DATA, ADDR + 1']},
+                {'name': 'MISO',             'wave': 'z.....|2..|2...|z.', 'data': ['RD DATA[15:0]', 'RD DATA, ADDR + 1']}
+            ]},
+            grid=False,
+            ygap=0.4
+        )
 
 
 '''
@@ -350,7 +471,7 @@ Function: draw_overall_architecture
 '''
 def draw_overall_architecture(filename='toplevel.png'):
     with schemdraw.Drawing(show=False) as d:
-        dsp.Box(w=2, h=1).label('AXI')
+        dsp.Box(w=2.5, h=1).label(r'AXI $\leftrightarrow$ SPI')
         dsp.Line().length(d.unit/4)
         dsp.Oscillator().label('Digital Signal\nGenerator', loc='top')
         dsp.Line().length(d.unit/4)
@@ -401,7 +522,7 @@ def draw_overall_architecture(filename='toplevel.png'):
         dsp.Line().length(d.unit/4).label(r'$U[k]$', loc='top', ofst=(-0.45, 0.1))
         pl = dsp.Box(h=1, w=2).label('Zynq PL')
         spi = elm.DataBusLine().length(d.unit/2).label('SPI')
-        dsp.Box(h=1).label('SPI to AXI')
+        dsp.Box(h=1, w=2.5).label(r'SPI $\leftrightarrow$ AXI')
 
         elm.DataBusLine().up().at(pl.N).toy(c3.end).label('I2C')
         dsp.Line().left().tox(comp_out.start)
@@ -423,6 +544,24 @@ def draw_overall_architecture(filename='toplevel.png'):
         dsp.Line().length(d.unit/4)
         dsp.Arrow().to(sum_node.S)
     d.save(f'./docs/docs/img/{filename}')
+
+
+def draw_testbench_configs(filename='validation_setup.png'):
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/zynq_{filename}') as d:
+        dsp.Box().label('Jupyter\n(PC)').color('green')
+        dsp.Arrow().linestyle('--').label('Ethernet').color('gray')
+        dsp.Box().label('Jupyter\n(Zynq PS)')
+        dsp.Line().length(d.unit/2).label('AXI', color='blue')
+        dsp.Box(w=3).label(r'AXI $\leftrightarrow$ SPI')
+        dsp.Line().length(d.unit/2).label('SPI', color='blue')
+        dsp.Box(w=3).label('DUT')
+
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/arduino_{filename}') as d:
+        dsp.Box().label('Jupyter\n(PC)').color('green')
+        dsp.Arrow().linestyle('--').label('pyserial').color('gray')
+        dsp.Box().label('Arduino')
+        dsp.Line().length(d.unit*3/4).label('SPI\n(PMOD A)', color='blue')
+        dsp.Box(w=3).label('DUT')
         
 
 def main():
@@ -430,9 +569,11 @@ def main():
     draw_adc_loop()
     draw_digital_filter()
     draw_uvm_db()
+    draw_axi_integration_tb()
     draw_main_sm()
     draw_spi()
     draw_overall_architecture()
+    draw_testbench_configs()
 
 if __name__ == '__main__':
     main()
