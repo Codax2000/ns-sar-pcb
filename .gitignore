@@ -11,11 +11,9 @@ hdl_design/hdl_design.ip_user_files/
 
 adc_regs/
 
-hdl_design/hdl_design.srcs/rtl/registers/adc_reg_sync.sv
-hdl_design/hdl_design.srcs/dv/adc_env/adc_regs_dv_pkg.sv
-hdl_design/hdl_design.srcs/rtl/registers/adc_regs_mod_hwif.rpt
-hdl_design/hdl_design.srcs/rtl/registers/adc_regs_mod_pkg.sv
-hdl_design/hdl_design.srcs/rtl/registers/adc_regs_mod.sv
+hdl_design/hdl_design.srcs/dv/axi_top_env/
+hdl_design/hdl_design.srcs/rtl/registers/adc/
+hdl_design/hdl_design.srcs/rtl/registers/dac/
 
 hdl_design/hdl_design.srcs/dv/waveforms
 
@@ -33,3 +31,4 @@ scripts.txt
 hdl.txt
 docs.txt
 gitlog.txt
+.aider*
