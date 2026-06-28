@@ -51,28 +51,6 @@ It also supports burst read and write, with the address incrementing by 1 after 
 
 ![SPI Burst Read](./img/spi_burst_read.png)
 
-
-## Verification
-
-Verification for this device will be done with UVM, using a combination of AXI and SPI.
-The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
-work, and repurpose a SPI agent to check the buses for shift registers and DACs.
-
-### ADC Testbench
-
-The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
-
-![Digital Testbench](./img/uvm_tb.png)
-
-### AXI Integration Testbench
-
-If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ. In that case, 
-an AXI to SPI adapter will be necessary, and will be run like so:
-
-The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.
-
-![AXI to SPI](./img/axi_integration_tb.png)
-
 ## Integration
 
 There are two options for integration. The first would be to integrate this with the
