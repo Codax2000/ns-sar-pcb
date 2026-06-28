@@ -56,11 +56,13 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#uvm-ms-testbench">UVM-MS Testbench</a>
+    <li class="toctree-l3"><a class="reference internal" href="#adc-testbench">ADC Testbench</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#axi-integration-testbench">AXI Integration Testbench</a>
     </li>
         </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#integration">Integration</a>
     </li>
     </ul>
                 </li>
@@ -136,96 +138,23 @@ the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit ad
 <p>Verification for this device will be done with UVM, using a combination of AXI and SPI.
 The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
 work, and repurpose a SPI agent to check the buses for shift registers and DACs.</p>
-<h3 id="uvm-ms-testbench">UVM-MS Testbench</h3>
-<p>The UVM testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
+<h3 id="adc-testbench">ADC Testbench</h3>
+<p>The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
 <p><img alt="Digital Testbench" src="../img/uvm_tb.png" /></p>
-<p>The test list is as follows:</p>
-<ol>
-<li>
-<p>Sanity Tests</p>
-<ol>
-<li><code>smoke_reset</code><ul>
-<li>assert external reset during idle</li>
-<li>check registers return to default and no X</li>
-</ul>
-</li>
-<li><code>smoke_reg_access</code><ul>
-<li>Write/read all control registers that don't kick off a process</li>
-<li>Check illegal accesses</li>
-<li>Boundary value testing</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>
-<p>Functional Correctness Tests</p>
-<ol>
-<li><code>ramp_monotonicity</code><ul>
-<li>Slow ramp input</li>
-<li>Check no missing codes</li>
-<li>Monotonic output</li>
-</ul>
-</li>
-<li><code>rand_dc_levels</code><ul>
-<li>Send multiple DC inputs (incremental mode only)</li>
-<li>Check output code is correct</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>
-<p>Spectral/Performance Tests</p>
-<ol>
-<li><code>snr_continuous</code><ul>
-<li>Full-scale sine input in DSM mode</li>
-<li>Measure SNR, THD, SFDR</li>
-<li>Assert SNR within bound based on Python model</li>
-</ul>
-</li>
-<li><code>snr_incremental</code><ul>
-<li>Full-scale sine input in incremental mode</li>
-<li>Measure SNR and ENOB</li>
-<li>Assert SNR within bound based on Python model</li>
-</ul>
-</li>
-<li><code>osr_sweep</code><ul>
-<li>Sweep OSR with everything else set and a reasonable FFT value</li>
-<li>Verify 2nd-order noise shaping</li>
-</ul>
-</li>
-<li><code>dem_compare</code><ul>
-<li>Compare spectra with DEM on vs off</li>
-<li>Verify harmonic reduction, even if minor (may need large capacitor mismatch)</li>
-</ul>
-</li>
-</ol>
-</li>
-<li>
-<p>Boundary/Stress Tests</p>
-<ol>
-<li><code>analog_digital_boundary_stress</code><ul>
-<li>Inject comparator offset and/or first conversion error</li>
-<li>Verify that output is still monotonic if using redundancy</li>
-</ul>
-</li>
-<li><code>spi_mid_conversion</code><ul>
-<li>Modify registers mid-conversion</li>
-<li>Verify graceful handling</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
 <h3 id="axi-integration-testbench">AXI Integration Testbench</h3>
-<p>This is up in the air; if using an Arduino, this won't be used. However, if a Zynq dev board is available, then it would be best to integrate the analog board with the digital on Zynq.</p>
-<p>This would mean adding adapters for AXI/SPI, and also waveform generation, likely with an oversampled DAC off the shelf. The plus side is that all of the bringup could then be done in Python.</p>
-<p>The testbench will need AXI adapters to I2C and SPI, and then just a couple of sanity tests would be sufficient:</p>
-<ol>
-<li>SPI register read/write using AXI</li>
-<li>DAC waveform generation using AXI (reuse models from UVM tb + I2C and digital model of anti-aliasing filter)</li>
-<li>NFFT conversion test (could be small, just proof of concept)</li>
-</ol>
-<p>This would also require writing Linux drivers, so there would be a lot of learning in the bringup.</p>
+<p>If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ. In that case, 
+an AXI to SPI adapter will be necessary, and will be run like so:</p>
+<p>The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.</p>
+<p><img alt="AXI to SPI" src="../img/axi_integration_tb.png" /></p>
+<h2 id="integration">Integration</h2>
+<p>There are two options for integration. The first would be to integrate this with the
+Zynq PS so that I can run AXI commands natively, like so:</p>
+<p><img alt="Zynq Validation" src="../img/zynq_validation_setup.png" /></p>
+<p>Given that my board very likely has a fried Ethernet chip, this may be difficult. If that
+persists and I am not able to find a workaround, I will ignore the dedicated PS and use
+the FPGA fabric only, using a Jupyter notebook over <code>pyserial</code>, with Arduino drivers
+instead of Linux ones. The bonus is that the PCB design will remain the same.</p>
+<p><img alt="Arduino Validation" src="../img/arduino_validation_setup.png" /></p>
               
             </div>
           </div><footer>
