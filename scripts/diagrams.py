@@ -215,15 +215,14 @@ def draw_uvm_db(filename='uvm_tb.png'):
     model_color='#eeffff'
 
     with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
-        axi_agent = dsp.Box(h=2, w=3).label('AXI Agent').fill(agent_color)
+        axi_agent = dsp.Box().label('SPI Agent').fill(agent_color)
 
-        dsp.Arrow(arrow='<->').length(d.unit/4)
-        axi_entry = dsp.Box().label('AXI Slave +\nInterconnect')
-
-        axi_bus = dsp.Line().length(d.unit/4).dot()
+        axi_bus = dsp.Line().length(d.unit*3/4).dot().linestyle('--')
         dsp.Line().length(d.unit/2)
 
         with d.container() as c:
+            dac_spi = dsp.Box().label('SPI Slave')
+            dsp.Line().length(d.unit/4)
             dac_registers = dsp.Box().label('DAC Registers')
             dsp.Line().length(d.unit/4).dot()
 
@@ -284,18 +283,12 @@ def draw_uvm_db(filename='uvm_tb.png'):
             dsp.Line().right().length(d.unit/4)
             dacn = dsp.Dac().label('DACN').fill(model_color)
 
-        dsp.Line().down().at(axi_bus.end).length(d.unit*2.5)
+        dsp.Line().down().at(axi_bus.end).length(d.unit*2.5).dot()
         dsp.Line().right().length(d.unit/2)
 
-        dsp.Box(h=2, w=3).label(r'AXI $\leftrightarrow$ SPI')
-        with d.hold():
-            dsp.Line().right().length(d.unit/4)
-            dsp.Line().down().length(d.unit*3/4).linestyle('--')
-            dsp.Box().fill(agent_color).label('SPI Agent')
-
-        elm.DataBusLine().label('SPI', color='blue').length(d.unit)
-
         with d.container() as c:
+            adc_spi = dsp.Box(h=2, w=3).label(r'SPI Slave')
+            elm.Line().length(d.unit/4)
             dsp.Box().label('ADC Registers')
             dsp.Line().length(d.unit/4)
             adc = dsp.Box().label('ADC State\nMachine')
@@ -303,6 +296,10 @@ def draw_uvm_db(filename='uvm_tb.png'):
             c.linestyle('--')
             c.label('ADC RTL')
             c.color('gray')
+
+        with d.hold():
+            dsp.Line().left().length(d.unit*3/4).linestyle('--').at(adc_spi.W, dx=-d.unit/2)
+            dsp.Box().fill(agent_color).label('SPI Agent')
 
         dsp.Arrow(arrow='<-').length(d.unit*6/4).label('Comparator')
 
@@ -330,17 +327,50 @@ def draw_uvm_db(filename='uvm_tb.png'):
             dsp.Box().label('SPI Agent').fill(agent_color)
         dsp.Line().toy(adc.S).up()
 
-        dsp.Line().at(sha.E, dy=0.5).right(d.unit/2-0.5)
+        dsp.Line().at(sha.E, dy=0.5).right(d.unit*4/2-0.5)
         dsp.Line().up().toy(dacn.out)
         dsp.Line().left().tox(dacn.out)
 
-        dsp.Line().at(sha.E, dy=-0.5).right(d.unit/2+0.5)
+        dsp.Line().at(sha.E, dy=-0.5).right(d.unit*4/2+0.5)
         dsp.Line().up().toy(dacp.out)
         dsp.Line().left().tox(dacp.out)
 
         # Add legend
         behav_legend = dsp.Box(h=1).at(axi_agent.W, dy=d.unit*1.5).right().label('Behavioral\nModel').anchor('W').fill(model_color)
         dsp.Box(h=1).at(behav_legend.S).label('UVM Agent').anchor('N').fill(agent_color)
+
+
+def draw_axi_integration_tb(filename='axi_integration_tb.png'):
+    agent_color='#ffeeee'
+    model_color='#eeffff'
+
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+        dsp.Box().label('AXI4-Lite Agent').fill(agent_color)
+        dsp.Line().length(d.unit/4).dot()
+        arr1 = dsp.Arrow().length(d.unit/4)
+        dsp.Box(w=3.5).label(r'AXI $\leftrightarrow$ Dual SPI')
+        dsp.Line().length(d.unit/4).dot()
+
+        with d.hold():
+            dsp.Line().up().length(d.unit/2)
+            dsp.Line().right().length(d.unit/4)
+            spi1 = dsp.Box().label('SPI Agent').fill(agent_color)
+        
+        with d.hold():
+            dsp.Line().down().length(d.unit/2)
+            dsp.Line().right().length(d.unit/4)
+            spi2 = dsp.Box().label('SPI Agent').fill(agent_color)
+
+        dsp.Line().up().at(arr1.start).length(d.unit*1.5)
+        dsp.Arrow().right().length(d.unit*3)
+        sb = dsp.Box().label('Scoreboard').fill(model_color)
+
+        dsp.Line().at(spi1.E).right().tox(sb.S - 0.5)
+        dsp.Arrow().up().toy(sb.S)
+
+        dsp.Line().at(spi2.E).right().tox(sb.S + 0.5)
+        dsp.Arrow().up().toy(sb.S)
+
 
 
 '''
@@ -441,7 +471,7 @@ Function: draw_overall_architecture
 '''
 def draw_overall_architecture(filename='toplevel.png'):
     with schemdraw.Drawing(show=False) as d:
-        dsp.Box(w=2, h=1).label('AXI')
+        dsp.Box(w=2.5, h=1).label(r'AXI $\leftrightarrow$ SPI')
         dsp.Line().length(d.unit/4)
         dsp.Oscillator().label('Digital Signal\nGenerator', loc='top')
         dsp.Line().length(d.unit/4)
@@ -492,7 +522,7 @@ def draw_overall_architecture(filename='toplevel.png'):
         dsp.Line().length(d.unit/4).label(r'$U[k]$', loc='top', ofst=(-0.45, 0.1))
         pl = dsp.Box(h=1, w=2).label('Zynq PL')
         spi = elm.DataBusLine().length(d.unit/2).label('SPI')
-        dsp.Box(h=1).label('SPI to AXI')
+        dsp.Box(h=1, w=2.5).label(r'SPI $\leftrightarrow$ AXI')
 
         elm.DataBusLine().up().at(pl.N).toy(c3.end).label('I2C')
         dsp.Line().left().tox(comp_out.start)
@@ -514,6 +544,24 @@ def draw_overall_architecture(filename='toplevel.png'):
         dsp.Line().length(d.unit/4)
         dsp.Arrow().to(sum_node.S)
     d.save(f'./docs/docs/img/{filename}')
+
+
+def draw_testbench_configs(filename='validation_setup.png'):
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/zynq_{filename}') as d:
+        dsp.Box().label('Jupyter\n(PC)').color('green')
+        dsp.Arrow().linestyle('--').label('Ethernet').color('gray')
+        dsp.Box().label('Jupyter\n(Zynq PS)')
+        dsp.Line().length(d.unit/2).label('AXI', color='blue')
+        dsp.Box(w=3).label(r'AXI $\leftrightarrow$ SPI')
+        dsp.Line().length(d.unit/2).label('SPI', color='blue')
+        dsp.Box(w=3).label('DUT')
+
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/arduino_{filename}') as d:
+        dsp.Box().label('Jupyter\n(PC)').color('green')
+        dsp.Arrow().linestyle('--').label('pyserial').color('gray')
+        dsp.Box().label('Arduino')
+        dsp.Line().length(d.unit*3/4).label('SPI\n(PMOD A)', color='blue')
+        dsp.Box(w=3).label('DUT')
         
 
 def main():
@@ -521,9 +569,11 @@ def main():
     draw_adc_loop()
     draw_digital_filter()
     draw_uvm_db()
+    draw_axi_integration_tb()
     draw_main_sm()
     draw_spi()
     draw_overall_architecture()
+    draw_testbench_configs()
 
 if __name__ == '__main__':
     main()

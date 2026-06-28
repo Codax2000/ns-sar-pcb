@@ -58,70 +58,32 @@ Verification for this device will be done with UVM, using a combination of AXI a
 The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
 work, and repurpose a SPI agent to check the buses for shift registers and DACs.
 
-### UVM-MS Testbench
+### ADC Testbench
 
-The UVM testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
+The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
 
 ![Digital Testbench](./img/uvm_tb.png)
 
-The test list is as follows:
-
-1. Sanity Tests
-
-    1. `smoke_reset`
-        - assert external reset during idle
-        - check registers return to default and no X
-    1. `smoke_reg_access`
-        - Write/read all control registers that don't kick off a process
-        - Check illegal accesses
-        - Boundary value testing
-
-1. Functional Correctness Tests
-
-    1. `ramp_monotonicity`
-        - Slow ramp input
-        - Check no missing codes
-        - Monotonic output
-    1. `rand_dc_levels`
-        - Send multiple DC inputs (incremental mode only)
-        - Check output code is correct
-
-1. Spectral/Performance Tests
-
-    1. `snr_continuous`
-        - Full-scale sine input in DSM mode
-        - Measure SNR, THD, SFDR
-        - Assert SNR within bound based on Python model
-    1. `snr_incremental`
-        - Full-scale sine input in incremental mode
-        - Measure SNR and ENOB
-        - Assert SNR within bound based on Python model
-    1. `osr_sweep`
-        - Sweep OSR with everything else set and a reasonable FFT value
-        - Verify 2nd-order noise shaping
-    1. `dem_compare`
-        - Compare spectra with DEM on vs off
-        - Verify harmonic reduction, even if minor (may need large capacitor mismatch)
-
-1. Boundary/Stress Tests
-
-    1. `analog_digital_boundary_stress`
-        - Inject comparator offset and/or first conversion error
-        - Verify that output is still monotonic if using redundancy
-    1. `spi_mid_conversion`
-        - Modify registers mid-conversion
-        - Verify graceful handling
-
 ### AXI Integration Testbench
 
-This is up in the air; if using an Arduino, this won't be used. However, if a Zynq dev board is available, then it would be best to integrate the analog board with the digital on Zynq.
+If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ. In that case, 
+an AXI to SPI adapter will be necessary, and will be run like so:
 
-This would mean adding adapters for AXI/SPI, and also waveform generation, likely with an oversampled DAC off the shelf. The plus side is that all of the bringup could then be done in Python.
+The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.
 
-The testbench will need AXI adapters to I2C and SPI, and then just a couple of sanity tests would be sufficient:
+![AXI to SPI](./img/axi_integration_tb.png)
 
-1. SPI register read/write using AXI
-1. DAC waveform generation using AXI (reuse models from UVM tb + I2C and digital model of anti-aliasing filter)
-1. NFFT conversion test (could be small, just proof of concept)
+## Integration
 
-This would also require writing Linux drivers, so there would be a lot of learning in the bringup.
+There are two options for integration. The first would be to integrate this with the
+Zynq PS so that I can run AXI commands natively, like so:
+
+![Zynq Validation](./img/zynq_validation_setup.png)
+
+Given that my board very likely has a fried Ethernet chip, this may be difficult. If that
+persists and I am not able to find a workaround, I will ignore the dedicated PS and use
+the FPGA fabric only, using a Jupyter notebook over `pyserial`, with Arduino drivers
+instead of Linux ones. The bonus is that the PCB design will remain the same.
+
+![Arduino Validation](./img/arduino_validation_setup.png)
+
