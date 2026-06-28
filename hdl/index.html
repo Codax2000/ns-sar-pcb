@@ -54,17 +54,13 @@
     </li>
         </ul>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#adc-testbench">ADC Testbench</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#axi-integration-testbench">AXI Integration Testbench</a>
-    </li>
-        </ul>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#integration">Integration</a>
     </li>
     </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../verification/">Verification</a>
                 </li>
               </ul>
               <ul>
@@ -134,18 +130,6 @@ the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit ad
 <p>It also supports burst read and write, with the address incrementing by 1 after each byte.</p>
 <p><img alt="SPI Burst Write" src="../img/spi_burst_write.png" /></p>
 <p><img alt="SPI Burst Read" src="../img/spi_burst_read.png" /></p>
-<h2 id="verification">Verification</h2>
-<p>Verification for this device will be done with UVM, using a combination of AXI and SPI.
-The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will
-work, and repurpose a SPI agent to check the buses for shift registers and DACs.</p>
-<h3 id="adc-testbench">ADC Testbench</h3>
-<p>The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.</p>
-<p><img alt="Digital Testbench" src="../img/uvm_tb.png" /></p>
-<h3 id="axi-integration-testbench">AXI Integration Testbench</h3>
-<p>If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ. In that case, 
-an AXI to SPI adapter will be necessary, and will be run like so:</p>
-<p>The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.</p>
-<p><img alt="AXI to SPI" src="../img/axi_integration_tb.png" /></p>
 <h2 id="integration">Integration</h2>
 <p>There are two options for integration. The first would be to integrate this with the
 Zynq PS so that I can run AXI commands natively, like so:</p>
@@ -160,7 +144,7 @@ instead of Linux ones. The bonus is that the PCB design will remain the same.</p
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../pcb/" class="btn btn-neutral float-right" title="PCB">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../verification/" class="btn btn-neutral float-right" title="Verification">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -190,7 +174,7 @@ instead of Linux ones. The bonus is that the PCB design will remain the same.</p
       <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../pcb/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../verification/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
