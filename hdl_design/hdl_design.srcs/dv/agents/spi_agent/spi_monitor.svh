@@ -16,11 +16,6 @@ class spi_monitor extends uvm_monitor;
     virtual spi_if vif;
     uvm_analysis_port #(spi_packet) mon_analysis_port;
 
-    bit CPOL;
-    bit CPHA;
-
-    logic [15:0] read_data_queue [$];
-
     function new(string name, uvm_component parent);
         super.new(name, parent);
         mon_analysis_port = new("mon_analysis_port", this);
@@ -43,67 +38,27 @@ class spi_monitor extends uvm_monitor;
     endtask
 
     virtual task collect_transaction(spi_packet item);
-        logic [7:0] current_byte;
-        spi_parity_t current_parity;
-        int n_observed_transactions;
-        int n_expected_transactions;
+        int bit_counter;
+        logic [7:0] mosi_byte;
+        logic [7:0] miso_byte;
 
-        n_observed_transactions = 0;
-        n_expected_transactions = 0;
+        bit_counter = 7;
 
-        observe_byte(1, current_byte, current_parity);
-        item.rd_en = current_byte[0];
-        n_expected_transactions = current_byte[7:1] + 1;
-        item.header_parity = current_parity;
-
-        observe_byte(1, item.address[7:0], item.address_parity[0]);
-        observe_byte(1, item.address[15:8], item.address_parity[1]);
-        `uvm_info(get_full_name(),
-                  $sformatf("Observed SPI address=%h, rd_en=%b, %0d expected transaction bytes", 
-                            item.address, item.rd_en, n_expected_transactions),
-                  UVM_HIGH)
-        while (n_observed_transactions != n_expected_transactions) begin
-            `uvm_info(get_full_name(), $sformatf("Observing SPI data"), UVM_HIGH)
-            observe_byte(!item.rd_en, current_byte, current_parity);
-            n_observed_transactions++;
-            
-            if (item.rd_en) begin
-                item.read_data.push_back(current_byte);
-                item.read_parity.push_back(current_parity);
-                item.n_reads++;
-            end else begin
-                item.write_data.push_back(current_byte);
-                item.write_parity.push_back(current_parity);
+        while (!vif.csb) begin
+            @(posedge vif.scl or posedge vif.csb);
+            if (!vif.csb)
+                mosi_byte[bit_counter] = vif.mosi;
+            @(negedge vif.scl or posedge vif.csb);
+            if (!vif.csb)
+                miso_byte[bit_counter] = vif.miso;
+            if (bit_counter == 0) begin
+                bit_counter = 7;
+                item.mosi.push_back(mosi_byte);
+                item.miso.push_back(miso_byte);
             end
-
+            else
+                bit_counter--;
         end
-        @(posedge vif.csb);
-
-    endtask
-
-    virtual task observe_byte(bit watch_mosi,
-                              output logic [7:0] current_byte,
-                              output spi_parity_t current_parity);
-        bit parity_count;
-        
-        parity_count = 1;
-        current_byte = 8'bxxxx_xxxx;
-        current_parity = BAD_PARITY;
-
-        for (int i = 0; i < 8; i++) begin
-            @(posedge vif.scl);
-            current_byte[i] = watch_mosi ? vif.mosi : vif.miso;
-            parity_count = parity_count ^ current_byte[i];
-        end
-        // wait another clock cycle and check parity
-        @(posedge vif.scl);
-        if ((parity_count == vif.mosi) && (parity_count == vif.miso))
-            current_parity = GOOD_PARITY;
-        
-        `uvm_info(get_full_name(),
-                  $sformatf("Observed monitor byte: data=%h, parity=%s",
-                            current_byte, current_parity.name()),
-                  UVM_HIGH)
     endtask
 
 endclass
