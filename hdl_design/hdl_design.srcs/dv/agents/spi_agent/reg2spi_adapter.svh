@@ -25,12 +25,12 @@ class reg2spi_adapter extends uvm_reg_adapter;
         ext = spi_packet_reg_extension::type_id::create("ext");
 
         write_byte[15]   = rw.kind == UVM_READ;
-        write_byte[14:0] = rw.addr;
+        write_byte[14:0] = rw.addr >> 1; // 15-bit word address
         pkt.mosi.push_back(write_byte[15:8]);
         pkt.mosi.push_back(write_byte[7:0]);
 
         // deal with data
-        if (pkt.rd_en) begin
+        if (rw.kind == UVM_READ) begin
             std::randomize(write_byte);
             pkt.mosi.push_back(write_byte[15:8]);
             pkt.mosi.push_back(write_byte[7:0]);
@@ -64,17 +64,13 @@ class reg2spi_adapter extends uvm_reg_adapter;
         if (! $cast (pkt, bus_item))
             `uvm_fatal("reg2spi_adapter", "Failed to cast bus item to SPI packet");
             
-        rw.kind = pkt.rd_en ? UVM_READ : UVM_WRITE ;
-        rw.addr = {pkt.address[15:1], 1'b0};
-        rw.data = pkt.rd_en ? pkt.read_data[0] : pkt.write_data[0];
-
-        rw.status = resolved_parity == GOOD_PARITY ? UVM_IS_OK : UVM_NOT_OK;
+        rw.status = UVM_IS_OK;
 
         if (pkt.mosi.size() != pkt.miso.size() || pkt.mosi.size() < 4)
             rw.status = UVM_NOT_OK;
         else begin
             rw.kind = pkt.mosi[0][7] ? UVM_READ : UVM_WRITE;
-            rw.addr = 15'{pkt.mosi[0][6:0], pkt.mosi[1]};
+            rw.addr = 16'({pkt.mosi[0][6:0], pkt.mosi[1]} << 1); // 15-bit word address shift left to 16-bit byte address
 
             if (rw.kind == UVM_WRITE)
                 rw.data = 16'{pkt.mosi[2], pkt.mosi[3]};

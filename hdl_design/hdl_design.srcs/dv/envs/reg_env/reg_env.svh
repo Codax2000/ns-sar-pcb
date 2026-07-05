@@ -20,6 +20,10 @@ class reg_env #(
     // Variable: ral
     // The typed register model for the specific device.
     REG_BLOCK ral;
+    
+    function void set_ral_block(REG_BLOCK ral_block);
+        this.ral = ral_block;
+    endfunction
 
     // Variable: adapter
     // The typed register adapter used by the register model and predictor.
@@ -38,13 +42,18 @@ class reg_env #(
         super.build_phase(phase);
         
         adapter = ADAPTER::type_id::create("adapter");
-        ral     = REG_BLOCK::type_id::create("ral");
+
+        // The RAL block can either be built internally or set externally.
+        // If set externally, it should be done BEFORE build_phase.
+        if (ral == null) begin
+            ral = REG_BLOCK::type_id::create("ral");
+            ral.build();
+            ral.lock_model();
+            ral.reset();
+        end
         
         predictor = uvm_reg_predictor #(SEQ_ITEM)::type_id::create("predictor", this);
 
-        ral.build();
-        ral.lock_model();
-        ral.reset();
         ral.default_map.set_auto_predict(0);
         
     endfunction
