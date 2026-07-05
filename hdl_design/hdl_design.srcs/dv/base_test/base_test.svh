@@ -50,11 +50,8 @@ class base_test extends uvm_test;
         create_configs();
         create_spi_configs();
 
-        // Create top-level RAL model
-        m_chip_ral = chip_top::type_id::create("m_chip_ral", this);
-        m_chip_ral.build();
-        m_chip_ral.lock_model();
-        m_chip_ral.reset();
+        build_chip_ral();
+        assign_spi_env_rals();
 
         // Set env configs into config_db for spi_env to retrieve
         uvm_config_db #(spi_env_cfg #(adc_regs))::set(this, "m_adc_spi_env", "cfg", m_adc_spi_env_cfg);
@@ -103,12 +100,30 @@ class base_test extends uvm_test;
         // ADC SPI Environment Config
         m_adc_spi_env_cfg = spi_env_cfg #(.REG_BLOCK(adc_regs))::type_id::create("m_adc_spi_env_cfg");
         m_adc_spi_env_cfg.m_spi_agent_cfg = m_adc_spi_agent_cfg;
-        m_adc_spi_env_cfg.m_ral = m_chip_ral.ADC; // Assign the pre-built RAL sub-block
+        m_adc_spi_env_cfg.m_reg_env_cfg = reg_env_cfg #(.REG_BLOCK(adc_regs))::type_id::create("m_adc_reg_env_cfg");
 
         // DAC SPI Environment Config
         m_dac_spi_env_cfg = spi_env_cfg #(.REG_BLOCK(dac_regs))::type_id::create("m_dac_spi_env_cfg");
         m_dac_spi_env_cfg.m_spi_agent_cfg = m_dac_spi_agent_cfg;
-        m_dac_spi_env_cfg.m_ral = m_chip_ral.DAC; // Assign the pre-built RAL sub-block
+        m_dac_spi_env_cfg.m_reg_env_cfg = reg_env_cfg #(.REG_BLOCK(dac_regs))::type_id::create("m_dac_reg_env_cfg");
+    endfunction
+
+    // Function: build_chip_ral
+    // Builds the chip-level RAL once at test scope. Subclasses can override to
+    // customize construction while keeping assign_spi_env_rals() unchanged.
+    virtual function void build_chip_ral();
+        m_chip_ral = chip_top::type_id::create("m_chip_ral", this);
+        m_chip_ral.build();
+        m_chip_ral.lock_model();
+        m_chip_ral.reset();
+    endfunction
+
+    // Function: assign_spi_env_rals
+    // Passes chip_top sub-blocks into each spi_env_cfg. Override to omit a handle
+    // (leave null) when an spi_env should build its own standalone register block.
+    virtual function void assign_spi_env_rals();
+        m_adc_spi_env_cfg.m_reg_env_cfg.m_ral = m_chip_ral.ADC;
+        m_dac_spi_env_cfg.m_reg_env_cfg.m_ral = m_chip_ral.DAC;
     endfunction
 
     virtual function void connect_phase(uvm_phase phase);
@@ -120,12 +135,15 @@ class base_test extends uvm_test;
         uvm_config_db #(virtual spi_if)::set(this, "m_adc_spi_env.m_spi_agent", "vif", m_top_cfg.vif_adc_spi);
         uvm_config_db #(virtual spi_if)::set(this, "m_dac_spi_env.m_spi_agent", "vif", m_top_cfg.vif_dac_spi);
 
-        // Connect RAL sub-blocks to their respective agents via adapters
-        m_chip_ral.ADC.default_map.set_sequencer(m_adc_spi_env.m_spi_agent.sequencer, m_adc_spi_env.m_reg_env.adapter);
-        m_chip_ral.DAC.default_map.set_sequencer(m_dac_spi_env.m_spi_agent.sequencer, m_dac_spi_env.m_reg_env.adapter);
-
-        // Connect predictor to the interposer for each SPI environment
-        // The RAL handles for the interposers are now set via the spi_env_cfg in build_phase.
+        // Connect each env's effective RAL map to its SPI sequencer.
+        m_adc_spi_env.m_ral.default_map.set_sequencer(
+            m_adc_spi_env.m_spi_agent.sequencer,
+            m_adc_spi_env.m_reg_env.adapter
+        );
+        m_dac_spi_env.m_ral.default_map.set_sequencer(
+            m_dac_spi_env.m_spi_agent.sequencer,
+            m_dac_spi_env.m_reg_env.adapter
+        );
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);

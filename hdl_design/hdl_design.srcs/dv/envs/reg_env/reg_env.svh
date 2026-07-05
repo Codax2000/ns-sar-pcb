@@ -17,13 +17,11 @@ class reg_env #(
 
     `uvm_component_param_utils(reg_env #(SEQ_ITEM, ADAPTER, REG_BLOCK))
 
+    reg_env_cfg #(REG_BLOCK) m_cfg;
+
     // Variable: ral
     // The typed register model for the specific device.
     REG_BLOCK ral;
-    
-    function void set_ral_block(REG_BLOCK ral_block);
-        this.ral = ral_block;
-    endfunction
 
     // Variable: adapter
     // The typed register adapter used by the register model and predictor.
@@ -40,12 +38,25 @@ class reg_env #(
     // subscriber instead of auto prediction.
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
+
+        if (!uvm_config_db #(reg_env_cfg #(REG_BLOCK))::get(this, "", "cfg", m_cfg)) begin
+            `uvm_fatal(get_full_name(), "Could not get reg_env_cfg from config_db");
+        end
         
         adapter = ADAPTER::type_id::create("adapter");
 
-        // The RAL block can either be built internally or set externally.
-        // If set externally, it should be done BEFORE build_phase.
-        if (ral == null) begin
+        if (m_cfg.has_external_ral()) begin
+            ral = m_cfg.m_ral;
+        end
+        else begin
+            `uvm_info(
+                get_full_name(),
+                $sformatf(
+                    "No external RAL supplied; building standalone %0s block.",
+                    REG_BLOCK::get_type_name()
+                ),
+                UVM_LOW
+            );
             ral = REG_BLOCK::type_id::create("ral");
             ral.build();
             ral.lock_model();

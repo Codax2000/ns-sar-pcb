@@ -87,6 +87,14 @@ class adc_env extends uvm_env;
         m_reset  = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset", this);
         m_adc_in = sine_agent::type_id::create("m_adc_in", this);
 
+        uvm_config_db #(
+            reg_env_cfg #(.REG_BLOCK(adc_regs))
+        )::set(
+            this,
+            "m_reg_env",
+            "cfg",
+            reg_env_cfg #(.REG_BLOCK(adc_regs))::type_id::create("m_reg_env_cfg")
+        );
         m_reg_env = reg_env #(
                         .SEQ_ITEM(spi_packet), 
                         .ADAPTER(reg2spi_adapter), 

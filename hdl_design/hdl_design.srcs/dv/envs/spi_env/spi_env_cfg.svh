@@ -1,9 +1,9 @@
 /**
 Class: spi_env_cfg
 
-Configuration object for the SPI environment. Contains virtual interfaces,
-checks and coverage enable flags, the SPI agent configuration, and the
-RAL sub-block for this specific SPI interface.
+Configuration object for the SPI environment. Contains the SPI agent
+configuration and a reg_env_cfg that is forwarded to the internal reg_env
+via config_db before reg_env is created.
 */
 class spi_env_cfg #(
     type REG_BLOCK = uvm_reg_block
@@ -15,12 +15,18 @@ class spi_env_cfg #(
     // Configuration object for the internal SPI agent.
     spi_agent_cfg m_spi_agent_cfg;
 
-    // Variable: m_ral
-    // The RAL sub-block that this SPI environment will interact with.
-    REG_BLOCK m_ral;
+    // Variable: m_reg_env_cfg
+    // Register environment configuration, forwarded to reg_env via config_db.
+    reg_env_cfg #(REG_BLOCK) m_reg_env_cfg;
 
     function new(string name = "spi_env_cfg");
         super.new(name);
     endfunction : new
+
+    // Function: has_external_ral
+    // Returns 1 when a parent (e.g. base_test) supplied the register block.
+    function bit has_external_ral();
+        return (m_reg_env_cfg != null) && m_reg_env_cfg.has_external_ral();
+    endfunction : has_external_ral
 
 endclass : spi_env_cfg

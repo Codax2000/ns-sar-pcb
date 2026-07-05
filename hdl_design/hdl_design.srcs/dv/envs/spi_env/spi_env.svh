@@ -16,6 +16,11 @@ class spi_env #(
 
     spi_env_cfg #(REG_BLOCK) m_cfg;
 
+    // Variable: m_ral
+    // Effective register block for this environment, whether supplied by the
+    // parent or built locally inside m_reg_env.
+    REG_BLOCK m_ral;
+
     spi_agent m_spi_agent;
 
     reg_env #(
@@ -40,11 +45,23 @@ class spi_env #(
             `uvm_fatal(get_full_name(), "Could not get spi_env_cfg from config_db");
         end
         
-        // Defensive checks on RAL sub-block
-        if (m_cfg.m_ral == null) begin
+        if (m_cfg.m_reg_env_cfg == null) begin
             `uvm_info(
                 get_full_name(),
-                "RAL sub-block (m_cfg.m_ral) is null in spi_env_cfg. Building new register sub-block.",
+                "No reg_env_cfg in spi_env_cfg; creating default (standalone RAL).",
+                UVM_LOW
+            );
+            m_cfg.m_reg_env_cfg = reg_env_cfg #(REG_BLOCK)::type_id::create("m_reg_env_cfg");
+        end
+
+        if (!m_cfg.has_external_ral()) begin
+            `uvm_info(
+                get_full_name(),
+                $sformatf(
+                    "No external RAL supplied in spi_env_cfg; %0s will build a standalone %0s block.",
+                    get_full_name(),
+                    REG_BLOCK::get_type_name()
+                ),
                 UVM_LOW
             );
         end
@@ -53,10 +70,11 @@ class spi_env #(
         uvm_config_db #(spi_agent_cfg)::set(this, "m_spi_agent", "cfg", m_cfg.m_spi_agent_cfg);
 
         m_spi_agent = spi_agent::type_id::create("m_spi_agent", this);
-        m_reg_env = reg_env#(spi_packet, reg2spi_adapter, REG_BLOCK)::type_id::create("m_reg_env", this);
 
-        // Set the RAL block in reg_env
-        m_reg_env.set_ral_block(m_cfg.m_ral);
+        uvm_config_db #(reg_env_cfg #(REG_BLOCK))::set(
+            this, "m_reg_env", "cfg", m_cfg.m_reg_env_cfg
+        );
+        m_reg_env = reg_env#(spi_packet, reg2spi_adapter, REG_BLOCK)::type_id::create("m_reg_env", this);
 
         m_interposer = SPI_SUBSCRIBER::type_id::create("m_interposer", this);
         m_packet_splitter = spi_packet_splitter::type_id::create("m_packet_splitter", this);
@@ -64,6 +82,16 @@ class spi_env #(
 
     virtual function void connect_phase(uvm_phase phase);
         super.connect_phase(phase);
+
+        m_ral = m_reg_env.ral;
+        m_interposer.m_ral = m_ral;
+
+        if (m_cfg.has_external_ral() && m_cfg.m_reg_env_cfg.m_ral != m_ral) begin
+            `uvm_error(
+                get_full_name(),
+                "External RAL handle in reg_env_cfg does not match reg_env.ral after build."
+            );
+        end
 
         // Connect SPI Monitor to SPI packet splitter
         m_spi_agent.monitor.mon_analysis_port.connect(m_packet_splitter.analysis_export);
