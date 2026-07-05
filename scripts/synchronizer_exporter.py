@@ -15,8 +15,6 @@ from systemrdl.walker import RDLListener
 if TYPE_CHECKING:
     import argparse
 
-import pdb
-
 
 '''
 Class: RTLSyncExporter

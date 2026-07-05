@@ -7,6 +7,7 @@ using the Silva-Steensgard architecture, with an
 optional reset
 '''
 
+from multiprocessing import Value
 from scipy.signal import windows
 import numpy as np
 import pandas as pd
@@ -24,9 +25,11 @@ class NSSAR:
         self._reg = {
             'nfft': 2**12,
             'osr': 32,
-            'fs': 100e6,
+            'fs': 125e6,
+            'vdd': 3.3,
+            'warmup_samples': 1000,
             'do_dwa': True,
-            'reset_dwa': True
+            'incremental_mode': True
         }
         self._cp = np.random.normal(1, cap_mismatch_sigma, \
                                     2 ** n_quantizer_bits)
@@ -38,20 +41,44 @@ class NSSAR:
         self._vrefp = vdd
         self._vrefn = vss
 
-    def convert(self, signal_specs):
-        '''
-        Converts a list of dictionaries of the type below and stores them
-        in memory
-        {
-            'amplitude': a_in,
-            'frequency': f_in
-            'phase': phi_in
-        }
-        '''
+    def convert(self, signal_specs=None, time_series_input=None):
+        '''                                                                                                                                                                                
+        Converts input signals (either sinusoidal specifications or a pre-defined                                                                                                          
+        time-series array) and stores the results in memory.                                                                                                                               
+                                                                                                                                                                                           
+        Parameters:                                                                                                                                                                        
+            signal_specs (list of dict, optional): A list of dictionaries, each specifying                                                                                                 
+                                                  an input sinusoid's amplitude, frequency,                                                                                                
+                                                  and phase. Used if time_series_input is None.                                                                                            
+                                                  Example: [{'amplitude': a, 'frequency': f, 'phase': p}]                                                                                  
+            time_series_input (numpy.ndarray, optional): A 2D numpy array of shape (2, N)                                                                                                  
+                                                         representing differential input signals                                                                                           
+                                                         [V_inP, V_inN]. Used if signal_specs is None.                                                                                     
+                                                         N must equal self._reg['nfft'] * self._reg['osr'].                                                                                
+        ''' 
+        if signal_specs is not None:
+            self._generate_input_signals(signal_specs)
+        elif time_series_input is not None:
+            self._u = time_series_input
+        else:
+            raise ValueError('Either signal_specs or time_series_input must be provided')
+
         print('Beginning DSM Loop')
         self._generate_control_signals()
-        self._generate_input_signals(signal_specs)
         nfft_derived = self._reg['nfft'] * self._reg['osr']
+        n_total_samples = nfft_derived + self._reg['warmup_samples']
+
+        if signal_specs is not None:
+            self._generate_sine_wave_input_signals(signal_specs)
+        else:
+            if not isinstance(time_series_input, np.ndarray) or time_series_input.ndim != 2 or time_series_input.shape[0] != 2:                                                            
+                raise ValueError("time_series_input must be a 2D numpy array of shape (2, N).")                                                                             
+            if time_series_input.shape[1] < n_total_samples:                                                                                                                              
+                raise ValueError(f"time_series_input length (N={time_series_input.shape[1]}) must have at least ({n_total_samples}).")      
+            self._u_pos = time_series_input[0, :n_total_samples]                             
+            self._u_neg = time_series_input[1, :n_total_samples]                             
+            self._u = self._u_pos - self._u_neg
+             
         for i in range(nfft_derived):
             self._calculate_integrator_to_quantizer(i)
             self._calculate_sample_to_quantizer(i)
@@ -266,8 +293,10 @@ class NSSAR:
         n_total_samples = self._reg['nfft'] * self._reg['osr']
         self._t = np.arange(n_total_samples) * T
         self._error = np.zeros(self._t.shape)
-        self._i1 = np.zeros(self._t.shape)
-        self._i2 = np.zeros(self._t.shape)
+        self._i1_pos = np.zeros(self._t.shape)
+        self._i1_neg = np.zeros(self._t.shape)
+        self._i2_pos = np.zeros(self._t.shape)
+        self._i2_neg = np.zeros(self._t.shape)
         self._d1_incremental = np.zeros(self._t.shape)
         self._d2_incremental = np.zeros(self._t.shape)
         self._qin_sample = np.zeros(self._t.shape)
@@ -290,37 +319,41 @@ class NSSAR:
         self._reset = (i % osr == 0)
         self._sample_output = (i % osr) == (osr - 1)
 
-
     def _generate_input_signals(self, data):
         '''
-        Generates input signal U and stores as a class variable
+        Generates differential input signal u_pos and u_neg and stores as a class variable
         '''
-        self._u = self._t * 0
+        self._u_pos = self._t * 0
+        self._u_neg = self._t * 0
         for d in data:
             u = d['amplitude'] * \
                 np.cos(2 * np.pi * d['frequency'] * self._t + d['phase'])
-            self._u += u
+            self._u_pos += self._vdd / 2.0 + u / 2.0
+            self._u_neg += self._vdd / 2.0 - u / 2.0
+            self._u = self._u_pos - self._u_neg
 
     def _calculate_integrator_to_quantizer(self, i):
         '''
         calculate vintp and vintn to the quantizer
         '''
-        vcm = (self._vrefp + self._vrefn) / 2
-        if self._reset[i]:
-            self._qin_integ[i] = 0
-        else:
-            self._qin_integ[i] = 2 * self._i1[i - 1] + self._i2[i - 1]
-        self._vintp[i] = vcm + self._qin_integ[i] / 2
-        self._vintn[i] = vcm - self._qin_integ[i] / 2
+        # vcm = (self._vrefp + self._vrefn) / 2
+        # if self._reset[i]:
+        #     self._qin_integ[i] = 0
+        # else:
+        #     self._qin_integ[i] = 2 * self._i1[i - 1] + self._i2[i - 1]
+        # self._vintp[i] = vcm + self._qin_integ[i] / 2
+        # self._vintn[i] = vcm - self._qin_integ[i] / 2
+        pass
 
     def _calculate_sample_to_quantizer(self, i):
         '''
         calculate vinp and vinn to the quantizer
         '''
-        self._qin_sample[i] = self._u[i]
-        vcm = (self._vrefp + self._vrefn) / 2
-        self._vinp[i] = vcm + self._qin_sample[i] / 2
-        self._vinn[i] = vcm - self._qin_sample[i] / 2
+        # self._qin_sample[i] = self._u[i]
+        # vcm = (self._vrefp + self._vrefn) / 2
+        # self._vinp[i] = vcm + self._qin_sample[i] / 2
+        # self._vinn[i] = vcm - self._qin_sample[i] / 2
+        pass
 
     def _quantize(self, i):
         '''

@@ -7,6 +7,10 @@ theme: readthedocs
 nav:
   - Home: index.md
   - HDL: hdl.md
+  - Verification: verification.md
   - PCB: pcb.md
   - Register Map: chip_top/index.html
   - Code: natural_docs.md
+
+plugins:
+  - include-markdown
