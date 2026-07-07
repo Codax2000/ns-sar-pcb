@@ -39,27 +39,46 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
         spi_packet current;
         bit [7:0] mosi0, mosi1;
         bit [7:0] miso0, miso1;
+        bit [14:0] address;
+        bit rd_en;
+        spi_packet t_clone;
 
         if (t.mosi.size() >= 4 && t.miso.size() >= 4) begin
-            mosi0 = t.mosi.pop_front();
-            mosi1 = t.mosi.pop_front();
-            miso0 = t.miso.pop_front();
-            miso1 = t.miso.pop_front();
-            do begin
+            // Clone original packet so we don't modify it directly in-place
+            if (!$cast(t_clone, t.clone())) begin
+                `uvm_fatal("spi_packet_splitter", "Failed to cast cloned packet")
+            end
+
+            mosi0 = t_clone.mosi.pop_front();
+            mosi1 = t_clone.mosi.pop_front();
+            miso0 = t_clone.miso.pop_front();
+            miso1 = t_clone.miso.pop_front();
+
+            rd_en = mosi0[7];
+            address = {mosi0[6:0], mosi1};
+
+            while (t_clone.mosi.size() >= 2 && t_clone.miso.size() >= 2) begin
                 current = spi_packet::type_id::create("current_pkt");
-                current.mosi.push_back(mosi0);
-                current.mosi.push_back(mosi1);
-                current.mosi.push_back(t.mosi.pop_front());
-                current.mosi.push_back(t.mosi.pop_front());
                 
+                // Form the header byte for the single transaction
+                current.mosi.push_back({rd_en, address[14:8]});
+                current.mosi.push_back(address[7:0]);
+                
+                // Dummy/empty miso headers
                 current.miso.push_back(miso0);
                 current.miso.push_back(miso1);
-                current.miso.push_back(t.miso.pop_front());
-                current.miso.push_back(t.miso.pop_front());
+
+                // Add 16-bit register payload
+                current.mosi.push_back(t_clone.mosi.pop_front());
+                current.mosi.push_back(t_clone.mosi.pop_front());
+                
+                current.miso.push_back(t_clone.miso.pop_front());
+                current.miso.push_back(t_clone.miso.pop_front());
+                
                 ap.write(current);
 
-                address++;
-            end while (t.mosi.size() > 1);
+                address++; // Increment word address for subsequent transaction in the burst
+            end
         end
     endfunction : write
 

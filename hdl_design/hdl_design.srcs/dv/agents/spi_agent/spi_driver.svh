@@ -36,7 +36,6 @@ class spi_driver extends uvm_driver #(spi_packet);
     endfunction
 
     virtual task run_phase(uvm_phase phase);
-
         vif.csb = 1'b1; // SPI off to start
         forever begin
             seq_item_port.get_next_item(req);
@@ -57,23 +56,24 @@ class spi_driver extends uvm_driver #(spi_packet);
         pkt.miso.delete();
 
         // Assert Chip Select (Active Low)
-        vif.scl = 0;
+        vif.scl_int = 0;
+        vif.drive_enable = 1;
         #(half_period_ns);
         vif.cs_n <= 1'b0;
 
         // Loop through every byte in the packet payload
-        foreach (pkt.mosi[byte_idx]) begin
-            tx_byte = pkt.mosi[byte_idx];
+        foreach (pkt.mosi_int[byte_idx]) begin
+            tx_byte = pkt.mosi_int[byte_idx];
             rx_byte = 8'h00;
 
             // Shift out 8 bits (MSB first standard)
             for (int bit_idx = 7; bit_idx >= 0; bit_idx--) begin
-                vif.mosi = tx_byte[bit_idx];
+                vif.mosi_int = tx_byte[bit_idx];
                 #(half_period_ns);
-                vif.scl = 1;
-                rx_byte[bit_idx] = vif.mosi;
+                vif.scl_int = 1;
+                rx_byte[bit_idx] = vif.mosi_int;
                 #(half_period_ns);
-                vif.scl = 0;
+                vif.scl_int = 0;
             end
             
             // Capture the received byte back into the transaction packet
@@ -84,7 +84,8 @@ class spi_driver extends uvm_driver #(spi_packet);
         #(half_period_ns);
         vif.cs_n <= 1'b1;
         #(half_period_ns);
+        vif.drive_enable = 0;
         
-    end task : drive_item
+    endtask : drive_item
 
 endclass

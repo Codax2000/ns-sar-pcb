@@ -10,6 +10,7 @@ package reg_env_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"
     
+    `include "reg_env_cfg.svh"
     `include "reg_env.svh"
 
 endpackage

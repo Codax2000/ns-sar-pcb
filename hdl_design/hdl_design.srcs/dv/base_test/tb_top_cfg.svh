@@ -15,18 +15,13 @@ class tb_top_cfg extends uvm_object;
     // Virtual interface for the reset signal bus.
     virtual bit_bus_if #(.WIDTH(1)) vif_reset;
 
-    // Variable: vif_spi
+    // Variable: vif_adc_spi
     // Virtual interface for the SPI agent.
-    virtual spi_if vif_spi;
+    virtual spi_if vif_adc_spi;
 
-    // Variable: vif_adc
-    // Virtual interface for the digital portion of the ADC input bus, which
-    // is a UVM-MS extension of <oscillator_agent>.
-    virtual oscillator_if vif_adc;
-
-    // Variable: vproxy_adc
-    // Proxy used to monitor ADC input amplitude.
-    sine_proxy vproxy_adc;
+    // Variable: vif_dac_spi
+    // Virtual interface for the SPI agent.
+    virtual spi_if vif_dac_spi;
 
     // Variable: vif_status
     // The status interface used to monitor things at the analog-digital boundary.
