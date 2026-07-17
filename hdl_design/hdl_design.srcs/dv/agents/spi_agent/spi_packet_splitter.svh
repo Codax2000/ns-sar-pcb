@@ -39,7 +39,7 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
         spi_packet current;
         bit [7:0] mosi0, mosi1;
         bit [7:0] miso0, miso1;
-        bit [14:0] address;
+        int  address;
         bit rd_en;
         spi_packet t_clone;
 
@@ -55,7 +55,7 @@ class spi_packet_splitter extends uvm_subscriber #(spi_packet);
             miso1 = t_clone.miso.pop_front();
 
             rd_en = mosi0[7];
-            address = {mosi0[6:0], mosi1};
+            address[14:0] = {mosi0[6:0], mosi1};
 
             while (t_clone.mosi.size() >= 2 && t_clone.miso.size() >= 2) begin
                 current = spi_packet::type_id::create("current_pkt");
