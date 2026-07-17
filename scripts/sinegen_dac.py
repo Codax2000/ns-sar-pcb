@@ -16,7 +16,7 @@ from CORDIC import CORDIC
 from fp_logic import fp_quantize # Import fp_quantize
 
 class SineGenDAC:
-    def __init__(self, n_dac_bits=1, n_cordic_bits=16, fs=100e6, vdd=3.3):
+    def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6, vdd=3.3):
         '''
         set class with hardware constraints and initialize register fields
         with default functions
@@ -309,13 +309,14 @@ def main():
     # Test 1: DAC output without Delta-Sigma Modulation
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0x7)
-    dac.set_amplitude(0xC)
+    dac.set_frequency(0x1)
+    dac.set_amplitude(0xE)
+    dac._reg['osr'] = 64
     dac.set_dac_mode(dac_number=0, mode='AC')
     dac.set_dac_mode(dac_number=1, mode='AC')
     
-    n_cycles = 2**12
-    n_plot_cycles = 250
+    n_cycles = 2**16
+    n_plot_cycles = 750
     dac.convert(n_cycles)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
