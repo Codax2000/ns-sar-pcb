@@ -14,9 +14,6 @@ package base_test_pkg;
     `include "uvm_macros.svh"
 
     import spi_agent_pkg::*;
-    import sine_agent_pkg::*;
-    import adc_env_pkg::*;
-    import chip_regs_dv_pkg::*;
     import spi_env_pkg::*;
 
     `include "tb_top_cfg.svh"

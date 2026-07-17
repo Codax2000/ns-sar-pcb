@@ -49,9 +49,10 @@ class spi_driver extends uvm_driver #(spi_packet);
     */
     virtual task drive_item(spi_packet pkt);
         real half_period_ns;
-        half_period_ns = clk_period_ns / 2.0;
         logic [7:0] tx_byte;
         logic [7:0] rx_byte;
+        
+        half_period_ns = clk_period_ns / 2.0;
 
         pkt.miso.delete();
 

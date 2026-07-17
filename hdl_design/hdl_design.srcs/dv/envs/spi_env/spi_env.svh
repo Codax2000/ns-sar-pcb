@@ -101,6 +101,6 @@ class spi_env #(
 
         // Connect the interposer's analysis port to the reg predictor's bus_in
         m_interposer.reg_analysis_port.connect(m_reg_env.predictor.bus_in);
-    end function : connect_phase
+    endfunction : connect_phase
 
 endclass : spi_env
