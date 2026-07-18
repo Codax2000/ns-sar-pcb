@@ -13,7 +13,11 @@ package base_test_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
+    import bit_bus_agent_pkg::*;
+    import oscillator_agent_pkg::*;
     import spi_agent_pkg::*;
+    import chip_regs_dv_pkg::*;
+    import reg_env_pkg::*;
     import spi_env_pkg::*;
 
     `include "tb_top_cfg.svh"

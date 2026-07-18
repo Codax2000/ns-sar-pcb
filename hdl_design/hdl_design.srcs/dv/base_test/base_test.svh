@@ -76,7 +76,7 @@ class base_test extends uvm_test;
         m_base_test_cfg.checks_enable = 1;
         m_base_test_cfg.coverage_enable = 1;
         m_base_test_cfg.spi_clk_frequency = 2e6; // 2 MHz for now
-        m_base_test_cfg.system_clk_frequency = int\'(10e6); // 10 MHz crystal oscillator
+        m_base_test_cfg.system_clk_frequency = int'(10e6); // 10 MHz crystal oscillator
         m_base_test_cfg.reset_duration = 500e-9; // 500ns reset pulse
     endfunction
 
@@ -136,12 +136,14 @@ class base_test extends uvm_test;
 
     virtual task main_phase(uvm_phase phase);
         uvm_status_e   status;
+        uvm_reg_data_t value;
+        
         // Example usage
         phase.raise_objection(this);
         `uvm_info(get_full_name(), "Starting main_phase", UVM_LOW);
 
         // Example RAL write to ADC
-        m_ral.ADC.SH_CTRL.N_ACTIVE_CYCLES.set(\'h55);
+        m_ral.ADC.SH_CTRL.N_ACTIVE_CYCLES.set(8'h55);
         m_ral.ADC.SH_CTRL.update(status);
         if (status == UVM_NOT_OK)
             `uvm_error(get_full_name(), "ADC_SH_CTRL write failed");
@@ -153,7 +155,7 @@ class base_test extends uvm_test;
             `uvm_error(get_full_name(), "DAC_ENABLE write failed");
 
         // Example RAL read from ADC
-        m_ral.ADC.CONVERSION_FLAGS.read(status);
+        m_ral.ADC.CONVERSION_FLAGS.read(status, value);
         if (status == UVM_NOT_OK)
             `uvm_error(get_full_name(), "ADC_CONVERSION_FLAGS read failed");
 

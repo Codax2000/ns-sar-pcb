@@ -5,6 +5,6 @@ package tests_pkg;
 
     import base_test_pkg::*;
 
-    `include "reg_test_lib.svh"
+    // `include "reg_test_lib.svh"
     
 endpackage

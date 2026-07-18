@@ -37,7 +37,7 @@ class oscillator_packet extends uvm_sequence_item;
     }
 
     function void post_randomize();
-        super.post_randomize();
+        void'(super.post_randomize());
         frequency = real'(frequency_int);
     endfunction
 

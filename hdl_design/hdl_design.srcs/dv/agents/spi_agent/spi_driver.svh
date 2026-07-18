@@ -60,11 +60,11 @@ class spi_driver extends uvm_driver #(spi_packet);
         vif.scl_int = 0;
         vif.drive_enable = 1;
         #(half_period_ns);
-        vif.cs_n <= 1'b0;
+        vif.csb <= 1'b0;
 
         // Loop through every byte in the packet payload
-        foreach (pkt.mosi_int[byte_idx]) begin
-            tx_byte = pkt.mosi_int[byte_idx];
+        foreach (pkt.mosi[byte_idx]) begin
+            tx_byte = pkt.mosi[byte_idx];
             rx_byte = 8'h00;
 
             // Shift out 8 bits (MSB first standard)
@@ -72,7 +72,7 @@ class spi_driver extends uvm_driver #(spi_packet);
                 vif.mosi_int = tx_byte[bit_idx];
                 #(half_period_ns);
                 vif.scl_int = 1;
-                rx_byte[bit_idx] = vif.mosi_int;
+                rx_byte[bit_idx] = vif.miso;
                 #(half_period_ns);
                 vif.scl_int = 0;
             end
@@ -83,7 +83,7 @@ class spi_driver extends uvm_driver #(spi_packet);
 
         // De-assert Chip Select
         #(half_period_ns);
-        vif.cs_n <= 1'b1;
+        vif.csb <= 1'b1;
         #(half_period_ns);
         vif.drive_enable = 0;
         
