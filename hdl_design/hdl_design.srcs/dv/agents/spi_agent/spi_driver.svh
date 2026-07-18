@@ -15,9 +15,6 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     real clk_period_ns;
 
-    bit cpol;
-    bit cpha;
-
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -28,10 +25,6 @@ class spi_driver extends uvm_driver #(spi_packet);
             `uvm_fatal("DRV", "Could not attach driver virtual interface")
         if (!uvm_config_db #(int)::get(this, "", "clk_speed_hz", speed))
             `uvm_fatal("DRV", "Could not attach driver speed")
-        if (!uvm_config_db #(bit)::get(this, "", "cpol", cpol))
-            `uvm_fatal("DRV", "Could not attach driver CPOL")
-        if (!uvm_config_db #(bit)::get(this, "", "cpha", cpha))
-            `uvm_fatal("DRV", "Could not attach driver CPHA")
         clk_period_ns = 1e9 / speed;
     endfunction
 

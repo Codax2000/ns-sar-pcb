@@ -22,43 +22,43 @@ module uvm_tb_top ();
     wire mosi;
     wire miso;
 
-    pulldown pd_scl (scl );
-    pulldown pd_mosi(mosi);
-    pulldown pd_miso(miso);
+//    pulldown pd_scl (scl );
+//    pulldown pd_mosi(mosi);
+//    pulldown pd_miso(miso);
 
-    bit_bus_if #(.WIDTH(1)) i_reset_if     ();
-    oscillator_if           i_clk_if       ();
-    spi_if                  i_dac_spi_if   (
+//    bit_bus_if #(.WIDTH(1)) i_reset_if     ();
+//    oscillator_if           i_clk_if       ();
+    spi_if i_dac_spi_if   (
         .csb (dac_csb),
         .scl (scl),
         .mosi(mosi),
         .miso(miso)
     );
-    spi_if                  i_adc_spi_if   (
-        .csb (adc_csb),
-        .scl (scl),
-        .mosi(mosi),
-        .miso(miso)
-    );
+//    spi_if                  i_adc_spi_if   (
+//        .csb (adc_csb),
+//        .scl (scl),
+//        .mosi(mosi),
+//        .miso(miso)
+//    );
 
-    assign i_clk_if.clk_observed = i_clk_if.clk_driven;
-    assign i_reset_if.bit_observed = i_reset_if.bit_driven;
+//    assign i_clk_if.clk_observed = i_clk_if.clk_driven;
+//    assign i_reset_if.bit_observed = i_reset_if.bit_driven;
 
-    status_if i_status_if ();
+//    status_if i_status_if ();
 
     tb_top_cfg cfg;
 
     initial begin
         cfg = new("tb_top_cfg");
-        cfg.vif_adc_spi = i_adc_spi_if;
+//        cfg.vif_adc_spi = i_adc_spi_if;
         cfg.vif_dac_spi = i_dac_spi_if;
-        cfg.vif_reset   = i_reset_if;
-        cfg.vif_clk     = i_clk_if;
-        cfg.vif_status  = i_status_if;
+//        cfg.vif_reset   = i_reset_if;
+//        cfg.vif_clk     = i_clk_if;
+//        cfg.vif_status  = i_status_if;
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test();
+        run_test("base_test");
     end
 
 endmodule
