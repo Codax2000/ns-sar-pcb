@@ -43,7 +43,7 @@ DEFAULT_TOP_HTML_PATH = './docs/docs/chip_top'
 
 # UVM register package (generated from chip_top for the full RAL model)
 DEFAULT_UVM_PKG_PATH  = \
-    './hdl_design/hdl_design.srcs/dv/axi_top_env/chip_regs_dv_pkg.sv'
+    './hdl_design/hdl_design.srcs/dv/chip_reg_top/chip_regs_dv_pkg.sv'
 
 # RTL output directories (one per independently compiled block)
 DEFAULT_DAC_RTL_PATH  = './hdl_design/hdl_design.srcs/rtl/registers/dac'

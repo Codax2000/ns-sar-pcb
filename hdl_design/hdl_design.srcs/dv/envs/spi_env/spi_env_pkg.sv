@@ -16,10 +16,9 @@ package spi_env_pkg;
     `include "uvm_macros.svh"
 
     import spi_agent_pkg::*;
-    import reg_env_pkg::*;
 
     `include "spi_env_cfg.svh"
-    `include "spi_env.svh"
     `include "spi_reg_subscriber.svh"
+    `include "spi_env.svh"
     
 endpackage

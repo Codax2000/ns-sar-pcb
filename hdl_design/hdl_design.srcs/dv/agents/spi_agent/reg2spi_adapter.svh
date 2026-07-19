@@ -36,8 +36,8 @@ class reg2spi_adapter extends uvm_reg_adapter;
             pkt.mosi.push_back(write_byte[7:0]);
         end
         else begin
-            pkt.mosi.push_back(item.value[15:8]);
-            pkt.mosi.push_back(item.value[7:0]);
+            pkt.mosi.push_back(rw.data[15:8]);
+            pkt.mosi.push_back(rw.data[7:0]);
         end
 
         
@@ -45,7 +45,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
             if (! $cast(ext, item.extension))
                 `uvm_fatal("ADAPTER", "Failed to cast item extension to SPI packet extension")
             while (ext.additional_write_data.size() > 0) begin
-                write_byte = ext.additional_write_data.pop();
+                write_byte = ext.additional_write_data.pop_front();
                 pkt.mosi.push_back(write_byte[15:8]);
                 pkt.mosi.push_back(write_byte[7:0]);
             end
@@ -60,6 +60,7 @@ class reg2spi_adapter extends uvm_reg_adapter;
 
     virtual function void bus2reg(uvm_sequence_item bus_item, ref uvm_reg_bus_op rw);
         spi_packet   pkt;
+        logic [15:0] temp_data;
 
         if (! $cast (pkt, bus_item))
             `uvm_fatal("reg2spi_adapter", "Failed to cast bus item to SPI packet");
@@ -72,10 +73,16 @@ class reg2spi_adapter extends uvm_reg_adapter;
             rw.kind = pkt.mosi[0][7] ? UVM_READ : UVM_WRITE;
             rw.addr = 16'({pkt.mosi[0][6:0], pkt.mosi[1]} << 1); // 15-bit word address shift left to 16-bit byte address
 
-            if (rw.kind == UVM_WRITE)
-                rw.data = 16'{pkt.mosi[2], pkt.mosi[3]};
-            else
-                rw.data = 16'{pkt.miso[2], pkt.miso[3]};
+            if (rw.kind == UVM_WRITE) begin
+                temp_data[15:8] = pkt.mosi[2];
+                temp_data[7:0]  = pkt.mosi[3];
+            end
+            else begin
+                temp_data[15:8] = pkt.mosi[2];
+                temp_data[7:0]  = pkt.mosi[3];
+            end
+            
+            rw.data = temp_data;
         end
         
         `uvm_info ("ADAPTER", 

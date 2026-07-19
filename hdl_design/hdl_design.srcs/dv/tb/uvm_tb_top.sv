@@ -28,7 +28,7 @@ module uvm_tb_top ();
 
     bit_bus_if #(.WIDTH(1)) i_reset_if     ();
     oscillator_if           i_clk_if       ();
-    spi_if                  i_dac_spi_if   (
+    spi_if i_dac_spi_if   (
         .csb (dac_csb),
         .scl (scl),
         .mosi(mosi),
@@ -58,7 +58,7 @@ module uvm_tb_top ();
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test();
+        run_test("reg_rw_test");
     end
 
 endmodule
