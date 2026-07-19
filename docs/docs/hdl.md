@@ -51,6 +51,18 @@ It also supports burst read and write, with the address incrementing by 1 after 
 
 ![SPI Burst Read](./img/spi_burst_read.png)
 
+### SPI CDC
+
+One of the issues with this SPI scheme is that there is no time for a typical CDC scheme.
+The CDC scheme, as it currently stands, is to synchronize the signals from SPI to the
+system clock, which will be roughly 5 times the maximum SPI clock speed. The current idea
+is to do the following (signals synchronized to SPI clock in purple):
+
+![SPI CDC](./img/spi_cdc.png)
+
+Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is
+to latch and hold the read data until the synchronized SPI clock returns to 0.
+
 ## Integration
 
 There are two options for integration. The first would be to integrate this with the
