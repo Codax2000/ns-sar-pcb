@@ -16,6 +16,10 @@ class dac_reg_subscriber extends spi_reg_subscriber;
             `uvm_fatal(get_full_name(), "Incorrect register model specified in uvm_config_db. dac_reg_subscriber requires dac_regs.");
     endfunction
 
+    virtual task reset_phase(uvm_phase phase);
+        regmodel.print();
+    endtask
+
     // Optional: Override write if DAC needs custom packet processing
     virtual function void write(spi_packet t);
         // Custom DAC logic can go here

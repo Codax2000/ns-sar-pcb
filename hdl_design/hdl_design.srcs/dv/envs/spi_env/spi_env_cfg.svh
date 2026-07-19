@@ -5,9 +5,11 @@ Configuration object for the SPI environment. Contains the SPI agent
 configuration and a reg_env_cfg that is forwarded to the internal reg_env
 via config_db before reg_env is created.
 */
-class spi_env_cfg extends uvm_object;
+class spi_env_cfg #(
+    type REGBLOCK = uvm_reg_block
+) extends uvm_object;
 
-    `uvm_object_utils(spi_env_cfg)
+    `uvm_object_param_utils(spi_env_cfg #(REGBLOCK))
 
     // Variable: m_spi_agent_cfg
     // Configuration object for the internal SPI agent.
@@ -15,7 +17,7 @@ class spi_env_cfg extends uvm_object;
 
     // Variable: regmodel
     // Register block instance.
-    uvm_reg_block regmodel;
+    REGBLOCK regmodel;
 
     function new(string name = "spi_env_cfg");
         super.new(name);

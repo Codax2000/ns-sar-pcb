@@ -14,18 +14,22 @@ class base_test extends uvm_test;
     chip_top regmodel;
 
     // Environment configuration objects
-    // spi_env_cfg #(.REG_BLOCK(adc_regs)) m_adc_spi_env_cfg;
-    spi_env_cfg #(.REG_BLOCK(dac_regs)) m_dac_spi_env_cfg;
-    // spi_agent_cfg m_adc_spi_agent_cfg;
-    spi_agent_cfg m_dac_spi_agent_cfg;
+    spi_env_cfg #(adc_regs) m_adc_spi_env_cfg;
+    spi_env_cfg #(dac_regs) m_dac_spi_env_cfg;
+
+    // Agent configurations
+    spi_agent_cfg                  m_adc_spi_agent_cfg;
+    spi_agent_cfg                  m_dac_spi_agent_cfg;
+    oscillator_agent_cfg           m_clk_agent_cfg;
+    bit_bus_agent_cfg #(.WIDTH(1)) m_reset_agent_cfg;
 
     // Environments for different agents
-    // spi_env #(.REG_BLOCK(adc_regs))      m_adc_spi_env;
-    spi_env m_dac_spi_env;
+    spi_env #(adc_regs) m_adc_spi_env;
+    spi_env #(dac_regs) m_dac_spi_env;
 
     // Agents for clock and reset
-    // bit_bus_agent #(.WIDTH(1))           m_reset_agent;
-    // oscillator_agent                     m_clk_agent;
+    bit_bus_agent #(.WIDTH(1))           m_reset_agent;
+    oscillator_agent                     m_clk_agent;
 
     // Variable: m_top_cfg
     // The toplevel configuration object containing virtual interfaces and proxies.
@@ -37,9 +41,9 @@ class base_test extends uvm_test;
 
     // Variable: vif_status
     // The status interface used to monitor things at the analog-digital boundary.
-    // It\'s entirely possible this will be unused, since everything is achievable through the
+    // It's entirely possible this will be unused, since everything is achievable through the
     // uvm_hdl_* macros, but could be useful anyway, even if it\'s empty.
-    // virtual status_if vif_status;
+    virtual status_if vif_status;
 
     function new (string name = "base_test", uvm_component parent = null);
         super.new(name, parent);
@@ -56,21 +60,28 @@ class base_test extends uvm_test;
         create_agent_configs();
 
         // Set env configs into config_db for spi_env to retrieve
-        // uvm_config_db #(spi_env_cfg #(adc_regs))::set(this, "m_adc_spi_env", "cfg", m_adc_spi_env_cfg);
-        uvm_config_db #(spi_env_cfg)::set(this, "m_dac_spi_env", "cfg", m_dac_spi_env_cfg);
+        uvm_config_db #(spi_env_cfg #(adc_regs))::set(this, "m_adc_spi_env", "cfg", m_adc_spi_env_cfg);
+        uvm_config_db #(spi_env_cfg #(dac_regs))::set(this, "m_dac_spi_env", "cfg", m_dac_spi_env_cfg);
+        uvm_config_db #(oscillator_agent_cfg)::set(this, "m_clk_agent", "cfg", m_clk_agent_cfg);
+        uvm_config_db #(bit_bus_agent_cfg #(1))::set(this, "m_reset_agent", "cfg", m_reset_agent_cfg);
 
         // Create agents and environments
-        // m_reset_agent = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset_agent", this);
-        // m_clk_agent = oscillator_agent::type_id::create("m_clk_agent", this);
+        m_reset_agent = bit_bus_agent #(.WIDTH(1))::type_id::create("m_reset_agent", this);
+        m_clk_agent = oscillator_agent::type_id::create("m_clk_agent", this);
         
         factory = uvm_factory::get();
+        factory.set_inst_override_by_type(
+            .original_type(spi_reg_subscriber::get_type()),
+            .override_type(adc_reg_subscriber::get_type()),
+            .full_inst_path("uvm_test_top.m_adc_spi_env.m_interposer")
+        );
         factory.set_inst_override_by_type(
             .original_type(spi_reg_subscriber::get_type()),
             .override_type(dac_reg_subscriber::get_type()),
             .full_inst_path("uvm_test_top.m_dac_spi_env.m_interposer")
         );
-        // m_adc_spi_env = spi_env #(.REG_BLOCK(adc_regs))::type_id::create("m_adc_spi_env", this);
-        m_dac_spi_env = spi_env::type_id::create("m_dac_spi_env", this);
+        m_adc_spi_env = spi_env #(adc_regs)::type_id::create("m_adc_spi_env", this);
+        m_dac_spi_env = spi_env #(dac_regs)::type_id::create("m_dac_spi_env", this);
     endfunction
 
     // Function: create_base_test_config
@@ -92,15 +103,15 @@ class base_test extends uvm_test;
     virtual function void create_agent_configs();
 
         // ADC SPI Environment Config
-        // m_adc_spi_agent_cfg = spi_agent_cfg::type_id::create("m_adc_spi_agent_cfg");
-        // m_adc_spi_agent_cfg.vif = m_top_cfg.vif_adc_spi;
-        // m_adc_spi_agent_cfg.is_active = UVM_ACTIVE;
-        // m_adc_spi_agent_cfg.checks_enable = m_base_test_cfg.checks_enable;
-        // m_adc_spi_agent_cfg.coverage_enable = m_base_test_cfg.coverage_enable;
-        // m_adc_spi_agent_cfg.clk_speed_hz = m_base_test_cfg.spi_clk_frequency;
-        // m_adc_spi_env_cfg = spi_env_cfg #(.REG_BLOCK(adc_regs))::type_id::create("m_adc_spi_env_cfg");
-        // m_adc_spi_env_cfg.m_spi_agent_cfg = m_adc_spi_agent_cfg;
-        // m_adc_spi_env_cfg.m_reg_env_cfg.m_ral = m_ral.ADC;
+        m_adc_spi_agent_cfg = spi_agent_cfg::type_id::create("m_adc_spi_agent_cfg");
+        m_adc_spi_agent_cfg.vif = m_top_cfg.vif_adc_spi;
+        m_adc_spi_agent_cfg.is_active = UVM_ACTIVE;
+        m_adc_spi_agent_cfg.checks_enable = m_base_test_cfg.checks_enable;
+        m_adc_spi_agent_cfg.coverage_enable = m_base_test_cfg.coverage_enable;
+        m_adc_spi_agent_cfg.clk_speed_hz = m_base_test_cfg.spi_clk_frequency;
+
+        m_adc_spi_env_cfg = spi_env_cfg #(adc_regs)::type_id::create("m_adc_spi_env_cfg");
+        m_adc_spi_env_cfg.m_spi_agent_cfg = m_adc_spi_agent_cfg;
 
         // DAC SPI Environment Config
         m_dac_spi_agent_cfg = spi_agent_cfg::type_id::create("m_dac_spi_agent_cfg");
@@ -110,9 +121,25 @@ class base_test extends uvm_test;
         m_dac_spi_agent_cfg.coverage_enable = m_base_test_cfg.coverage_enable;
         m_dac_spi_agent_cfg.clk_speed_hz = m_base_test_cfg.spi_clk_frequency;
 
-        m_dac_spi_env_cfg = spi_env_cfg::type_id::create("m_dac_spi_env_cfg");
+        m_dac_spi_env_cfg = spi_env_cfg #(dac_regs)::type_id::create("m_dac_spi_env_cfg");
         m_dac_spi_env_cfg.m_spi_agent_cfg = m_dac_spi_agent_cfg;
-        m_dac_spi_env_cfg.regmodel = regmodel.DAC;
+  
+        // Oscillator agent config
+        m_clk_agent_cfg = oscillator_agent_cfg::type_id::create("m_clk_agent_cfg");
+        m_clk_agent_cfg.vif = m_top_cfg.vif_clk;
+        m_clk_agent_cfg.is_active = UVM_ACTIVE;
+        m_clk_agent_cfg.checks_enable = m_base_test_cfg.checks_enable;
+        m_clk_agent_cfg.coverage_enable = m_base_test_cfg.coverage_enable;
+        m_clk_agent_cfg.frequency_threshold = 0.005;
+        m_clk_agent_cfg.timeout_time_ns = 50;
+
+        // Reset agent config
+        m_reset_agent_cfg = bit_bus_agent_cfg #(.WIDTH(1))::type_id::create("m_reset_agent_cfg");
+        m_reset_agent_cfg.vif = m_top_cfg.vif_reset;
+        m_reset_agent_cfg.is_active = UVM_ACTIVE;
+        m_reset_agent_cfg.checks_enable = m_base_test_cfg.checks_enable;
+        m_reset_agent_cfg.coverage_enable = m_base_test_cfg.coverage_enable;
+
     endfunction
 
     // Function: build_chip_ral
@@ -120,26 +147,38 @@ class base_test extends uvm_test;
     // customize construction while keeping assign_spi_env_rals() unchanged.
     virtual function void build_chip_ral();
         regmodel = chip_top::type_id::create("regmodel", this);
-        regmodel.build();
-        regmodel.lock_model();
-        regmodel.reset();
     endfunction
 
     virtual function void end_of_elaboration_phase(uvm_phase phase);
+        // regmodel.build();
+        regmodel.ADC = m_adc_spi_env.regmodel;
+        regmodel.DAC = m_dac_spi_env.regmodel;
+        regmodel.lock_model();
+        regmodel.reset();
+        
         uvm_top.print_topology();
-        // uvm_factory::get().print();
-        // m_ral.print();
+        uvm_factory::get().print();
+        regmodel.print();
     endfunction
 
-    virtual task main_phase(uvm_phase phase);
-        uvm_status_e   status;
-        uvm_reg_data_t value;
-        
+    virtual task reset_phase(uvm_phase phase);
+        uvm_status_e     status;
+        uvm_reg_data_t   value;
+        single_value_seq reset_seq;
+
         // Example usage
         phase.raise_objection(this);
-        `uvm_info(get_full_name(), "Starting main_phase", UVM_LOW);
+        `uvm_info(get_full_name(), "Starting reset_phase", UVM_LOW);
 
-
+        fork
+            begin
+                m_reset_agent.set(0);
+                #(m_base_test_cfg.reset_duration * 1e9);
+                m_reset_agent.set(1);
+                #(m_base_test_cfg.reset_duration * 1e9);
+            end
+            m_clk_agent.set(1, 125_000_000, 0);
+        join
 
         phase.drop_objection(this);
     endtask

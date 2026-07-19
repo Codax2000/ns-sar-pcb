@@ -276,7 +276,7 @@ package chip_regs_dv_pkg;
         endfunction : new
 
         virtual function void build();
-            this.default_map = create_map("reg_map", 0, 1, UVM_NO_ENDIAN);
+            this.default_map = create_map("reg_map", 0, 2, UVM_NO_ENDIAN);
             this.AC_CONFIG = dac_regs__AC_CONFIG::type_id::create("AC_CONFIG");
             this.AC_CONFIG.configure(this);
 

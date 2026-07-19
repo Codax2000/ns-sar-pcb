@@ -30,6 +30,9 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     virtual task run_phase(uvm_phase phase);
         vif.csb = 1'b1; // SPI off to start
+        vif.mosi = 1'bz;
+        vif.scl = 1'bz;
+        
         forever begin
             seq_item_port.get_next_item(req);
             drive_item(req);
