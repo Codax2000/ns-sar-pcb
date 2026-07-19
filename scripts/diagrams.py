@@ -562,7 +562,35 @@ def draw_testbench_configs(filename='validation_setup.png'):
         dsp.Box().label('Arduino')
         dsp.Line().length(d.unit*3/4).label('SPI\n(PMOD A)', color='blue')
         dsp.Box(w=3).label('DUT')
-        
+
+
+def draw_spi_cdc(filename='spi_cdc.png'):
+    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+        logic.TimingDiagram(
+            {'signal': [
+                {'name': 'SPI CLK',       'wave': '0101', 'async': [0, 1.3, 5.6, 9.9, 11.0], 'color': 'purple'},
+                {'name': 'Sync\'d SPI CLK',       'wave': '010', 'async': [0, 3, 7, 11]},
+                {'name': 'SYS CLK',       'wave': 'ppppppppppp'},
+                {'name': 'SPI Read/Write Enable',     'wave': '010', 'async': [0, 1.3, 5.6, 11.0], 'color': 'purple'},
+                {'name': 'Enable Sync 1', 'wave': '0.1...0....'},
+                {'name': 'Enable Sync 2', 'wave': '0..1...0...'},
+                {'name': 'SYSCLK Rising Edge Detect', 'wave': '0...10.....'},
+                {'name': 'SYSCLK Read/Write Enable', 'wave': '0...10.....'},
+                {'name': 'SYSCLK Read Latch', 'wave': '0....10....'},
+                {'name': 'SYSCLK Read Data', 'wave': '0....2..0..'},
+                {'name': 'SPICLK Read Data', 'wave': '02', 'async': [0, 5.6, 11], 'color': 'purple'}
+            ],
+            'edge': [
+                '[0^:1.3]+[0^:5.6] 1-5 MHz',
+                '[3^:1.3]+[3^:5.6] Set on SPI count',
+                '[4^:2]+[4^:6] Sync to SYSCLK',
+                '[6^:4]+[6^:5] 1 cycle later, to allow stable data',
+                '[9^:5]+[9^:8] Clear on SPICLK',
+                '[10^:5.6]+[10^:11] Latch on SPICLK Negedge'
+            ]},
+            grid=False,
+            ygap=0.4
+        )
 
 def main():
     draw_digital_architecture()
@@ -574,6 +602,7 @@ def main():
     draw_spi()
     draw_overall_architecture()
     draw_testbench_configs()
+    draw_spi_cdc()
 
 if __name__ == '__main__':
     main()
