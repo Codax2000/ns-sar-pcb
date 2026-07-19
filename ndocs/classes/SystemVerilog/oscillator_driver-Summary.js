@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:oscillator_driver","oscillator_driver");NDSummary.OnSummaryLoaded("SystemVerilogClass:oscillator_driver",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[102,0,0,"oscillator_driver"]]);

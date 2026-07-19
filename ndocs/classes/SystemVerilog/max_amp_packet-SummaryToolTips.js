@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("SystemVerilogClass:max_amp_packet",{148:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype148\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">max_amp_packet</div></div></div><div class=\"TTSummary\">Extension of the sine packet that forces max amplitude.</div></div>"});

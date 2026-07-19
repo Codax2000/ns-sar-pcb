@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("File:rtl/registers/spi.sv",{225:"<div class=\"NDToolTip TVariable LSystemVerilog\"><div id=\"NDPrototype225\" class=\"NDPrototype\"><div class=\"PSection PPlainSection\"><span class=\"SHKeyword\">logic</span> bit_counter_done</div></div><div class=\"TTSummary\">Utility variable to avoid having to type it out every time</div></div>"});

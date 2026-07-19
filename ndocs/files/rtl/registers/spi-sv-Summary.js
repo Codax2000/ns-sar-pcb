@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:rtl/registers/spi.sv","spi.sv");NDSummary.OnSummaryLoaded("File:rtl/registers/spi.sv",[["SystemVerilog","SystemVerilog"]],[["Groups","Group"],["Variables","Variable"]],[[223,0,0,"registers (should total","registers(should_total"],[224,0,0,"wires/enables","wires/enables"],[225,0,1,"bit_counter_done","bit_counter_done"]]);

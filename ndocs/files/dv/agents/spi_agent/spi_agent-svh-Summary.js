@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/spi_agent/spi_agent.svh","spi_agent.svh");NDSummary.OnSummaryLoaded("File:dv/agents/spi_agent/spi_agent.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[165,0,0,"spi_agent","spi_agent"]]);

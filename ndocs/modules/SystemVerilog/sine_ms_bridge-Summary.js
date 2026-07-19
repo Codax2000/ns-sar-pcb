@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogModule:sine_ms_bridge","sine_ms_bridge");NDSummary.OnSummaryLoaded("SystemVerilogModule:sine_ms_bridge",[["SystemVerilog","SystemVerilog"]],[["Functions","Function"],["Groups","Group"],["Modules","Module"]],[[131,0,2,"sine_ms_bridge"],[132,0,1,"Functions","Functions"],[133,0,0,"sample","sample"]]);

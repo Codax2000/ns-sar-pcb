@@ -1,0 +1,1 @@
+﻿NDContentPage.OnToolTipsLoaded({82:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype82\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">oscillator_monitor</div></div></div><div class=\"TTSummary\">Monitors the oscillator interface and reports any changes in frequency or enabled status.</div></div>"});

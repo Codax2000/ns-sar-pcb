@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogPackage:oscillator_agent_pkg","oscillator_agent_pkg");NDSummary.OnSummaryLoaded("SystemVerilogPackage:oscillator_agent_pkg",[["SystemVerilog","SystemVerilog"]],[["Packages","Package"]],[[104,0,0,"oscillator_agent_pkg"]]);

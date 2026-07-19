@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("ada",["Variable"],[["adapter",,[["reg_env",,,,0,"File:dv/reg_env/reg_env.svh:reg_env.adapter","SystemVerilogClass:reg_env:adapter"]]]]);

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("vdd",["Variable"],[["VDD",,[["uvm_tb_top",,,,0,"File:dv/tb/uvm_tb_top.sv:uvm_tb_top.VDD","SystemVerilogModule:uvm_tb_top:VDD"]]]]);

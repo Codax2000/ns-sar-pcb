@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("pha",["Variable"],[["phase",,[["sine_ms_bridge_core",,,,0,"File:dv/agents/sine_agent/sine_ms_bridge_core.sv:sine_ms_bridge_core.phase","SystemVerilogModule:sine_ms_bridge_core:phase"]]]]);

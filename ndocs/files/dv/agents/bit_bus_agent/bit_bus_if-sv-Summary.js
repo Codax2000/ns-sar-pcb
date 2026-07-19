@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/bit_bus_agent/bit_bus_if.sv","bit_bus_if.sv");NDSummary.OnSummaryLoaded("File:dv/agents/bit_bus_agent/bit_bus_if.sv",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[71,0,0,"bit_bus_if","bit_bus_if"]]);

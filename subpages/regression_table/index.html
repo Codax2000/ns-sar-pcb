@@ -8,20 +8,21 @@
     <title>Regression table - Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
     
       <script>
         // Current page data
         var mkdocs_page_name = "Regression table";
-        var mkdocs_page_input_path = "subpages/regression_table.md";
+        var mkdocs_page_input_path = "subpages\\regression_table.md";
         var mkdocs_page_url = null;
       </script>
     
+    <script src="../../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-      <script>hljs.highlightAll();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -31,7 +32,11 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href="../.." class="icon icon-home"> Noise-Shaping SAR PCB
-        </a>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
@@ -72,13 +77,13 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Regression table</li>
+    <li><a href="../.." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Regression table</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
+
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
@@ -134,6 +139,30 @@
 <td>0.0%</td>
 <td>Check that for some number of FFT, OSR, and incremental enable, the correct number of ADC outputs is returned.</td>
 </tr>
+<tr>
+<td><code>test_adc_conversion</code></td>
+<td>0.0%</td>
+<td>0.0%</td>
+<td>Check that, for some number of FFT, OSR, and incremental controls, the conversion outputs are the same, given the analog models output the correct value.</td>
+</tr>
+<tr>
+<td><code>test_mem_readback</code></td>
+<td>0.0%</td>
+<td>0.0%</td>
+<td>Check that memory, when read back using random burst read access, is correctly read back.</td>
+</tr>
+<tr>
+<td><code>test_spi_burst</code></td>
+<td>0.0%</td>
+<td>0.0%</td>
+<td>Test SPI burst mode read and write accesses across a range of registers (e.g., configuring SH_CTRL, INT1_CTRL, INT2_CTRL, FFT_CTRL, ADC_CTRL consecutively) and verify register/data integrity.</td>
+</tr>
+<tr>
+<td><code>test_spi_double_buffered</code></td>
+<td>0.0%</td>
+<td>0.0%</td>
+<td>Test SPI access to double-buffered registers. Read and write shadow registers, verify that updates transfer to active registers only after a START_CONVERSION or synchronization point, and verify the read-back consistency.</td>
+</tr>
 </tbody>
 </table>
               
@@ -167,14 +196,14 @@
     
   </span>
 </div>
-    <script src="../../js/jquery-3.6.0.min.js"></script>
-    <script>var base_url = "../..";</script>
-    <script src="../../js/theme_extra.js"></script>
-    <script src="../../js/theme.js"></script>
-    <script>
-        jQuery(function () {
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
             SphinxRtdTheme.Navigation.enable(true);
-        });
+        };
     </script>
 
 </body>

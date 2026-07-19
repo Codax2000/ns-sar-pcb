@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:bit_bus_monitor","bit_bus_monitor");NDSummary.OnSummaryLoaded("SystemVerilogClass:bit_bus_monitor",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[72,0,0,"bit_bus_monitor"]]);

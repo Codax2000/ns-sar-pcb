@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/oscillator_agent/oscillator_driver.svh","oscillator_driver.svh");NDSummary.OnSummaryLoaded("File:dv/agents/oscillator_agent/oscillator_driver.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[102,0,0,"oscillator_driver","oscillator_driver"]]);

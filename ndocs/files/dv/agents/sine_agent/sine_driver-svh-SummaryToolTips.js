@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("File:dv/agents/sine_agent/sine_driver.svh",{127:"<div class=\"NDToolTip TClass LSystemVerilog\"><div class=\"NDClassPrototype\" id=\"NDClassPrototype127\"><div class=\"CPEntry TClass Current\"><div class=\"CPName\">sine_driver</div></div></div><div class=\"TTSummary\">Oscillator agent capable of driving sine waves.</div></div>"});

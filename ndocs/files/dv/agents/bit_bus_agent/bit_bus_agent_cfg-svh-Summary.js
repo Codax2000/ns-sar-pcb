@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/bit_bus_agent/bit_bus_agent_cfg.svh","bit_bus_agent_cfg.svh");NDSummary.OnSummaryLoaded("File:dv/agents/bit_bus_agent/bit_bus_agent_cfg.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[75,0,0,"bit_bus_agent_cfg","bit_bus_agent_cfg"]]);

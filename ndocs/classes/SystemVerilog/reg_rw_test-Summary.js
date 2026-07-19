@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:reg_rw_test","reg_rw_test");NDSummary.OnSummaryLoaded("SystemVerilogClass:reg_rw_test",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[221,0,0,"reg_rw_test"]]);

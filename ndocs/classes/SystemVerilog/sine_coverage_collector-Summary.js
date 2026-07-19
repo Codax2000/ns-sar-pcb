@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:sine_coverage_collector","sine_coverage_collector");NDSummary.OnSummaryLoaded("SystemVerilogClass:sine_coverage_collector",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[129,0,0,"sine_coverage_collector"]]);

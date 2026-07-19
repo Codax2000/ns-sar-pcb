@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("sam",["Function"],[["sample",,[["sine_ms_bridge",,,,0,"File:dv/agents/sine_agent/sine_ms_bridge.sv:sine_ms_bridge.sample","SystemVerilogModule:sine_ms_bridge:sample"],["sine_proxy",,,,0,"File:dv/agents/sine_agent/sine_proxy.svh:sine_proxy.sample","SystemVerilogClass:sine_proxy:sample"]]]]);

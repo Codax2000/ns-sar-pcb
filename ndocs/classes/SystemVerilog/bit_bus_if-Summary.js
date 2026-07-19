@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:bit_bus_if","bit_bus_if");NDSummary.OnSummaryLoaded("SystemVerilogClass:bit_bus_if",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[71,0,0,"bit_bus_if"]]);

@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:reg2spi_adapter","reg2spi_adapter");NDSummary.OnSummaryLoaded("SystemVerilogClass:reg2spi_adapter",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[166,0,0,"reg2spi_adapter"]]);

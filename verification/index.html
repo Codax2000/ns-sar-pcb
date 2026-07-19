@@ -8,7 +8,7 @@
     <title>Verification - Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,11 +17,12 @@
         var mkdocs_page_url = null;
       </script>
     
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="../js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-      <script>hljs.highlightAll();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -31,7 +32,11 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href=".." class="icon icon-home"> Noise-Shaping SAR PCB
-        </a>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
@@ -44,7 +49,7 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="#">Verification</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Verification</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a>
         <ul>
@@ -53,6 +58,8 @@
     <li class="toctree-l3"><a class="reference internal" href="#axi-integration-testbench">AXI Integration Testbench</a>
     </li>
         </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#writing-tests">Writing Tests</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#test-list-and-status">Test List and Status</a>
     </li>
@@ -84,13 +91,13 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Verification</li>
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Verification</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
+
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
@@ -111,6 +118,39 @@ work, and repurpose a SPI agent to check the buses for shift registers and DACs.
 an AXI to SPI adapter will be necessary, and will be run like so:</p>
 <p>The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.</p>
 <p><img alt="AXI to SPI" src="../img/axi_integration_tb.png" /></p>
+<h2 id="writing-tests">Writing Tests</h2>
+<p>The ADC and DAC are connected to the toplevel <code>regmodel</code> instance. With that
+scheme, the tests are portable to the single-AXI-bus scheme. If a single AXI
+interface is eventually possible, then the same scheme would be used.</p>
+<p>The reset and clock agents can be set using each one's <code>set</code> method. Registers
+can be written using the toplevel <code>regmodel</code> instance.</p>
+<pre><code>class reg_rw_test extends base_test;
+
+    `uvm_component_utils(reg_rw_test)
+
+    function new (string name = &quot;reg_rw_test&quot;, uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    virtual task main_phase(uvm_phase phase);
+        uvm_sequencer_base   sequencer;
+        uvm_status_e         status;
+
+        phase.raise_objection(this);
+
+        `uvm_info(get_full_name(), &quot;Beginning main phase&quot;, UVM_LOW)
+
+        regmodel.ADC.SH_CTRL.write(status, 16'h4004);
+        regmodel.DAC.ENABLE.dacp_enable.write(status, 1'b1);
+
+        phase.drop_objection(this);
+    endtask
+
+endclass
+</code></pre>
+<p>These register transactions are executed on two different agents, on two different
+interfaces, which act on some shared pins.</p>
+<p><img alt="SPI Test" src="../img/spi_sequence.jpg" /></p>
 <h2 id="test-list-and-status">Test List and Status</h2>
 <p>Here is the latest live status from the regression pipeline.</p>
 <style>
@@ -121,61 +161,6 @@ an AXI to SPI adapter will be necessary, and will be run like so:</p>
     word-break: break-word;
   }
 </style>
-
-<table>
-<thead>
-<tr>
-<th>Test</th>
-<th>Functional Coverage</th>
-<th>Status</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>test_dac_reset</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>With both DACs running, reset DUT and check that both DACs are disabled on startup.</td>
-</tr>
-<tr>
-<td><code>test_dac_dc</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>With both DACs in DC mode, randomize DACs and check that output codes are correct.</td>
-</tr>
-<tr>
-<td><code>test_dac_ac</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>With one or both DACs in AC mode, randomize frequency and DSM enable.</td>
-</tr>
-<tr>
-<td><code>test_dac_en</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>Enable both DACs in DC or AC mode, then disable one or both. Ensure only one output packet received.</td>
-</tr>
-<tr>
-<td><code>test_dac_dsm</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>With at least one DAC in delta-sigma mode, check output to make sure delta-sigma modulator is running.</td>
-</tr>
-<tr>
-<td><code>test_adc_reset</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>Check that ADC registers match reset values on boot.</td>
-</tr>
-<tr>
-<td><code>test_adc_mem</code></td>
-<td>0.0%</td>
-<td>0.0%</td>
-<td>Check that for some number of FFT, OSR, and incremental enable, the correct number of ADC outputs is returned.</td>
-</tr>
-</tbody>
-</table>
               
             </div>
           </div><footer>
@@ -215,14 +200,14 @@ an AXI to SPI adapter will be necessary, and will be run like so:</p>
     
   </span>
 </div>
-    <script src="../js/jquery-3.6.0.min.js"></script>
-    <script>var base_url = "..";</script>
-    <script src="../js/theme_extra.js"></script>
-    <script src="../js/theme.js"></script>
-    <script>
-        jQuery(function () {
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
             SphinxRtdTheme.Navigation.enable(true);
-        });
+        };
     </script>
 
 </body>

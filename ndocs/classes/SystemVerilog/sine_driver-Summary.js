@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:sine_driver","sine_driver");NDSummary.OnSummaryLoaded("SystemVerilogClass:sine_driver",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[127,0,0,"sine_driver"]]);

@@ -1,0 +1,1 @@
+﻿NDSummary.OnToolTipsLoaded("SystemVerilogModule:adc_regs_reg_sync",{205:"<div class=\"NDToolTip TModule LSystemVerilog\"><div class=\"TTSummary\">Instantiates CDC synchronizers for the CSR registers.&nbsp; Automatically generated from registers.rdl using PeakRDL.</div></div>"});

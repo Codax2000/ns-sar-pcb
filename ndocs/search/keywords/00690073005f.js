@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("is_",["Variable"],[["is_active",,[["oscillator_agent_cfg",,,,0,"File:dv/agents/oscillator_agent/oscillator_agent_cfg.svh:oscillator_agent_cfg.is_active","SystemVerilogClass:oscillator_agent_cfg:is_active"]]]]);

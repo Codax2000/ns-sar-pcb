@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_monitor","spi_monitor");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_monitor",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[156,0,0,"spi_monitor"]]);

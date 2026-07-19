@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/reg_env/reg_env_pkg.sv","reg_env_pkg.sv");NDSummary.OnSummaryLoaded("File:dv/reg_env/reg_env_pkg.sv",[["SystemVerilog","SystemVerilog"]],[["Packages","Package"]],[[193,0,0,"reg_env_pkg","reg_env_pkg"]]);

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("ral",["Variable"],[["ral",,[["reg_env",,,,0,"File:dv/reg_env/reg_env.svh:reg_env.ral","SystemVerilogClass:reg_env:ral"]]]]);

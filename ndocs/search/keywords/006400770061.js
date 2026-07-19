@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("dwa",["Variable"],[["DWA_EN",,[["adc_regs.FFT_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.FFT_CTRL.DWA_EN"]]]]);

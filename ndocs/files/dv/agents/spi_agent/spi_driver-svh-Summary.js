@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/spi_agent/spi_driver.svh","spi_driver.svh");NDSummary.OnSummaryLoaded("File:dv/agents/spi_agent/spi_driver.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[160,0,0,"spi_driver","spi_driver"]]);

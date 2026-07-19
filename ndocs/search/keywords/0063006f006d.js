@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("com",["Function"],[["compile_rdl",,[[,,,,0,"File2:registers.py:compile_rdl"]]]]);

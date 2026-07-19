@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("ap",["Variable"],[["ap",,[["spi_packet_splitter",,,,0,"File:dv/agents/spi_agent/spi_packet_splitter.svh:spi_packet_splitter.ap","SystemVerilogClass:spi_packet_splitter:ap"]]]]);

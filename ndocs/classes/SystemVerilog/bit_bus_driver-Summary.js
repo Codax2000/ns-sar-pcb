@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:bit_bus_driver","bit_bus_driver");NDSummary.OnSummaryLoaded("SystemVerilogClass:bit_bus_driver",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[73,0,0,"bit_bus_driver"]]);

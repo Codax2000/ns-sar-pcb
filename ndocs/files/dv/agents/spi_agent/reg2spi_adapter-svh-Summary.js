@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/spi_agent/reg2spi_adapter.svh","reg2spi_adapter.svh");NDSummary.OnSummaryLoaded("File:dv/agents/spi_agent/reg2spi_adapter.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[166,0,0,"reg2spi_adapter","reg2spi_adapter"]]);

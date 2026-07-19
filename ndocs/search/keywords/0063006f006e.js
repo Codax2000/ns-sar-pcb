@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("con",["Function"],[["configure_driver",,[["sine_proxy",,,,0,"File:dv/agents/sine_agent/sine_proxy.svh:sine_proxy.configure_driver","SystemVerilogClass:sine_proxy:configure_driver"]]],["connect_phase",,[["reg_env",,,,0,"File:dv/reg_env/reg_env.svh:reg_env.connect_phase","SystemVerilogClass:reg_env:connect_phase"]]]]);

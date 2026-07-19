@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_packet_reg_extension","spi_packet_reg_extension");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_packet_reg_extension",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[150,0,0,"spi_packet_reg_extension"]]);

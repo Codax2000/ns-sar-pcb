@@ -8,7 +8,7 @@
     <title>Noise-Shaping SAR PCB</title>
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
     
       <script>
         // Current page data
@@ -17,11 +17,12 @@
         var mkdocs_page_url = null;
       </script>
     
+    <script src="js/jquery-3.6.0.min.js" defer></script>
     <!--[if lt IE 9]>
       <script src="js/html5shiv.min.js"></script>
     <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-      <script>hljs.highlightAll();</script> 
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -31,12 +32,16 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href="." class="icon icon-home"> Noise-Shaping SAR PCB
-        </a>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#adc-architecture">ADC Architecture</a>
     </li>
@@ -82,13 +87,13 @@
       <div class="wy-nav-content">
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Home</li>
+    <li><a href="." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Home</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
   <hr/>
 </div>
+
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
@@ -146,11 +151,11 @@
 </tbody>
 </table>
 <p>The Python simulation results are like so:</p>
-<p><img alt="Python DSM Simulation" src="./img/TODO.jfif" /></p>
+<p><img alt="Python DSM Simulation" src="img/TODO.jfif" /></p>
 <p>These have a fixed OSR and FFT for comparison. In incremental mode, the output is similar, but already downsampled and filtered:</p>
-<p><img alt="Python Incremental Simulation" src="./img/TODO.jfif" /></p>
+<p><img alt="Python Incremental Simulation" src="img/TODO.jfif" /></p>
 <p>The SystemVerilog simulation results, with the same parameters:</p>
-<p><img alt="SystemVerilog Incremental Simulation" src="./img/TODO.jfif" /></p>
+<p><img alt="SystemVerilog Incremental Simulation" src="img/TODO.jfif" /></p>
 <h2 id="technology">Technology</h2>
 <p>The ultimate goal of this is to add the PCB onto a Zynq dev board with the form factor of an Arduino shield. The goal there would be to have an all-in-one testbench, where the Zynq would act as signal generator, test prober (using onboard ADCs) and the digital part of the DUT, while also running Python in Linux for easy interaction with the board. In lieu of that, the same should be possible using an Arduino as the testbed, but the bringup would potentially be more difficult.</p>
 <p>Here is a summary of the technology used:</p>
@@ -220,20 +225,20 @@
     
   </span>
 </div>
-    <script src="js/jquery-3.6.0.min.js"></script>
-    <script>var base_url = ".";</script>
-    <script src="js/theme_extra.js"></script>
-    <script src="js/theme.js"></script>
-    <script>
-        jQuery(function () {
+    <script>var base_url = '.';</script>
+    <script src="js/theme_extra.js" defer></script>
+    <script src="js/theme.js" defer></script>
+      <script src="search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
             SphinxRtdTheme.Navigation.enable(true);
-        });
+        };
     </script>
 
 </body>
 </html>
 
 <!--
-MkDocs version : 1.6.1
-Build Date UTC : 2026-06-28 06:30:26.433885+00:00
+MkDocs version : 1.3.0
+Build Date UTC : 2026-07-19 05:38:52.994512+00:00
 -->

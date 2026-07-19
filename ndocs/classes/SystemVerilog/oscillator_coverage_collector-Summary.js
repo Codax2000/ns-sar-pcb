@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:oscillator_coverage_collector","oscillator_coverage_collector");NDSummary.OnSummaryLoaded("SystemVerilogClass:oscillator_coverage_collector",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[103,0,0,"oscillator_coverage_collector"]]);

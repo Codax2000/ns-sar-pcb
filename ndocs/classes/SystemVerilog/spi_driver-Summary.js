@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_driver","spi_driver");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_driver",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[160,0,0,"spi_driver"]]);

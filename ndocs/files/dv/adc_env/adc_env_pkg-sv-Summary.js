@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/adc_env/adc_env_pkg.sv","adc_env_pkg.sv");NDSummary.OnSummaryLoaded("File:dv/adc_env/adc_env_pkg.sv",[["SystemVerilog","SystemVerilog"]],[["Packages","Package"]],[[16,0,0,"adc_env_pkg","adc_env_pkg"]]);

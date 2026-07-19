@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/sine_agent/sine_coverage_collector.svh","sine_coverage_collector.svh");NDSummary.OnSummaryLoaded("File:dv/agents/sine_agent/sine_coverage_collector.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[129,0,0,"sine_coverage_collector","sine_coverage_collector"]]);

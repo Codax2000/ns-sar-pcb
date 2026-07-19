@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File:dv/agents/sine_agent/sine_agent.svh","sine_agent.svh");NDSummary.OnSummaryLoaded("File:dv/agents/sine_agent/sine_agent.svh",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[149,0,0,"sine_agent","sine_agent"]]);
