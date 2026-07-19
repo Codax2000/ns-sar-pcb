@@ -53,6 +53,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#spi-protocol">SPI Protocol</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#spi-cdc">SPI CDC</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#integration">Integration</a>
@@ -131,6 +133,14 @@ the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit ad
 <p>It also supports burst read and write, with the address incrementing by 1 after each byte.</p>
 <p><img alt="SPI Burst Write" src="../img/spi_burst_write.png" /></p>
 <p><img alt="SPI Burst Read" src="../img/spi_burst_read.png" /></p>
+<h3 id="spi-cdc">SPI CDC</h3>
+<p>One of the issues with this SPI scheme is that there is no time for a typical CDC scheme.
+The CDC scheme, as it currently stands, is to synchronize the signals from SPI to the
+system clock, which will be roughly 5 times the maximum SPI clock speed. The current idea
+is to do the following (signals synchronized to SPI clock in purple):</p>
+<p><img alt="SPI CDC" src="../img/spi_cdc.png" /></p>
+<p>Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is
+to latch and hold the read data until the synchronized SPI clock returns to 0.</p>
 <h2 id="integration">Integration</h2>
 <p>There are two options for integration. The first would be to integrate this with the
 Zynq PS so that I can run AXI commands natively, like so:</p>
