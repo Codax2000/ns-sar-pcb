@@ -1,7 +1,11 @@
 module spi (
+    input  logic sysclk,
+    input  logic rst_n,
+
     input  logic scl,
     input  logic mosi,
     output logic miso,
+    output logic miso_en,
     input  logic cs_b,
 
     output logic                      if_req,
@@ -20,6 +24,8 @@ module spi (
     logic [7:0] miso_shift_reg;
     logic [7:0] mosi_shift_reg;
     logic [1:0] addr_state;
+
+    assign miso_en = 0;
 
     always_ff @(posedge scl or posedge cs_b) begin
         if (cs_b) begin

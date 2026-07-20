@@ -50,34 +50,18 @@ module uvm_tb_top ();
 
     chip_top DUT (
         // SPI interfaces
-        .adc_csb(adc_csb),
-        .adc_scl(scl),
-        .adc_miso(miso),
-        .adc_mosi(mosi),
-        
-        .dac_csb(dac_csb),
-        .dac_scl(scl),
-        .dac_miso(miso),
-        .dac_mosi(mosi),
+        .adc_csb,    
+        .dac_csb,
+        .scl,
+        .miso,
+        .mosi,
 
         // system clock
-        .sysclk(i_clk_if.clk_driven)
+        .sysclk(i_clk_if.clk_driven),
+        .arst_n(i_reset_if.bit_driven),
 
-        // sinegen DAC signals
-        // output logic sinegen_syncb,
-        // output logic sinegen_sclk,
-        // output logic sinegen_dinp,
-        // output logic sinegen_dinn,
-
-        // SAR ADC signals
-        // output logic shift_reg_dout,
-        // output logic shift_reg_sclk,
-        // output logic shift_reg_den,
-        // output logic shift_reg_latch,
-        // input  logic sar_adc_in,
-        // output logic sh_en,
-        // output logic int1_en,
-        // output logic int2_en
+        // other signals, unused for now
+        .sar_adc_in(0)
     );
 
     initial begin
