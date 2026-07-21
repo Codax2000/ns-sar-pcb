@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:spi_packet","spi_packet");NDSummary.OnSummaryLoaded("SystemVerilogClass:spi_packet",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[158,0,0,"spi_packet"]]);

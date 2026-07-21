@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("osr",["Variable"],[["OSR_POWER",,[["adc_regs.FFT_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.FFT_CTRL.OSR_POWER"]]]]);

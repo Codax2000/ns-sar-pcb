@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("ena",["Variable"],[["enabled",,[["oscillator_packet",,,,0,"File:dv/agents/oscillator_agent/oscillator_packet.svh:oscillator_packet.enabled","SystemVerilogClass:oscillator_packet:enabled"]]]]);

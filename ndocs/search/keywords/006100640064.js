@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("add",["Function"],[["add_exporter_arguments",,[["RTLSyncExporterPlugin",,,,0,"File2:synchronizer_exporter.py:RTLSyncExporterPlugin.add_exporter_arguments","PythonClass:RTLSyncExporterPlugin:add_exporter_arguments"]]]]);

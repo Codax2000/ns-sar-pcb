@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("noi",["Variable"],[["NOISE_SHAPING_EN",,[["adc_regs.FFT_CTRL",,,,0,"File:rtl/registers/adc_regs_mod.sv:adc_regs.FFT_CTRL.NOISE_SHAPING_EN"]]]]);

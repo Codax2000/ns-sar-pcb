@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("dif",["Variable"],[["differential",,[["sine_ms_bridge_core",,,,0,"File:dv/agents/sine_agent/sine_ms_bridge_core.sv:sine_ms_bridge_core.differential","SystemVerilogModule:sine_ms_bridge_core:differential"]]]]);

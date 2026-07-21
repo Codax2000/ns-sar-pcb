@@ -1,1 +1,0 @@
-﻿NDSummary.OnToolTipsLoaded("File:rtl/registers/adc_regs_mod.sv",{});

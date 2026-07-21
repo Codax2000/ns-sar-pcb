@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:sine_agent","sine_agent");NDSummary.OnSummaryLoaded("SystemVerilogClass:sine_agent",[["SystemVerilog","SystemVerilog"]],[["Classes","Class"]],[[149,0,0,"sine_agent"]]);

@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("wri",["Function"],[["write",,[["spi_packet_splitter",,,,0,"File:dv/agents/spi_agent/spi_packet_splitter.svh:spi_packet_splitter.write","SystemVerilogClass:spi_packet_splitter:write"]]]]);

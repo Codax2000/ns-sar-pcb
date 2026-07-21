@@ -1,1 +1,0 @@
-﻿NDSearch.OnPrefixDataLoaded("do_",["Function"],[["do_export",,[["RTLSyncExporterPlugin",,,,0,"File2:synchronizer_exporter.py:RTLSyncExporterPlugin.do_export","PythonClass:RTLSyncExporterPlugin:do_export"]]]]);

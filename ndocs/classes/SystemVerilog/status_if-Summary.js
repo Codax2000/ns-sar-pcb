@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("SystemVerilogClass:status_if","status_if");NDSummary.OnSummaryLoaded("SystemVerilogClass:status_if",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[176,0,0,"status_if"]]);

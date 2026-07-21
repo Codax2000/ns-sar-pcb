@@ -1,1 +1,0 @@
-﻿NDFramePage.OnPageTitleLoaded("File:dv/interfaces/status_if.sv","status_if.sv");NDSummary.OnSummaryLoaded("File:dv/interfaces/status_if.sv",[["SystemVerilog","SystemVerilog"]],[["Interfaces","Interface"]],[[176,0,0,"status_if","status_if"]]);
