@@ -16,9 +16,9 @@ This has several goals:
    :maxdepth: 2
    :caption: Contents:
 
-   pages/hdl
-   pages/pcb
-   pages/verification
+   hdl
+   pcb
+   verification
 
 ADC Architecture
 ----------------
