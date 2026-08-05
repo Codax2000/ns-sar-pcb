@@ -34,14 +34,14 @@ class spi_agent extends uvm_agent;
         uvm_config_db #(int)::set(this, "driver", "clk_speed_hz", cfg.clk_speed_hz);
 
         monitor = spi_monitor::type_id::create("monitor", this);
-        if (cfg.is_active) begin
+        if (cfg.is_active == UVM_ACTIVE) begin
             driver = spi_driver::type_id::create("driver", this);
             sequencer = uvm_sequencer #(spi_packet)::type_id::create("sequencer", this);
         end
     endfunction
 
     function void connect_phase(uvm_phase phase);
-        if (cfg.is_active)
+        if (cfg.is_active == UVM_ACTIVE)
             driver.seq_item_port.connect(sequencer.seq_item_export);
     endfunction
 

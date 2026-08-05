@@ -15,9 +15,6 @@ class spi_driver extends uvm_driver #(spi_packet);
 
     real clk_period_ns;
 
-    bit cpol;
-    bit cpha;
-
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -28,18 +25,17 @@ class spi_driver extends uvm_driver #(spi_packet);
             `uvm_fatal("DRV", "Could not attach driver virtual interface")
         if (!uvm_config_db #(int)::get(this, "", "clk_speed_hz", speed))
             `uvm_fatal("DRV", "Could not attach driver speed")
-        if (!uvm_config_db #(bit)::get(this, "", "cpol", cpol))
-            `uvm_fatal("DRV", "Could not attach driver CPOL")
-        if (!uvm_config_db #(bit)::get(this, "", "cpha", cpha))
-            `uvm_fatal("DRV", "Could not attach driver CPHA")
         clk_period_ns = 1e9 / speed;
     endfunction
 
     virtual task run_phase(uvm_phase phase);
-
         vif.csb = 1'b1; // SPI off to start
+        vif.mosi = 1'bz;
+        vif.scl = 1'bz;
+        
         forever begin
             seq_item_port.get_next_item(req);
+            `uvm_info(get_full_name(), $sformatf("Driving packet: %s", req.sprint()), UVM_LOW)
             drive_item(req);
             seq_item_port.item_done(req);
         end
@@ -50,16 +46,18 @@ class spi_driver extends uvm_driver #(spi_packet);
     */
     virtual task drive_item(spi_packet pkt);
         real half_period_ns;
-        half_period_ns = clk_period_ns / 2.0;
         logic [7:0] tx_byte;
         logic [7:0] rx_byte;
+        
+        half_period_ns = clk_period_ns / 2.0;
 
         pkt.miso.delete();
 
         // Assert Chip Select (Active Low)
-        vif.scl = 0;
+        vif.scl_int = 0;
+        vif.drive_enable = 1;
         #(half_period_ns);
-        vif.cs_n <= 1'b0;
+        vif.csb <= 1'b0;
 
         // Loop through every byte in the packet payload
         foreach (pkt.mosi[byte_idx]) begin
@@ -68,12 +66,12 @@ class spi_driver extends uvm_driver #(spi_packet);
 
             // Shift out 8 bits (MSB first standard)
             for (int bit_idx = 7; bit_idx >= 0; bit_idx--) begin
-                vif.mosi = tx_byte[bit_idx];
+                vif.mosi_int = tx_byte[bit_idx];
                 #(half_period_ns);
-                vif.scl = 1;
-                rx_byte[bit_idx] = vif.mosi;
+                vif.scl_int = 1;
+                rx_byte[bit_idx] = vif.miso;
                 #(half_period_ns);
-                vif.scl = 0;
+                vif.scl_int = 0;
             end
             
             // Capture the received byte back into the transaction packet
@@ -82,9 +80,10 @@ class spi_driver extends uvm_driver #(spi_packet);
 
         // De-assert Chip Select
         #(half_period_ns);
-        vif.cs_n <= 1'b1;
+        vif.csb <= 1'b1;
         #(half_period_ns);
+        vif.drive_enable = 0;
         
-    end task : drive_item
+    endtask : drive_item
 
 endclass

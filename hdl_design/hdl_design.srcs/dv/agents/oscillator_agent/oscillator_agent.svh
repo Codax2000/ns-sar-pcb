@@ -39,7 +39,7 @@ class oscillator_agent extends uvm_agent;
         uvm_config_db #(uvm_active_passive_enum)::set(this, "", "is_active", m_agent_cfg.is_active);
 
         monitor = oscillator_monitor::type_id::create("monitor", this);
-        if (m_agent_cfg.is_active) begin
+        if (m_agent_cfg.is_active == UVM_ACTIVE) begin
             driver = oscillator_driver::type_id::create("driver", this);
             sequencer = uvm_sequencer #(oscillator_packet)::type_id::create("sequencer", this);
         end
@@ -54,5 +54,22 @@ class oscillator_agent extends uvm_agent;
         if (m_agent_cfg.coverage_enable)
             monitor.mon_analysis_port.connect(m_coverage_collector.analysis_export);
     endfunction
+
+    virtual task set(bit clk_enabled, int frequency, bit disabled_state=0);
+        oscillator_single_packet_seq seq;
+        if (m_agent_cfg.is_active == UVM_ACTIVE) begin
+            seq = oscillator_single_packet_seq::type_id::create("seq");
+            seq.pkt_enabled = clk_enabled;
+            seq.pkt_frequency = frequency;
+            seq.pkt_disabled_state = disabled_state;
+            seq.start(sequencer);
+        end
+        else begin
+            `uvm_fatal(
+                get_full_name(),
+                "Passive agent, set() cannot be used."
+            )
+        end
+    endtask
 
 endclass

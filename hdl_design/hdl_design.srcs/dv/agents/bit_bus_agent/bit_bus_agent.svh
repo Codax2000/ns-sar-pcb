@@ -42,4 +42,23 @@ class bit_bus_agent #(int WIDTH = 1) extends uvm_agent;
             driver.seq_item_port.connect(sequencer.seq_item_export);
     endfunction
 
+    virtual task set(int value);
+        single_value_seq #(.WIDTH(WIDTH)) seq;
+        if (cfg.is_active == UVM_ACTIVE) begin
+            seq = single_value_seq #(.WIDTH(WIDTH))::type_id::create("seq");
+            seq.seq_value = value;
+            seq.start(sequencer);
+        end
+        else begin
+            `uvm_fatal(
+                get_full_name(),
+                "Passive agent, set() cannot be used."
+            )
+        end
+    endtask
+
+    virtual function int get();
+        return cfg.vif.bit_observed;
+    endfunction
+
 endclass

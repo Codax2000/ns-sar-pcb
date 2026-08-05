@@ -8,14 +8,21 @@ Contains the base test and associated configuration classes:
 - <base_test>
 
 */
+`timescale 1ns/1ns
+
 package base_test_pkg;
 
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
+    import bit_bus_agent_pkg::*;
+    import oscillator_agent_pkg::*;
     import spi_agent_pkg::*;
-    import sine_agent_pkg::*;
-    import adc_env_pkg::*;
+    import chip_regs_dv_pkg::*;
+    import spi_env_pkg::*;
+
+    `include "adc_reg_subscriber.svh"
+    `include "dac_reg_subscriber.svh"
 
     `include "tb_top_cfg.svh"
     `include "base_test_cfg.svh"

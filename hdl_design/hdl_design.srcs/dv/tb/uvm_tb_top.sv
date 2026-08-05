@@ -16,59 +16,65 @@ Instantiates bridge and interfaces and runs the current test.
 */
 module uvm_tb_top ();
 
-    bit_bus_if #(.WIDTH(1)) i_reset_if ();
-    oscillator_if           i_clk_if   ();
-    spi_if                  i_spi_if   ();
+    wire adc_csb;
+    wire dac_csb;
+    wire scl;
+    wire mosi;
+    wire miso;
+
+    pulldown pd_scl (scl );
+    pulldown pd_mosi(mosi);
+    pulldown pd_miso(miso);
+
+    bit_bus_if #(.WIDTH(1)) i_reset_if     ();
+    oscillator_if           i_clk_if       ();
+    spi_if i_dac_spi_if   (
+        .csb (dac_csb),
+        .scl (scl),
+        .mosi(mosi),
+        .miso(miso)
+    );
+    spi_if                  i_adc_spi_if   (
+        .csb (adc_csb),
+        .scl (scl),
+        .mosi(mosi),
+        .miso(miso)
+    );
 
     assign i_clk_if.clk_observed = i_clk_if.clk_driven;
     assign i_reset_if.bit_observed = i_reset_if.bit_driven;
 
     status_if i_status_if ();
 
-    // Variable: VDD
-    // Parametrized supply voltage of the design
-    localparam VDD = 1.2;
-    real       vinp;
-    real       vinn;
-
-    sine_ms_bridge m_bridge (
-        .vdd(VDD),
-        .vss(0.0),
-
-        .voutp(vinp),
-        .voutn(vinn),
-
-        .vinp(vinp),
-        .vinn(vinn)
-    );
-
-    board_top #(
-        .N_QUANTIZER_BITS(4)
-    ) DUT (
-        .vdd(VDD),
-
-        .clk(i_clk_if.clk_driven),
-        .arst(i_reset_if.bit_driven),
-
-        .vinp(vinp),
-        .vinn(vinn),
-
-        .spi_signals(i_spi_if)
-    );
-
     tb_top_cfg cfg;
+
+    chip_top DUT (
+        // SPI interfaces
+        .adc_csb,    
+        .dac_csb,
+        .scl,
+        .miso,
+        .mosi,
+
+        // system clock
+        .sysclk(i_clk_if.clk_driven),
+        .arst_n(i_reset_if.bit_driven),
+
+        // other signals, unused for now
+        .sar_adc_in(0)
+    );
 
     initial begin
         cfg = new("tb_top_cfg");
-        cfg.vif_spi = i_spi_if;
-        cfg.vif_reset = i_reset_if;
-        cfg.vif_clk = i_clk_if;
-        cfg.vif_adc = m_bridge.bridge_if;
-        cfg.vproxy_adc = m_bridge.proxy;
+        cfg.vif_adc_spi = i_adc_spi_if;
+        cfg.vif_dac_spi = i_dac_spi_if;
+        cfg.vif_reset   = i_reset_if;
+        cfg.vif_clk     = i_clk_if;
+        cfg.vif_status  = i_status_if;
 
         uvm_config_db #(tb_top_cfg)::set(null, "*", "tb_top_cfg", cfg);
 
-        run_test("main_sm_sar_convert_test");
+        run_test("reg_rw_test");
     end
 
 endmodule

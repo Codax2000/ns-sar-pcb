@@ -24,7 +24,6 @@ from peakrdl_regblock import RegblockExporter
 from peakrdl_regblock.cpuif.passthrough import PassthroughCpuif
 from peakrdl_regblock.cpuif.axi4lite import AXI4Lite_Cpuif
 from peakrdl_regblock.udps import ALL_UDPS
-from synchronizer_exporter import RTLSyncExporter
 from peakrdl_cheader.exporter import CHeaderExporter
 
 
@@ -43,7 +42,7 @@ DEFAULT_TOP_HTML_PATH = './docs/docs/chip_top'
 
 # UVM register package (generated from chip_top for the full RAL model)
 DEFAULT_UVM_PKG_PATH  = \
-    './hdl_design/hdl_design.srcs/dv/axi_top_env/chip_regs_dv_pkg.sv'
+    './hdl_design/hdl_design.srcs/dv/chip_reg_top/chip_regs_dv_pkg.sv'
 
 # RTL output directories (one per independently compiled block)
 DEFAULT_DAC_RTL_PATH  = './hdl_design/hdl_design.srcs/rtl/registers/dac'
@@ -191,10 +190,10 @@ def gen_dac_rtl(root, path, **kwargs):
     exporter = RegblockExporter(**kwargs)
     exporter.export(
         root, path,
-        cpuif_cls=AXI4Lite_Cpuif,
+        cpuif_cls=PassthroughCpuif,
         generate_hwif_report=True,
         module_name='dac_regs_mod',
-        retime_read_response=True,
+        retime_read_response=True
     )
 
 
@@ -217,23 +216,8 @@ def gen_adc_rtl(root, path, **kwargs):
         cpuif_cls=PassthroughCpuif,
         generate_hwif_report=True,
         module_name='adc_regs_mod',
-        retime_read_response=True,
+        retime_read_response=True
     )
-
-
-def gen_sync(root, filename, **kwargs):
-    '''
-    Function: gen_sync
-
-    Generate SystemVerilog clock-domain synchronizer RTL for the ADC register
-    interface (SPI clock -> system clock).
-
-    Parameters:
-        root     - elaborated RDL root node (adc_regs)
-        filename - output .sv file path
-    '''
-    exporter = RTLSyncExporter(**kwargs)
-    exporter.export(root, filename)
 
 
 def gen_cheader(root, filename, **kwargs):
@@ -280,7 +264,6 @@ def main():
     print('[registers.py] Compiling ADC registers...')
     adc_root = compile_rdl(args.udp_spec, args.adc_spec)
     gen_adc_rtl(adc_root, args.adc_rtl)
-    gen_sync(adc_root, args.sync)
 
     # ------------------------------------------------------------------
     # 3. Top: unified UVM RAL + HTML

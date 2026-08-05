@@ -26,9 +26,12 @@ nd_config/Working\ Data/
 docs/site
 docs/docs/img/
 img/
+docs_sphinx/_build
 .ipynb_checkpoints/
 scripts.txt
 hdl.txt
 docs.txt
 gitlog.txt
 .aider*
+hdl_design/hdl_design.srcs/dv/chip_reg_top/
+.Xil/

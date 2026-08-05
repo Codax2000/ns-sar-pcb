@@ -26,6 +26,46 @@ The first thing to do will be to add an AXI adapter so that it can be used to co
 
 ![AXI to SPI](./img/axi_integration_tb.png)
 
+## Writing Tests
+
+The ADC and DAC are connected to the toplevel `regmodel` instance. With that
+scheme, the tests are portable to the single-AXI-bus scheme. If a single AXI
+interface is eventually possible, then the same scheme would be used.
+
+The reset and clock agents can be set using each one's `set` method. Registers
+can be written using the toplevel `regmodel` instance.
+
+```{systemverilog}
+class reg_rw_test extends base_test;
+
+    `uvm_component_utils(reg_rw_test)
+
+    function new (string name = "reg_rw_test", uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    virtual task main_phase(uvm_phase phase);
+        uvm_sequencer_base   sequencer;
+        uvm_status_e         status;
+
+        phase.raise_objection(this);
+
+        `uvm_info(get_full_name(), "Beginning main phase", UVM_LOW)
+
+        regmodel.ADC.SH_CTRL.write(status, 16'h4004);
+        regmodel.DAC.ENABLE.dacp_enable.write(status, 1'b1);
+
+        phase.drop_objection(this);
+    endtask
+
+endclass
+```
+
+These register transactions are executed on two different agents, on two different
+interfaces, which act on some shared pins.
+
+![SPI Test](./img/spi_sequence.jpg)
+
 ## Test List and Status
 
 Here is the latest live status from the regression pipeline.
@@ -38,5 +78,3 @@ Here is the latest live status from the regression pipeline.
     word-break: break-word;
   }
 </style>
-
-{% include "subpages/regression_table.md" %}
