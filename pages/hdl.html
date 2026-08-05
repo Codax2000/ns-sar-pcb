@@ -1,0 +1,173 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Logic &mdash; Noise-Shaping SAR PCB 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2709fde1"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Mixed-Signal PCB Design" href="pcb.html" />
+    <link rel="prev" title="PCB Design for a Noise-Shaping SAR" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Noise-Shaping SAR PCB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Digital Logic</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#digital-architecture">Digital Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#main-state-machine">Main State Machine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spi-protocol">SPI Protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spi-cdc">SPI CDC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration">Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#register-map">Register Map</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pcb.html">Mixed-Signal PCB Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Noise-Shaping SAR PCB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Digital Logic</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/pages/hdl.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="digital-logic">
+<h1>Digital Logic<a class="headerlink" href="#digital-logic" title="Link to this heading"></a></h1>
+<p>ADCs need digital logic. This means a register interface for CSRs (control and status registers) and a main state machine to control the conversion. It therefore means closing timing and rigorous verification.</p>
+<section id="digital-architecture">
+<h2>Digital Architecture<a class="headerlink" href="#digital-architecture" title="Link to this heading"></a></h2>
+<p>The digital architecture is mainly a SPI interface that connects to a state machine. The state machine manages the NFFT conversion using control/status registers from the SPI clock domain and writes data from the SAR ADC to the data memory, which can be read from the SPI domain.</p>
+<img alt="Toplevel Architecture" class="align-center" src="../_images/digital.png" />
+<p>The incremental filters are implemented as simple up-counters, since they have a reset.</p>
+<img alt="Digital Filters" class="align-center" src="../_images/dig_filter.png" />
+<section id="main-state-machine">
+<h3>Main State Machine<a class="headerlink" href="#main-state-machine" title="Link to this heading"></a></h3>
+<p>Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it’s easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:</p>
+<img alt="Main State Machine" class="align-center" src="../_images/main_state_machine.png" />
+<p>This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls; this controls the memory, oversampling, and clocking logic.</p>
+<p>The ADC has the following values controllable via SPI:</p>
+<ul class="simple">
+<li><p>Incremental mode enable/disable</p></li>
+<li><p>DEM enable/disable</p></li>
+<li><p>Number of FFT samples (NFFT)</p></li>
+<li><p>Oversampling ratio (OSR)</p></li>
+<li><p>SHA/Integration length and overlap times</p></li>
+<li><p>The number of bits in the SAR quantizer</p></li>
+</ul>
+</section>
+<section id="spi-protocol">
+<h3>SPI Protocol<a class="headerlink" href="#spi-protocol" title="Link to this heading"></a></h3>
+<p>SPI works in SPI mode 0, with a 15-bit address, which accesses 2 bytes at a time. That way, even though the RTL accesses using a 16-bit address, SPI still works with 15 bit, and just retrieves the registers at address and address + 1, from the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit address, and the SPI interface just reads back two data words.</p>
+<p>The SDO pin is tri-stated unless it is actively sending data.</p>
+<p>For a write:</p>
+<img alt="SPI Write" class="align-center" src="../_images/spi_write.png" />
+<p>For a read:</p>
+<img alt="SPI Read" class="align-center" src="../_images/spi_read.png" />
+<p>It also supports burst read and write, with the address incrementing by 1 after each byte.</p>
+<img alt="SPI Burst Write" class="align-center" src="../_images/spi_burst_write.png" />
+<img alt="SPI Burst Read" class="align-center" src="../_images/spi_burst_read.png" />
+</section>
+<section id="spi-cdc">
+<h3>SPI CDC<a class="headerlink" href="#spi-cdc" title="Link to this heading"></a></h3>
+<p>One of the issues with this SPI scheme is that there is no time for a typical CDC scheme. The CDC scheme, as it currently stands, is to synchronize the signals from SPI to the system clock, which will be roughly 5 times the maximum SPI clock speed. The current idea is to do the following (signals synchronized to SPI clock in purple):</p>
+<img alt="SPI CDC" class="align-center" src="../_images/spi_cdc.png" />
+<p>Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is to latch and hold the read data until the synchronized SPI clock returns to 0.</p>
+</section>
+</section>
+<section id="integration">
+<h2>Integration<a class="headerlink" href="#integration" title="Link to this heading"></a></h2>
+<p>There are two options for integration. The first would be to integrate this with the Zynq PS so that I can run AXI commands natively, like so:</p>
+<img alt="Zynq Validation" class="align-center" src="../_images/zynq_validation_setup.png" />
+<p>Given that my board very likely has a fried Ethernet chip, this may be difficult. If that persists and I am not able to find a workaround, I will ignore the dedicated PS and use the FPGA fabric only, using a Jupyter notebook over <code class="docutils literal notranslate"><span class="pre">pyserial</span></code>, with Arduino drivers instead of Linux ones. The bonus is that the PCB design will remain the same.</p>
+<img alt="Arduino Validation" class="align-center" src="../_images/arduino_validation_setup.png" />
+</section>
+<section id="register-map">
+<h2>Register Map<a class="headerlink" href="#register-map" title="Link to this heading"></a></h2>
+<p>The generated register map is available at <a class="reference internal" href="../peakrdl-html/index.html?p=chip_top"><code class="xref rdl rdl-ref docutils literal notranslate"><span class="pre">chip_top</span></code></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="PCB Design for a Noise-Shaping SAR" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pcb.html" class="btn btn-neutral float-right" title="Mixed-Signal PCB Design" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Alex Knowlton.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

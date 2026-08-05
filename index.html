@@ -6,20 +6,20 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PCB Design for a Noise-Shaping SAR &mdash; Noise-Shaping SAR PCB  documentation</title>
+  <title>PCB Design for a Noise-Shaping SAR &mdash; Noise-Shaping SAR PCB 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Digital Logic" href="hdl.html" /> 
+    <link rel="next" title="Digital Logic" href="pages/hdl.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,11 +41,11 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="hdl.html">Digital Logic</a></li>
-<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pcb.html">Mixed-Signal PCB Design</a></li>
-<li class="toctree-l1"><a class="reference internal" href="natural_docs.html">NaturalDocs</a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pages/hdl.html">Digital Logic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/pcb.html">Mixed-Signal PCB Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/verification.html">Verification</a></li>
 </ul>
 
         </div>
@@ -64,7 +64,7 @@
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">PCB Design for a Noise-Shaping SAR</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -84,99 +84,128 @@
 <li><p>Design an analog/mixed-signal circuit using LTSpice, instead of my usual Spectre.</p></li>
 <li><p>Implement a system that includes some kind of bus communication protocol, likely I2C or SPI.</p></li>
 </ol>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pages/hdl.html">Digital Logic</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pages/hdl.html#digital-architecture">Digital Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pages/hdl.html#integration">Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pages/hdl.html#register-map">Register Map</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pages/pcb.html">Mixed-Signal PCB Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pages/pcb.html#analog-design">Analog Design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pages/pcb.html#pcb-design">PCB Design</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pages/verification.html">Verification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pages/verification.html#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pages/verification.html#writing-tests">Writing Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pages/verification.html#test-list-and-status">Test List and Status</a></li>
+</ul>
+</li>
+</ul>
+</div>
 <section id="adc-architecture">
 <h2>ADC Architecture<a class="headerlink" href="#adc-architecture" title="Link to this heading"></a></h2>
 <p>The ADC will use a Silva-Steensgard topology with optional reset for incremental operation.</p>
-<p><img alt="Silva-Steensgard Topology" src="_images/adc_loop.png" /></p>
+<img alt="Silva-Steensgard Topology" src="_images/adc_loop.png" />
 <p>This should give fine results on a PCB while also presenting a decent challenge for this project.</p>
 </section>
 <section id="block-diagram">
 <h2>Block Diagram<a class="headerlink" href="#block-diagram" title="Link to this heading"></a></h2>
 <p>ADCs are typically implemented on-chip. This is done primarily for speed, since discrete capacitances are so much higher. However, for an educational project, there is nothing in theory that stops a discrete implementation from being possible.</p>
 <p>The analog frontend (the sampling circuit, comparator, CDAC, and integrators) of a noise-shaping SAR can be done relatively simply with discrete components, whereas the digital backend (SAR clocking, register interface, memory, etc.) can be done on an FPGA. Additionally, since many FPGA development boards have Arduino-compatible pinouts, the analog could be developed on an Arduino header and the digital done either on an FPGA or an Arduino. The current plan is to use a Zynq-7000 dev board like the Arty-Z7 and integrate the ADC into the Linux OS via AXI, so that the testing can be done natively in Python.</p>
-<p><img alt="Overall Block Diagram" src="_images/toplevel.png" /></p>
+<img alt="Overall Block Diagram" src="_images/toplevel.png" />
 <p>The integrators, sample and hold, and multi-tail comparator will all be implemented using discrete components. The CDAC, which using discrete components, will also use commercial shift registers to cut down on GPIO usage in the FPGA.</p>
 </section>
 <section id="results">
 <h2>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h2>
 <p>There are many layers of simulation results, with varying levels of utility.</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 25.0%" />
+<col style="width: 45.0%" />
+</colgroup>
 <thead>
-<tr class="row-odd"><th class="head text-left"><p>Simulation Type</p></th>
-<th class="head text-left"><p>Domain</p></th>
-<th class="head text-left"><p>Purpose</p></th>
+<tr class="row-odd"><th class="head"><p>Simulation Type</p></th>
+<th class="head"><p>Domain</p></th>
+<th class="head"><p>Purpose</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td class="text-left"><p>Ideal ADC</p></td>
-<td class="text-left"><p>Python</p></td>
-<td class="text-left"><p>Determine design boundaries</p></td>
+<tr class="row-even"><td><p>Ideal ADC</p></td>
+<td><p>Python</p></td>
+<td><p>Determine design boundaries</p></td>
 </tr>
-<tr class="row-odd"><td class="text-left"><p>Non-ideal CDAC, integrator op-amps</p></td>
-<td class="text-left"><p>Python</p></td>
-<td class="text-left"><p>Assess effects of DWA, integrator non-linearity, things that can be modeled as LTI or similar</p></td>
+<tr class="row-odd"><td><p>Non-ideal CDAC, integrator op-amps</p></td>
+<td><p>Python</p></td>
+<td><p>Assess effects of DWA, integrator non-linearity, things that can be modeled as LTI or similar</p></td>
 </tr>
-<tr class="row-even"><td class="text-left"><p>Digital RTL/GLS</p></td>
-<td class="text-left"><p>SystemVerilog + RNM</p></td>
-<td class="text-left"><p>Determine timing impact of digital, optimal digital architecture</p></td>
+<tr class="row-even"><td><p>Digital RTL/GLS</p></td>
+<td><p>SystemVerilog + RNM</p></td>
+<td><p>Determine timing impact of digital, optimal digital architecture</p></td>
 </tr>
-<tr class="row-odd"><td class="text-left"><p>Analog SPICE</p></td>
-<td class="text-left"><p>LTSpice/NgSpice</p></td>
-<td class="text-left"><p>Design PCB, refine SystemVerilog model (block-level only, since no AMS simulator)</p></td>
+<tr class="row-odd"><td><p>Analog SPICE</p></td>
+<td><p>LTSpice/NgSpice</p></td>
+<td><p>Design PCB, refine SystemVerilog model (block-level only, since no AMS simulator)</p></td>
 </tr>
 </tbody>
 </table>
 <p>The Python simulation results are like so:</p>
-<p><img alt="Python DSM Simulation" src="img/TODO.jfif" /></p>
+<img alt="Python DSM Simulation" src="_static/img/TODO.jfif" />
 <p>These have a fixed OSR and FFT for comparison. In incremental mode, the output is similar, but already downsampled and filtered:</p>
-<p><img alt="Python Incremental Simulation" src="img/TODO.jfif" /></p>
+<img alt="Python Incremental Simulation" src="_static/img/TODO.jfif" />
 <p>The SystemVerilog simulation results, with the same parameters:</p>
-<p><img alt="SystemVerilog Incremental Simulation" src="img/TODO.jfif" /></p>
+<img alt="SystemVerilog Incremental Simulation" src="_static/img/TODO.jfif" />
 </section>
 <section id="technology">
 <h2>Technology<a class="headerlink" href="#technology" title="Link to this heading"></a></h2>
 <p>The ultimate goal of this is to add the PCB onto a Zynq dev board with the form factor of an Arduino shield. The goal there would be to have an all-in-one testbench, where the Zynq would act as signal generator, test prober (using onboard ADCs) and the digital part of the DUT, while also running Python in Linux for easy interaction with the board. In lieu of that, the same should be possible using an Arduino as the testbed, but the bringup would potentially be more difficult.</p>
 <p>Here is a summary of the technology used:</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
 <thead>
-<tr class="row-odd"><th class="head text-left"><p>Purpose</p></th>
-<th class="head text-left"><p>Program</p></th>
+<tr class="row-odd"><th class="head"><p>Purpose</p></th>
+<th class="head"><p>Program</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td class="text-left"><p>System Design</p></td>
-<td class="text-left"><p>Python <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="docutils literal notranslate"><span class="pre">scipy</span></code>, <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code></p></td>
+<tr class="row-even"><td><p>System Design</p></td>
+<td><p>Python <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="docutils literal notranslate"><span class="pre">scipy</span></code>, <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code></p></td>
 </tr>
-<tr class="row-odd"><td class="text-left"><p>Documentation</p></td>
-<td class="text-left"><p>Python <code class="docutils literal notranslate"><span class="pre">mkdocs</span></code>, <code class="docutils literal notranslate"><span class="pre">schemdraw</span></code></p></td>
+<tr class="row-odd"><td><p>Documentation</p></td>
+<td><p>Python <code class="docutils literal notranslate"><span class="pre">mkdocs</span></code>, <code class="docutils literal notranslate"><span class="pre">schemdraw</span></code></p></td>
 </tr>
-<tr class="row-even"><td class="text-left"><p>Digital Logic Design</p></td>
-<td class="text-left"><p>Xilinx Vivado</p></td>
+<tr class="row-even"><td><p>Digital Logic Design</p></td>
+<td><p>Xilinx Vivado</p></td>
 </tr>
-<tr class="row-odd"><td class="text-left"><p>Analog Circuit Design</p></td>
-<td class="text-left"><p>LTSpice, NGSpice</p></td>
+<tr class="row-odd"><td><p>Analog Circuit Design</p></td>
+<td><p>LTSpice, NGSpice</p></td>
 </tr>
-<tr class="row-even"><td class="text-left"><p>PCB Design</p></td>
-<td class="text-left"><p>KiCAD</p></td>
+<tr class="row-even"><td><p>PCB Design</p></td>
+<td><p>KiCAD</p></td>
 </tr>
 </tbody>
 </table>
-<div class="toctree-wrapper compound">
-</div>
-<p><a href="chip_top/index.html">Register Map</a></p></section>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="hdl.html" class="btn btn-neutral float-right" title="Digital Logic" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pages/hdl.html" class="btn btn-neutral float-right" title="Digital Logic" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2026, Codax2000.</p>
+    <p>&#169; Copyright 2026, Alex Knowlton.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
