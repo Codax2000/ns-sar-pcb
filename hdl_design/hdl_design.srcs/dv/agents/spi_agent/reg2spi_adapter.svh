@@ -78,8 +78,8 @@ class reg2spi_adapter extends uvm_reg_adapter;
                 temp_data[7:0]  = pkt.mosi[3];
             end
             else begin
-                temp_data[15:8] = pkt.mosi[2];
-                temp_data[7:0]  = pkt.mosi[3];
+                temp_data[15:8] = pkt.miso[2];
+                temp_data[7:0]  = pkt.miso[3];
             end
             
             rw.data = temp_data;

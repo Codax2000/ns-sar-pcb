@@ -2,32 +2,32 @@
 // Toplevel container module chiefly responsible for managing IO buffer connections.
 // Only <adc_top> and <dac_top> are included.
 module chip_top (
-    // SPI interfaces
-    input  logic adc_csb,    
-    input  logic dac_csb,
-    input  logic scl,
-    output logic miso,
-    input  logic mosi,
-
     // system clock
-    input sysclk,
-    input arst_n,
+    input  wire sysclk,
+    input  wire arst_n,
+
+    // SPI interfaces
+    input  wire adc_csb,    
+    input  wire dac_csb,
+    input  wire scl,
+    output wire miso,
+    input  wire mosi,
 
     // sinegen DAC signals
-    output logic sinegen_syncb,
-    output logic sinegen_sclk,
-    output logic sinegen_dinp,
-    output logic sinegen_dinn,
+    output wire sinegen_syncb,
+    output wire sinegen_sclk,
+    output wire sinegen_dinp,
+    output wire sinegen_dinn,
 
     // SAR ADC signals
-    output logic shift_reg_dout,
-    output logic shift_reg_sclk,
-    output logic shift_reg_den,
-    output logic shift_reg_latch,
-    input  logic sar_adc_in,
-    output logic sh_en,
-    output logic int1_en,
-    output logic int2_en
+    output wire shift_reg_dout,
+    output wire shift_reg_sclk,
+    output wire shift_reg_den,
+    output wire shift_reg_latch,
+    input  wire sar_adc_in,
+    output wire sh_en,
+    output wire int1_en,
+    output wire int2_en
 );
 
     logic sysclk_buf;
@@ -49,18 +49,28 @@ module chip_top (
     logic sinegen_dinn_buf;
 
     `ifdef VIVADO
-    assign sysclk_buf = sysclk;
-    assign arst_n_buf = arst_n;
-    assign adc_csb_buf = adc_csb;
-    assign dac_csb_buf = dac_csb;
-    assign scl_buf = scl;
-    assign mosi_buf = mosi;
-    assign miso_buf = adc_miso_en ? adc_miso : dac_miso_en ? dac_miso : 1'bz;
+    // system clock
+    logic sysclk_in;
+    IBUF i_buf_clk  (.I(sysclk), .O(sysclk_in));
+    BUFG i_bufg_clk (.I(sysclk_in), .O(sysclk_buf));
+
+    IBUF i_arst_n_buf (.I(arst_n), .O(arst_n_buf));
+    IBUF i_adc_csb_buf (.I(adc_csb), .O(adc_csb_buf));
+    IBUF i_dac_csb_buf (.I(dac_csb), .O(dac_csb_buf));
+    IBUF i_scl_buf (.I(scl), .O(scl_buf));
+    IBUF i_mosi_buf (.I(mosi), .O(mosi_buf));
+
+    assign miso_buf = adc_miso_en ? adc_miso : dac_miso;
+    IOBUF i_miso_buf (
+        .T(!(adc_miso_en || dac_miso_en)),
+        .I(miso_buf),
+        .IO(miso)
+    );
     
-    assign sinegen_syncb = sinegen_syncb_buf;
-    assign sinegen_sclk  = sinegen_sclk_buf;
-    assign sinegen_dinp  = sinegen_dinp_buf;
-    assign sinegen_dinn  = sinegen_dinn_buf;
+    OBUF i_sinegen_syncb_buf (.I(sinegen_syncb_buf), .O(sinegen_syncb));
+    OBUF i_sinegen_sclk_buf  (.I(sinegen_sclk_buf ), .O(sinegen_sclk ));
+    OBUF i_sinegen_dinp_buf  (.I(sinegen_dinp_buf ), .O(sinegen_dinp ));
+    OBUF i_sinegen_dinn_buf  (.I(sinegen_dinn_buf ), .O(sinegen_dinn ));
     `else
     assign sysclk_buf = sysclk;
     assign arst_n_buf = arst_n;

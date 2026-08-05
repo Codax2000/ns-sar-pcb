@@ -35,6 +35,7 @@ class spi_driver extends uvm_driver #(spi_packet);
         
         forever begin
             seq_item_port.get_next_item(req);
+            `uvm_info(get_full_name(), $sformatf("Driving packet: %s", req.sprint()), UVM_LOW)
             drive_item(req);
             seq_item_port.item_done(req);
         end
