@@ -44,10 +44,6 @@ gen: clean
 	@cd docs; $(MKDOCS) build; cd ..;
 	@echo "[Makefile] Done."
 
-deploy:
-	cd docs; $(MKDOCS) gh-deploy; cd ..;
-	@echo "[Makefile] Done."
-
 clean:
 	@echo "[Makefile] Cleaning generated files..."
 	@rm -rf $(DAC_RTL_DIR)
@@ -62,3 +58,13 @@ clean:
 	@rm -rf ./scripts/__pycache__
 	@rm -rf .aider*
 	@echo "[Makefile] Done."
+
+doc:
+	python -m sphinx.cmd.build -b html docs docs/_build/html
+
+serve:
+	python -m http.server --directory docs/_build/html
+
+deploy:
+	@ghp-import -m "Update documentation" -b gh-pages docs/_build/html --push
+	@echo "[Makefile] Deployed to GitHub Pages. New site should be visible in a few minutes."
