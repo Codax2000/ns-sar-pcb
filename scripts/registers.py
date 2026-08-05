@@ -17,6 +17,7 @@ Unified chip_top (DAC + ADC composed):
 
 import sys
 import argparse
+from pathlib import Path
 from systemrdl import RDLCompiler, RDLCompileError
 from peakrdl_uvm import UVMExporter
 from peakrdl_html import HTMLExporter
@@ -38,7 +39,7 @@ DEFAULT_ADC_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/adc_registers.rd
 DEFAULT_TOP_RDL_SPEC  = './hdl_design/hdl_design.srcs/registers/chip_top.rdl'
 
 # HTML documentation directory (top-level only)
-DEFAULT_TOP_HTML_PATH = './docs/docs/chip_top'
+DEFAULT_TOP_HTML_PATH = './docs/_static/chip_top'
 
 # UVM register package (generated from chip_top for the full RAL model)
 DEFAULT_UVM_PKG_PATH  = \
@@ -249,6 +250,7 @@ def main():
     2. ADC  — compile adc_registers.rdl  -> passthrough RTL + synchronizer
     3. Top  — compile chip_top.rdl       -> unified UVM RAL package + HTML
     '''
+
     args = parse_input_arguments()
 
     # ------------------------------------------------------------------
@@ -276,7 +278,9 @@ def main():
     top_root = compile_rdl(args.udp_spec, args.top_spec)
     gen_uvm_pkg(top_root, args.uvmpkg,
                 user_template_dir='./scripts/peakrdl_templates')
-    gen_html(top_root, args.top_html)
+    
+    # Not needed for now, Sphinx extension handles it
+    # gen_html(top_root, args.top_html)
     gen_cheader(top_root, args.cheader)
 
     print('[registers.py] Done.')
