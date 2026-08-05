@@ -66,5 +66,5 @@ serve:
 	python -m http.server --directory docs/_build/html
 
 deploy:
-	@ghp-import -m "Update documentation" -b gh-pages docs/_build/html --push
+	@ghp-import -m "Update documentation" -b gh-pages docs/_build/html --push --no-jekyll
 	@echo "[Makefile] Deployed to GitHub Pages. New site should be visible in a few minutes."
