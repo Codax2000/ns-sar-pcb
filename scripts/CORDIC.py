@@ -1,216 +1,165 @@
 '''
-Alex Knowlton
-10/24
+Aditya Patel
+7/26/26
 
-Defines a CORDIC object capable of hyperbolic or linear
-rotation or vectoring.
+File: Creating a CORDIC module that functions in rotation mode. Goal is to plot cos and output of CORDIC module on the same waveform.
+
+Something that needs to be verified: 1. the magnitude of the inputs vectors. The reason is x_out, y_out, z_out are all declared as 16-bit fixed-point integers, works fine with input vector (1,0) but fails with (2,3) with Q(16,13)
+
+Two fixes: 
+1. Increase int16 to int32 but depends if hardware allows us to do that
+2. Reduce the precision of Q-format. We can make it Q(16, 12).
 '''
 
-from fp_logic import *
 import numpy as np
 import matplotlib.pyplot as plt
-import pdb
+from fp_logic import *
+
+# Constants/setup - function that builds your tan^-1(2^-j) lookup table for j = 0 --> 15
 
 class CORDIC:
-    """
-    CORDIC (Coordinate Rotation Digital Computer) simulation object.
 
-    Simulates hardware-accurate CORDIC operations using fixed-point arithmetic 
-    configurations. Supports both rotation and vectoring modes across linear 
-    and hyperbolic coordinate systems.
-    """
+    # Q(n,r) = (16,13) for x, y
+    # Q(n,r) = (16,11) for z (angle)
 
-    def __init__(self, n_rotations=16, n_x=16, r_x=8, n_z=16, r_z=8):
-        """
-        Initialize the CORDIC engine with specific fixed-point formats and iterations.
+    ''' Excepts the runtime format values for the way x, y, and z should be stored.
+        Since x and y are two coordinates of the same vector, their magnitudes will be the same,
+        and therefore n_Y and r_y is unnecessary.
+    '''
+    def __init__(self, n_rotations=16, n_x=16, r_x=13, n_z=16, r_z=11):      
 
-        Parameters
-        ----------
-        n_rotations : int, optional
-            Number of iterations to perform during processing. Defaults to 16.
-        n_x : int, optional
-            Total word length (bit width) for X and Y channels. Defaults to 16.
-        r_x : int, optional
-            Number of fractional bits for X and Y channels. Defaults to 8.
-        n_z : int, optional
-            Total word length (bit width) for the Z (angle) channel. Defaults to 16.
-        r_z : int, optional
-            Number of fractional bits for the Z (angle) channel. Defaults to 8.
-        """
         self._n_x = n_x
-        self._r_x = r_x
         self._n_z = n_z
+        self._r_x = r_x
         self._r_z = r_z
         self._n_rotations = n_rotations
 
-    def rotate(self, x, y, z, is_hyperbolic=False):
-        """
-        Perform CORDIC rotation mode, driving the angle tracking value z towards 0.
+    def build_lut (self):
+        index = np.arange(self._n_rotations)
+        lut = np.arctan(np.power(2.0, -index))
+        return lut
 
-        Parameters
-        ----------
-        x : int, float, or numpy.ndarray
-            Initial X-coordinate(s). Can be scalar or 1D array-like.
-        y : int, float, or numpy.ndarray
-            Initial Y-coordinate(s). Can be scalar or 1D array-like.
-        z : int, float, or numpy.ndarray
-            Initial angle(s) to rotate through. Can be scalar or 1D array-like.
-        is_hyperbolic : bool, optional
-            If True, performs hyperbolic rotation (using arctanh tables).
-            If False, performs circular/linear rotation (using arctan tables). 
-            Defaults to False.
+    # converting pi values into Q format
+    def get_pi_constants (self):
 
-        Returns
-        -------
-        x_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking X values across stages.
-        y_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking Y values across stages.
-        z_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking Z values across stages.
-        sigma_history : numpy.ndarray
-            Matrix of shape (n_rotations, N) containing rotation directions (-1 or 1).
-        """
-        return self._cordic_rotate(x, y, z, False, is_hyperbolic)
+        ppi         = fp_quantize(np.pi, self._n_z, self._r_z)      # π
+        npi         = fp_quantize(-np.pi, self._n_z, self._r_z)     # -π
+        ppi_half    = fp_quantize((np.pi)/2, self._n_z, self._r_z)  # π/2
+        npi_half    = fp_quantize((-np.pi)/2, self._n_z, self._r_z) # -π/2
+        return ppi, npi, ppi_half, npi_half
 
-    def vector(self, x, y, z, is_hyperbolic=False):
-        """
-        Perform CORDIC vectoring mode, driving the Y-coordinate towards 0.
+    '''
+    Problem: the angles can also be represented betwee ~(-pi/2, pi/2). 
+    We want to be able to represent a full circle from (-pi, pi), so we have
+    rotate the vector and adjust the angle theta accordingly.
+    '''
+    def _glue_logic(self, x, y, z):
+        x = np.array(x)                        # numpy arrays are passed by referenceso any change in the function will change the original contents.
+        y = np.array(y)                        
+        z = np.array(z)
+        # z_qtz = fp_quantize(z, self._n_z, self._r_z)
 
-        Parameters
-        ----------
-        x : int, float, or numpy.ndarray
-            Initial X-coordinate(s). Can be scalar or 1D array-like.
-        y : int, float, or numpy.ndarray
-            Initial Y-coordinate(s). Can be scalar or 1D array-like.
-        z : int, float, or numpy.ndarray
-            Initial accumulator angle(s). Can be scalar or 1D array-like.
-        is_hyperbolic : bool, optional
-            If True, performs hyperbolic vectoring. If False, performs 
-            circular/linear vectoring. Defaults to False.
+        ppi, npi, ppi_half, npi_half = self.get_pi_constants()
 
-        Returns
-        -------
-        x_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking X values across stages.
-        y_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking Y values across stages.
-        z_history : numpy.ndarray
-            Matrix of shape (n_rotations + 3, N) tracking Z values across stages.
-        sigma_history : numpy.ndarray
-            Matrix of shape (n_rotations, N) containing rotation directions (-1 or 1).
-        """
-        return self._cordic_rotate(x, y, z, True, is_hyperbolic)
-    
-    def _cordic_rotate(self, x, y, z, is_vectoring, is_hyperbolic):
-        """
-        Internal unified CORDIC engine executing execution loops and scaling adjustments.
+        filt2 = z < npi_half        # z < -π/2
+        filt3 = z > ppi_half        # z > π/2
+        filt1 = filt2 | filt3
 
-        The output matrices contain structurally indexed rows:
-          - Row 0: Original inputs.
-          - Row 1: Outputs post quadrant-mapping correction (glue logic).
-          - Rows 2 to (n_rotations + 1): State history per iteration step `j`.
-          - Row -1 (Last): Final state scaled by the compensation factor `K`.
+        ''' Add π if z < -π/2, else if z > π/2, subtract π
+        '''
+        z[filt2] = fp_add(z[filt2], ppi, self._n_z, self._n_z, self._r_z, \
+                            self._r_z, self._n_z, self._r_z)
+        z[filt3] = fp_add(z[filt3], npi, self._n_z, self._n_z, self._r_z, \
+                            self._r_z, self._n_z, self._r_z)
+        x[filt1] = -x[filt1]        # bring the vector from Quad II or III into I or IV
+        y[filt1] = -y[filt1]
+        return x, y, z
 
-        Parameters
-        ----------
-        x : int, float, or numpy.ndarray
-            Raw X-coordinate values.
-        y : int, float, or numpy.ndarray
-            Raw Y-coordinate values.
-        z : int, float, or numpy.ndarray
-            Raw Z-coordinate values.
-        is_vectoring : bool
-            Directs loop to track y=0 if True, else z=0 if False.
-        is_hyperbolic : bool
-            Selects hyperbolic lookup configurations and scaling constants if True.
+    def iteration(self, x, y, z):
+        ''' CORDIC Engine runnning iterations
+        
+        Parameters:
+        x: int, float, or numpy.ndarray
+            Raw x-coordinate values
+        y: int, float, or numpy.ndarray
+            Raw y-coordinate values
+        z: int, float, or numpy.ndarray
+            Raw z-coordinate values
 
-        Returns
-        -------
-        tuple of numpy.ndarray
-            Returns (x_out, y_out, z_out, sigma) where histories are tracked across 
-            execution rows.
-        """
-        x, y, z = self._fix_types(x, y, z)
-        x_glue, y_glue, z_glue = self._glue_logic(x, y, z, is_vectoring)
+        Reuturns:
+        tuple of nump.ndarray
+            Returns (x_out, y_out, z_out, sigma) where histories are tracked across execution rows
+        
+        
+        '''
+        x, y, z = self._fix_types_and_quantize(x, y, z)
+        x_glue, y_glue, z_glue = self._glue_logic(x, y, z)
 
-        # create result arrays
-        x_out = np.zeros((self._n_rotations + 3, x.shape[1]))
-        y_out = np.zeros((self._n_rotations + 3, x.shape[1]))
-        z_out = np.zeros((self._n_rotations + 3, x.shape[1]))
-        sigma = np.zeros((self._n_rotations, x.shape[1]))
+        K = fp_quantize(1/1.64676, self._n_x, self._r_x)
+
+        x_length = x.shape[1]
+        broadcaster = np.zeros((1, x_length))
+        K = K + broadcaster
+        print("K:", np.shape([K]))
+        print("x:", np.shape([x]))
+        # creating 2D result arrays, initialized to all 0
+        # np.zeros format = (rows, columns). So rows = n_rotations (16) + 3 = 19 for
+        # original inputs, glue logic values, 16 iterations, and final K scaled output
+
+        x_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)    #x.shape[1] because it returns the horizontal width aka # columns of x array
+        y_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)
+        z_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)
+        sigma_j = np.zeros((self._n_rotations, x.shape[1]), dtype=np.int32)
+        
+        # the original inputs without any modifications
         x_out[0, :] = x[0, :]
         y_out[0, :] = y[0, :]
         z_out[0, :] = z[0, :]
 
+        # the glue logic values
         x_out[1, :] = x_glue[0, :]
         y_out[1, :] = y_glue[0, :]
         z_out[1, :] = z_glue[0, :]
 
-        # rename for readability, now that things are saved
-        x = x_out
-        y = y_out
-        z = z_out
-
-        # set appropriate lookup table for the operation
-        lut, K, index, m = self.get_rotation_constants(is_hyperbolic)
+        # 16 iterations
+        index = np.arange(self._n_rotations)
+        lut = self.build_lut()
+        lut = fp_quantize(lut, self._n_z, self._r_z)
+        
         for i in range(len(index)):
             j_current = index[i]
-            if is_vectoring:
-                filt = y[i+1, :] >= 0
-            else:
-                filt = z[i+1, :] < 0
-            sigma[i, filt] = -1
-            sigma[i, ~filt] = 1
 
-            x[i+2, :] = x[i+1, :] - m * sigma[i, :] * y[i+1, :] * (2.0**(-j_current))
-            y[i+2, :] = y[i+1, :] + sigma[i, :] * x[i+1, :] * (2.0**(-j_current))
-            z[i+2, :] = z[i+1, :] - sigma[i, :] * lut[i]
+            filt = z_out[i+1, :] < 0
+            sigma_j[i, filt] = -1
+            sigma_j[i, ~filt] = 1
 
-        x[-1, :] = fp_mult(x[-2, :], K, self._n_x, self._n_x, self._r_x, \
-                           self._r_x, self._n_x, self._r_x)
-        y[-1, :] = fp_mult(y[-2, :], K, self._n_x, self._n_x, self._r_x, \
-                           self._r_x, self._n_x, self._r_x)
-        z[-1, :] = z[-2, :]
-        sigma[sigma == 0] = -1
-        return x, y, z, sigma
-    
-    def _glue_logic(self, x, y, z, is_vectoring):
-        """
-        Map target coordinates or angles into convergence-safe domains.
-        """
-        x = np.array(x)
-        y = np.array(y)
-        z = np.array(z)
-        ppi, npi, ppi_half, npi_half = self.get_pi_constants()
-        z_gt_pihalf = z > ppi_half
-        z_lt_pihalf = z < npi_half
-        if is_vectoring:
-            filt1 = x < 0
-            filt2 = (x < 0) & (y >= 0)
-            filt3 = (x < 0) & (y < 0)
-        else:
-            filt1 = z_gt_pihalf | z_lt_pihalf
-            filt2 = z_lt_pihalf
-            filt3 = z_gt_pihalf
-        z[filt2] = fp_add(z[filt2], ppi, self._n_z, self._n_z, self._r_z, \
-                          self._r_z, self._n_z, self._r_z)
-        z[filt3] = fp_add(z[filt3], npi, self._n_z, self._n_z, self._r_z, \
-                          self._r_z, self._n_z, self._r_z)
-        x[filt1] = -x[filt1]
-        y[filt1] = -y[filt1]
-        return x, y, z
-    
-    def _fix_types(self, x, y, z):
-        """
-        Standardize raw parameter types and broadcast scalars/arrays into consistent matrices.
-        """
-        if type(x) != type(np.zeros(1)):
+            x_out[i+2, :] = x_out[i+1, :] - (sigma_j[i, :] * y_out[i+1, :] >> j_current)
+            y_out[i+2, :] = y_out[i+1, :] + (sigma_j[i, :] * x_out[i+1, :] >> j_current)
+            z_out[i+2, :] = z_out[i+1, :] - (sigma_j[i, :] * lut[j_current])
+
+            print(f"i:{i}, x:{x_out[i+2,0]/2**self._r_x:.4f}, y:{y_out[i+2,0]/2**self._r_x:.4f}, "      
+                    f"z:{z_out[i+2,0]/2**self._r_z:.4f}, sigma:{sigma_j[i,0]}")
+
+        x_out[-1, :] = fp_mult(x_out[-2, :], K, self._n_x, self._n_x, self._r_x, self._r_x, self._n_x, self._r_x)
+        y_out[-1, :] = fp_mult(y_out[-2, :], K, self._n_x, self._n_x, self._r_x, self._r_x, self._n_x, self._r_x)
+        z_out[-1, :] = z_out[-2, :]
+        
+        print(f"i: 18, x: {x_out[-1, :]}, y: {y_out[-1, :]}, z: {z_out[-1, :]}, sigma: {sigma_j[i, :]}")
+        return x_out, y_out, z_out, sigma_j
+        
+
+    def _fix_types_and_quantize(self, x, y, z):
+
+        if type(x) != type(np.array([1])):
             x = np.array([x])
-        if type(y) != type(np.zeros(1)):
+        if type(y) != type(np.array([1])):
             y = np.array([y])
-        if type(z) != type(np.zeros(1)):
+        if type(z) != type(np.array([1])):
             z = np.array([z])
+
+        x = fp_quantize(x, self._n_x, self._r_x)
+        y = fp_quantize(y, self._n_x, self._r_x)
+        z = fp_quantize(z, self._n_z, self._r_z)
 
         max_length = max([len(x), len(y), len(z)])
         broadcaster = np.zeros((1, max_length))
@@ -218,93 +167,41 @@ class CORDIC:
         y = y + broadcaster
         z = z + broadcaster
 
-        return x, y, z
-    
-    def get_rotation_constants(self, is_hyperbolic):
-        """
-        Generate quantized step lookup vectors, scaling limits, and indices.
-        """
-        index = np.arange(self._n_rotations)
-        m = 1
-        lut = np.arctan(np.power(2.0, -index))
-
-        if is_hyperbolic:
-            m = -1
-            index += 1
-            extra_numbers = []
-            extra = 4
-            while(extra < self._n_rotations):
-                extra_numbers.append(extra)
-                extra = 3 * extra + 1
-            extra = np.array(extra_numbers)
-            index = np.concatenate((index, extra))
-            index = np.sort(index)
-            index = index[:self._n_rotations]
-            lut = np.arctanh(np.power(2.0, -index))
-        K = np.prod(np.sqrt(1 + m * np.power(2.0, -2*index)))
-        K_fp = fp_quantize(1 / K, self._n_x, self._r_x)
-        lut = fp_quantize(lut, self._n_z, self._r_z)
-        return lut, K_fp, index, m
-
-    def get_pi_constants(self):
-        """
-        Retrieve quantized boundary references based on Z register fixed-point settings.
-        """
-        ppi = fp_quantize(np.pi, self._n_z, self._r_z)
-        npi = fp_quantize(-np.pi, self._n_z, self._r_z)
-        ppi_half = fp_quantize(np.pi / 2, self._n_z, self._r_z)
-        npi_half = fp_quantize(-np.pi / 2, self._n_z, self._r_z)
-        return ppi, npi, ppi_half, npi_half
-
-    def __str__(self):
-        return f'CORDIC:\n\t{self._n_rotations} iterations\n\tX: Q({self._n_x}, {self._r_x})\n\tZ: Q({self._n_z}, {self._r_z})'
+        return x , y, z
 
 
-if __name__ == "__main__":
-    # 1. Instantiate the CORDIC block with higher resolution for demo purposes
-    # Using Q(24, 16) to ensure the fixed point logic handles pi/2 and 1.0 smoothly
-    n_steps = 16
-    cordic_engine = CORDIC(n_rotations=n_steps, n_x=24, r_x=16, n_z=24, r_z=16)
-    
-    # 2. Extract 1/K scale factor dynamically from your architecture constants
-    _, K_reciprocal, _, _ = cordic_engine.get_rotation_constants(is_hyperbolic=False)
-    
-    # For a circular rotation to calculate sin(z) and cos(z):
-    # x0 = 1/K, y0 = 0, z0 = target_angle
-    initial_x = K_reciprocal
-    initial_y = 0.0
-    initial_z = np.pi / 2.0  # target angle
-    
-    # 3. Execute the CORDIC rotation engine
-    x_hist, y_hist, z_hist, _ = cordic_engine.rotate(initial_x, initial_y, initial_z)
-    
-    # 4. Extract data array histories (flattening the matrix row shapes)
-    # Rows 2 to (n_steps + 2) track values across the actual iteration indices 0 to n_steps-1
-    iter_indices = np.arange(n_steps)
-    x_iterations = x_hist[2:2 + n_steps, 0]
-    y_iterations = y_hist[2:2 + n_steps, 0]
-    z_iterations = z_hist[2:2 + n_steps, 0]
-    
-    print(f"Calculated Value for Sin(pi/2): {y_hist[-1, 0]:.6f} (Expected: ~1.0)")
-    print(f"Calculated Value for Cos(pi/2): {x_hist[-1, 0]:.6f} (Expected: ~0.0)")
+''' Testing: Sweep Angles and plot them to verify the CORDIC engine'''
+my_cordic = CORDIC()
 
-    # 5. Plotting configurations
-    plt.figure(figsize=(10, 6))
-    
-    plt.plot(iter_indices, x_iterations, 'o-', label='X value (~Cos tracking)', color='crimson')
-    plt.plot(iter_indices, y_iterations, 's-', label='Y value (~Sin tracking)', color='dodgerblue')
-    plt.plot(iter_indices, z_iterations, '^--', label='Z angle error (rads)', color='orange')
-    
-    # Highlight final post-scaled adjustment row values
-    plt.axhline(y=y_hist[-1, 0], color='blue', linestyle=':', alpha=0.6, label='Final Normalized Sin value')
-    plt.axhline(y=x_hist[-1, 0], color='red', linestyle=':', alpha=0.6, label='Final Normalized Cos value')
+# x0 = 1
+# y0 = 0
 
-    plt.title(f"CORDIC Converging States across {n_steps} Rotations ($\phi = \pi/2$)")
-    plt.xlabel("Rotation Step Index ($j$)")
-    plt.ylabel("Value State Magnitude")
-    plt.xticks(iter_indices)
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend(loc='best')
-    plt.tight_layout()
-    
-    plt.savefig('./img/cordic_example.png')
+x02 = 2
+y02 = 3
+
+thetas = np.linspace(-np.pi, np.pi, 200)
+
+# run the iteration
+x_out, y_out, z_out, sigma_j = my_cordic.iteration(1, 0, thetas)
+# x_out, y_out, z_out, sigma_j = my_cordic.iteration(1, 0, np.pi/4)
+# x_out2, y_out2, z_out2, sigma_j2 = my_cordic.iteration(x02, y02, thetas)
+
+#plot
+cordic_cos = x_out[-1, :]
+cordic_cos = cordic_cos / (2**my_cordic._r_x)
+# cordic_mix_x = x_out2[-1, :]
+# cordic_mix_y = y_out2[-1, :]
+# cordic_mix_x = cordic_mix_x/ (2**my_cordic._r_x)
+# cordic_mix_y = cordic_mix_y/ (2**my_cordic._r_x)
+
+
+plt.plot(thetas, cordic_cos, label='CORDIC')        #compare the cordic computed cos against numpy's in-built cos
+# plt.plot(thetas, cordic_mix_x, label='cordic mix x', color='blue')
+# plt.plot(thetas, cordic_mix_y, label='cordic mix y', color='green')
+
+plt.plot(thetas, np.cos(thetas), label='numpy cos', linestyle='dashed')
+# plt.plot(thetas, 2*np.cos(thetas) - 3*np.sin(thetas), label='2cos-3sin', linestyle="dashed", color='red')
+# plt.plot(thetas, 2*np.sin(thetas) + 3*np.cos(thetas), label='2sin+3cos', linestyle="dashed", color='brown')
+# plt.plot(thetas, cordic_cos - np.cos(thetas), label='error', linestyle='dashdot')
+plt.legend()
+plt.savefig('cordic_2.png')
