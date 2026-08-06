@@ -70,6 +70,12 @@ module spi (
                         if_addr <= if_addr + 1;
                 end
             end
+
+            // load write data
+            if (byte_count == 4'hF && addr_state == RECEIVE_WRITE)
+                if_wr_data <= {mosi_shift_reg[13:0], mosi};
+            else
+                if_wr_data <= 0;
         end
     end
 

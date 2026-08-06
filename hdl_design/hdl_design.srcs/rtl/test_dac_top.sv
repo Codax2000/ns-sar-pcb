@@ -103,7 +103,7 @@ module test_dac_top (
 
         .s_cpuif_req      ( sysclk_dac_if_req_posedge),
         .s_cpuif_req_is_wr(!sysclk_dac_if_rd_en),
-        .s_cpuif_addr     ({sysclk_dac_if_addr[3:1], 1'b0}),
+        .s_cpuif_addr     ({sysclk_dac_if_addr[2:0], 1'b0}),
         .s_cpuif_wr_data  ( sysclk_dac_if_wr_data),
         .s_cpuif_wr_biten ( 16'hFFFF),
         .s_cpuif_rd_err   ( sysclk_dac_if_rd_err),
