@@ -63,12 +63,13 @@ module spi (
                     else
                         addr_state    <= RECEIVE_WRITE;
                 end
-                else begin
-                    if (if_addr == 15'h7FFF)
-                        if_addr <= if_addr;
-                    else
-                        if_addr <= if_addr + 1;
-                end
+            end
+     
+            if (rd_en || wr_en) begin
+                if (if_addr == 15'h7FFF)
+                    if_addr <= if_addr;
+                else
+                    if_addr <= if_addr + 1;
             end
 
             // load write data
