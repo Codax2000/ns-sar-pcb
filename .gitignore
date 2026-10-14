@@ -20,8 +20,8 @@ hdl_design/hdl_design.srcs/dv/waveforms
 software/firmware/src/registers/chip_top_registers.h
 
 freq_adapter/
-docs/docs/chip_top/
-docs/docs/ndocs/
+docs/_build/
+docs/_static/img/
 nd_config/Working\ Data/
 docs/site
 docs/docs/img/

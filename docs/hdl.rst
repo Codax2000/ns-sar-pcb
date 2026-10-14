@@ -1,0 +1,100 @@
+=============
+Digital Logic
+=============
+
+ADCs need digital logic. This means a register interface for CSRs (control and status registers) and a main state machine to control the conversion. It therefore means closing timing and rigorous verification.
+
+Digital Architecture
+--------------------
+
+The digital architecture is mainly a SPI interface that connects to a state machine. The state machine manages the NFFT conversion using control/status registers from the SPI clock domain and writes data from the SAR ADC to the data memory, which can be read from the SPI domain.
+
+.. image:: ./_static/img/digital.png
+   :alt: Toplevel Architecture
+   :align: center
+
+The incremental filters are implemented as simple up-counters, since they have a reset.
+
+.. image:: ./_static/img/dig_filter.png
+   :alt: Digital Filters
+   :align: center
+
+Main State Machine
+~~~~~~~~~~~~~~~~~~
+
+Most SAR ADCs are controlled via an asynchronous control loop an discrete clocking logic. This is not so easy with an FPGA, and short of building it with discrete components, it's easier to use an FSM. It should be fast enough to operate with no issues. The main state machine looks like so:
+
+.. image:: ./_static/img/main_state_machine.png
+   :alt: Main State Machine
+   :align: center
+
+This ADC will support noise-shaping and oversampling. The goal of the main state machine is to take a certain number of samples with the easiest possible controls; this controls the memory, oversampling, and clocking logic.
+
+The ADC has the following values controllable via SPI:
+
+* Incremental mode enable/disable
+* DEM enable/disable
+* Number of FFT samples (NFFT)
+* Oversampling ratio (OSR)
+* SHA/Integration length and overlap times
+* The number of bits in the SAR quantizer
+
+SPI Protocol
+~~~~~~~~~~~~
+
+SPI works in SPI mode 0, with a 15-bit address, which accesses 2 bytes at a time. That way, even though the RTL accesses using a 16-bit address, SPI still works with 15 bit, and just retrieves the registers at address and address + 1, from the RTL point of view. In other words, the address is the 15 MSBs of a 16-bit address, and the SPI interface just reads back two data words.
+
+The SDO pin is tri-stated unless it is actively sending data.
+
+For a write:
+
+.. image:: ./_static/img/spi_write.png
+   :alt: SPI Write
+   :align: center
+
+For a read:
+
+.. image:: ./_static/img/spi_read.png
+   :alt: SPI Read
+   :align: center
+
+It also supports burst read and write, with the address incrementing by 1 after each byte.
+
+.. image:: ./_static/img/spi_burst_write.png
+   :alt: SPI Burst Write
+   :align: center
+
+.. image:: ./_static/img/spi_burst_read.png
+   :alt: SPI Burst Read
+   :align: center
+
+SPI CDC
+~~~~~~~
+
+One of the issues with this SPI scheme is that there is no time for a typical CDC scheme. The CDC scheme, as it currently stands, is to synchronize the signals from SPI to the system clock, which will be roughly 5 times the maximum SPI clock speed. The current idea is to do the following (signals synchronized to SPI clock in purple):
+
+.. image:: ./_static/img/spi_cdc.png
+   :alt: SPI CDC
+   :align: center
+
+Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is to latch and hold the read data until the synchronized SPI clock returns to 0.
+
+Integration
+-----------
+
+There are two options for integration. The first would be to integrate this with the Zynq PS so that I can run AXI commands natively, like so:
+
+.. image:: ./_static/img/zynq_validation_setup.png
+   :alt: Zynq Validation
+   :align: center
+
+Given that my board very likely has a fried Ethernet chip, this may be difficult. If that persists and I am not able to find a workaround, I will ignore the dedicated PS and use the FPGA fabric only, using a Jupyter notebook over ``pyserial``, with Arduino drivers instead of Linux ones. The bonus is that the PCB design will remain the same.
+
+.. image:: ./_static/img/arduino_validation_setup.png
+   :alt: Arduino Validation
+   :align: center
+
+Register Map
+------------
+
+The generated register map is available at :rdl:ref:`chip_top`.

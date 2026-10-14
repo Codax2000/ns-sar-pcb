@@ -19,10 +19,10 @@ class reg_rw_test extends base_test;
 
         `uvm_info(get_full_name(), "Beginning main phase", UVM_LOW)
 
-        // regmodel.ADC.SH_CTRL.write(status, 16'h4004);
+        regmodel.ADC.SH_CTRL.write(status, 16'h4004);
         regmodel.DAC.ENABLE.dacp_enable.write(status, 1'b1);
-        regmodel.DAC.AC_CONFIG.mirror(status);
-        regmodel.DAC.ENABLE.dacp_enable.mirror(status);
+        // regmodel.DAC.AC_CONFIG.mirror(status);
+        // regmodel.DAC.ENABLE.dacp_enable.mirror(status);
 
         phase.drop_objection(this);
     endtask

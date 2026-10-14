@@ -17,6 +17,7 @@ this project. This includes:
 
 import schemdraw
 import schemdraw.elements as elm
+from pathlib import Path
 from schemdraw import dsp
 from schemdraw import flow
 from schemdraw import logic
@@ -28,7 +29,7 @@ Function: draw_digital_architecture
 Draw and saves the ADC digital architecture
 
 Parameters:
-    filename - the name of the PNG file in ./docs/docs/img that will be saved
+    filename - the name of the PNG file in ./docs/_static/img that will be saved
 '''
 def draw_digital_architecture(filename='digital.png'):
     with schemdraw.Drawing(show=False) as d:
@@ -124,7 +125,7 @@ def draw_digital_architecture(filename='digital.png'):
         elm.DataBusLine().down().toy(fl.end)
         dsp.Line().left().tox(fl.end)
     
-    d.save(f'./docs/docs/img/{filename}')
+    d.save(f'./docs/_static/img/{filename}')
 
 
 '''
@@ -183,7 +184,7 @@ def draw_adc_loop(filename='adc_loop'):
         dsp.Line().length(d.unit/4)
         dsp.Arrow().to(s_quant.NW)
     
-    d.save(f'./docs/docs/img/{filename}')
+    d.save(f'./docs/_static/img/{filename}')
 
 '''
 Function: draw_digital_filter
@@ -204,7 +205,7 @@ def draw_digital_filter(filename='dig_filter.png'):
         dsp.Arrow().at(filt1.S, dy=-d.unit/2).to(filt1.S).label('RST', loc='left')
         dsp.Arrow().at(filt2.S, dy=-d.unit/2).to(filt2.S).label('RST', loc='left')
     
-    d.save(f'./docs/docs/img/{filename}')
+    d.save(f'./docs/_static/img/{filename}')
 
 
 '''
@@ -214,7 +215,7 @@ def draw_uvm_db(filename='uvm_tb.png'):
     agent_color='#ffeeee'
     model_color='#eeffff'
 
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}') as d:
         axi_agent = dsp.Box().label('SPI Agent').fill(agent_color)
 
         axi_bus = dsp.Line().length(d.unit*3/4).dot().linestyle('--')
@@ -344,7 +345,7 @@ def draw_axi_integration_tb(filename='axi_integration_tb.png'):
     agent_color='#ffeeee'
     model_color='#eeffff'
 
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}') as d:
         dsp.Box().label('AXI4-Lite Agent').fill(agent_color)
         dsp.Line().length(d.unit/4).dot()
         arr1 = dsp.Arrow().length(d.unit/4)
@@ -408,14 +409,14 @@ def draw_main_sm(filename='main_state_machine.png'):
         flow.Box().label('INT2')
         flow.Line().tox(nfft_done.S)
         flow.Arrow().toy(nfft_done.S)
-    d.save(f'./docs/docs/img/{filename}')
+    d.save(f'./docs/_static/img/{filename}')
 
 
 '''
 Function: draw_spi
 '''
 def draw_spi(filename='spi'):
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_write.png') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}_write.png') as d:
         logic.TimingDiagram(
             {'signal': [
                 {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
@@ -427,7 +428,7 @@ def draw_spi(filename='spi'):
             ygap=0.4
         )
 
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_read.png') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}_read.png') as d:
         logic.TimingDiagram(
             {'signal': [
                 {'name': r'$\overline{CS}$', 'wave': '1.0....|....|.1.'},
@@ -440,7 +441,7 @@ def draw_spi(filename='spi'):
             ygap=0.4
         )
 
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_burst_write.png') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}_burst_write.png') as d:
         logic.TimingDiagram(
             {'signal': [
                 {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
@@ -452,7 +453,7 @@ def draw_spi(filename='spi'):
             ygap=0.4
         )
     
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}_burst_read.png') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}_burst_read.png') as d:
         logic.TimingDiagram(
             {'signal': [
                 {'name': r'$\overline{CS}$', 'wave': '1.0...|...|....|1.'},
@@ -543,11 +544,11 @@ def draw_overall_architecture(filename='toplevel.png'):
         dsp.Box(h=1, w=1.25).label('INT2')
         dsp.Line().length(d.unit/4)
         dsp.Arrow().to(sum_node.S)
-    d.save(f'./docs/docs/img/{filename}')
+    d.save(f'./docs/_static/img/{filename}')
 
 
 def draw_testbench_configs(filename='validation_setup.png'):
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/zynq_{filename}') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/zynq_{filename}') as d:
         dsp.Box().label('Jupyter\n(PC)').color('green')
         dsp.Arrow().linestyle('--').label('Ethernet').color('gray')
         dsp.Box().label('Jupyter\n(Zynq PS)')
@@ -556,7 +557,7 @@ def draw_testbench_configs(filename='validation_setup.png'):
         dsp.Line().length(d.unit/2).label('SPI', color='blue')
         dsp.Box(w=3).label('DUT')
 
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/arduino_{filename}') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/arduino_{filename}') as d:
         dsp.Box().label('Jupyter\n(PC)').color('green')
         dsp.Arrow().linestyle('--').label('pyserial').color('gray')
         dsp.Box().label('Arduino')
@@ -565,7 +566,7 @@ def draw_testbench_configs(filename='validation_setup.png'):
 
 
 def draw_spi_cdc(filename='spi_cdc.png'):
-    with schemdraw.Drawing(show=False, file=f'./docs/docs/img/{filename}') as d:
+    with schemdraw.Drawing(show=False, file=f'./docs/_static/img/{filename}') as d:
         logic.TimingDiagram(
             {'signal': [
                 {'name': 'SPI CLK',       'wave': '0101', 'async': [0, 1.3, 5.6, 9.9, 11.0], 'color': 'purple'},
@@ -593,6 +594,9 @@ def draw_spi_cdc(filename='spi_cdc.png'):
         )
 
 def main():
+    Path("docs/_static").mkdir(parents=True, exist_ok=True)
+    Path("docs/_static/img").mkdir(parents=True, exist_ok=True)
+
     draw_digital_architecture()
     draw_adc_loop()
     draw_digital_filter()

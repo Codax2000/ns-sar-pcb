@@ -16,8 +16,6 @@
 // leaves headroom for expansion. PeakRDL requires power-of-2 alignment for
 // sub-map boundaries.
 
-`include "adc_registers.rdl"
-`include "dac_registers.rdl"
 
 addrmap chip_top {
     desc = "Top-level chip address map (DAC via AXI4-Lite, ADC+MEM via SPI)";
