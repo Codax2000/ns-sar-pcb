@@ -1,0 +1,16 @@
+[project]
+name = "ns-sar-pcb"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flake8>=7.4.1",
+    "jupyterlab>=4.6.4",
+    "matplotlib>=3.11.2",
+    "numba>=0.68.0",
+    "pandas>=3.0.6",
+    "schemdraw>=0.23",
+    "scipy>=1.18.1",
+    "sphinx>=9.1.0",
+]
