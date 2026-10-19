@@ -1,8 +1,10 @@
 """Fixed-point rotation-mode CORDIC sine and cosine.
 
-Phase is an unsigned 16-bit binary angle: ``2**16`` codes is one full
-turn. The top two bits select the quadrant and the low 14 bits are the
-residual inside that quadrant. One residual code is ``pi / 2**15``
+Phase is an unsigned 16-bit binary angle (U0.16): ``2**16`` codes is
+one full turn, so full scale is ``2*pi`` radians. The top two bits
+select the quadrant and the low 14 bits are the residual inside that
+quadrant. The residual and the arctangent table stay in that unit.
+Code ``m`` is ``m / 2**16`` of a turn. There is no conversion to
 radians.
 
 The quadrant step is a 90-degree pre-rotation, which is a swap and
@@ -13,7 +15,7 @@ negate in hardware:
 * quadrant 2: ``(-x, -y)``
 * quadrant 3: ``(y, -x)``
 
-The residual is then in ``[0, pi/2)`` and is applied with shift-add
+The residual is then in ``[0, 1/4)`` turn and is applied with shift-add
 iterations. Iteration ``i`` grows the vector length by
 ``sqrt(1 + 2**(-2*i))``. The product of those factors is the gain
 ``K``. The datapath multiplies by a quantized ``1/K`` and saturates
@@ -37,6 +39,10 @@ from fp_array import FixedPointArray
 
 PHASE_BITS = 16
 OFFSET_BITS = 14
+# Signed width of the angle word. The residual is at most 2**14 - 1
+# codes and the first table entry is 2**13 codes, so a 16-bit signed
+# word holds both and still has room when an iteration steps past zero.
+ANGLE_WIDTH = 16
 
 
 def cordic_gain(n_rotations: int) -> float:
@@ -103,8 +109,9 @@ class CORDIC:
     """Rotation-mode CORDIC with a 90-degree quadrant pre-rotation.
 
     ``x`` and ``y`` use signed format ``(n_x, r_x)``. The residual angle
-    uses signed format ``(n_z, r_z)`` in radians. Phase inputs are
-    unsigned 16-bit codes. Iterations keep full precision; only the
+    is a signed fraction of a turn with ``PHASE_BITS`` fractional bits,
+    the same LSB as the U0.16 phase code. Phase inputs are unsigned
+    16-bit codes. Iterations keep full precision; only the
     gain-compensated output is narrowed to ``(n_x, r_x)``.
     """
 
@@ -113,10 +120,12 @@ class CORDIC:
         n_rotations: int = 16,
         n_x: int = 16,
         r_x: int = 13,
-        n_z: int = 16,
-        r_z: int = 11,
     ) -> None:
         """Build the arctangent table and the quantized reciprocal gain.
+
+        Table entry ``i`` is ``atan(2**(-i)) / (2*pi)``, floored into
+        the phase-code LSB. ``atan(1) / (2*pi)`` is exactly 1/8 of a
+        turn, so the first code is ``2**13``.
 
         Parameters
         ----------
@@ -126,10 +135,6 @@ class CORDIC:
             Signed width of ``x`` and ``y``. Default is 16.
         r_x : int, optional
             Fractional bits of ``x`` and ``y``. Default is 13.
-        n_z : int, optional
-            Signed width of the angle accumulator. Default is 16.
-        r_z : int, optional
-            Fractional bits of the angle accumulator. Default is 11.
 
         Raises
         ------
@@ -140,14 +145,12 @@ class CORDIC:
         self._n_rotations: int = int(n_rotations)
         self._n_x: int = int(n_x)
         self._r_x: int = int(r_x)
-        self._n_z: int = int(n_z)
-        self._r_z: int = int(r_z)
-        angles = [
-            math.atan(2.0 ** (-index))
+        turns = [
+            math.atan(2.0 ** (-index)) / (2.0 * math.pi)
             for index in range(self._n_rotations)
         ]
         self._angle_lut: FixedPointArray = FixedPointArray(
-            angles, self._n_z, self._r_z
+            turns, ANGLE_WIDTH, PHASE_BITS
         )
         self._inv_gain: FixedPointArray = FixedPointArray(
             1.0 / self._gain, self._n_x, self._r_x
@@ -200,17 +203,6 @@ class CORDIC:
             Signed width and fractional bits of the vector.
         """
         return self._n_x, self._r_x
-
-    @property
-    def angle_format(self) -> tuple[int, int]:
-        """Return the ``(n, r)`` format of the residual angle.
-
-        Returns
-        -------
-        tuple of int
-            Signed width and fractional bits, in radians.
-        """
-        return self._n_z, self._r_z
 
     def _phase_codes(self, phase: Any) -> np.ndarray:
         """Return phase as integer codes in ``[0, 65535]``.
@@ -279,21 +271,23 @@ class CORDIC:
         )
 
     def _residual_angle(self, offset: np.ndarray) -> FixedPointArray:
-        """Quantize a 14-bit quadrant offset into radians.
+        """Return a 14-bit quadrant offset in U0.16 turn units.
 
         Parameters
         ----------
         offset : numpy.ndarray
-            Low 14 phase bits. One code equals ``pi / 2**15`` radians.
+            Low 14 phase bits. Code ``m`` is already ``m / 2**16`` of a
+            turn, so the bits are stored as the angle mantissa.
 
         Returns
         -------
         FixedPointArray
-            Residual in ``[0, pi/2)``, floored into the angle format.
+            Residual in ``[0, 1/4)`` turn, as signed
+            ``(ANGLE_WIDTH, PHASE_BITS)`` codes.
         """
-        lsb = math.pi / (1 << (PHASE_BITS - 1))
-        radians = offset.astype(np.float64) * lsb
-        return FixedPointArray(radians, self._n_z, self._r_z)
+        return FixedPointArray.from_mantissas(
+            offset, ANGLE_WIDTH, PHASE_BITS
+        )
 
     def _microrotation(
         self,
@@ -321,7 +315,8 @@ class CORDIC:
         tuple of FixedPointArray
             Updated ``(x, y, angle)``. Both vector updates use the
             pre-update components. The angle moves toward zero by
-            ``atan(2**(-index))``.
+            table entry ``index``, which is ``atan(2**(-index))`` in
+            fractions of a turn.
         """
         direction = np.where(angle < 0, -1, 1)
         shifted_x = x_vector >> index
@@ -368,7 +363,8 @@ class CORDIC:
             Initial y components.
         phase : array-like of int
             Unsigned phase codes in ``[0, 65535]``. ``2**16`` codes is
-            one full turn.
+            one full turn. The low 14 bits are the residual angle, in
+            the same unit as the arctangent table.
 
         Returns
         -------
@@ -464,15 +460,18 @@ def sweep_and_plot(
 def _absolute_tolerance(cordic: CORDIC) -> float:
     """Return an absolute sine/cosine tolerance for ``cordic``.
 
-    Each arctangent constant is floored into the angle format, so the
-    rotated angle can be short by up to one angle LSB per iteration.
-    Sine and cosine change by at most one radian of that error. One
-    more output LSB covers the vector quantizer and ``1/K``.
+    The angle LSB is one phase code, ``2*pi/2**PHASE_BITS`` radians.
+    Flooring each arctangent constant can miss the residual by one such
+    LSB per iteration, and ``|d(sin)/d(theta)|`` and ``|d(cos)/d(theta)|``
+    are at most 1. Each microrotation also truncates a shifted component
+    by up to one vector LSB. The floored ``1/K`` shortens a magnitude-K
+    vector by up to ``K`` vector LSBs, and the output quantizer adds one
+    more.
 
     Parameters
     ----------
     cordic : CORDIC
-        Model whose formats set the tolerance.
+        Model whose iteration count and vector format set the tolerance.
 
     Returns
     -------
@@ -480,14 +479,34 @@ def _absolute_tolerance(cordic: CORDIC) -> float:
         Absolute tolerance.
     """
     _vector_bits, fraction_bits = cordic.vector_format
-    _angle_bits, angle_fraction = cordic.angle_format
-    angle_lsb = 2.0 ** (-angle_fraction)
-    output_lsb = 2.0 ** (-fraction_bits)
-    return cordic.n_rotations * angle_lsb + output_lsb
+    angle_lsb = 2.0 * math.pi / (1 << PHASE_BITS)
+    vector_lsb = 2.0 ** (-fraction_bits)
+    angle_error = cordic.n_rotations * angle_lsb
+    shift_error = cordic.n_rotations * vector_lsb
+    gain_error = (cordic.gain + 1.0) * vector_lsb
+    return angle_error + shift_error + gain_error
 
 
 class CORDICTests(unittest.TestCase):
     """Tests sine and cosine across all four quadrants."""
+
+    def test_arctangent_table_is_a_binary_angle(self) -> None:
+        """Tests that table codes are ``atan(2**-i)`` in U0.16 turns."""
+        cordic = CORDIC()
+        scale = 1 << PHASE_BITS
+        for index, code in enumerate(cordic._angle_lut.values):
+            turns = math.atan(2.0 ** (-index)) / (2.0 * math.pi)
+            expected = math.floor(turns * scale)
+            self.assertEqual(int(code), expected)
+        self.assertEqual(int(cordic._angle_lut.values[0]), 1 << 13)
+
+    def test_residual_keeps_the_phase_code(self) -> None:
+        """Tests that a quadrant offset is stored without scaling."""
+        cordic = CORDIC()
+        offset = np.array([0, 1, (1 << OFFSET_BITS) - 1])
+        residual = cordic._residual_angle(offset)
+        np.testing.assert_array_equal(residual.values, offset)
+        self.assertEqual(residual.r, PHASE_BITS)
 
     def test_gain_is_the_iteration_product(self) -> None:
         """Tests that ``K`` is the product of the per-iteration gains."""
