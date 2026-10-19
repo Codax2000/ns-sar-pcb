@@ -5,22 +5,28 @@ truncating DAC quantizer, and an optional second-order error-feedback
 modulator. Widths below are the defaults (16-bit CORDIC, 8-bit DAC):
 
 * Phase accumulator: unsigned 16-bit word. ``2**16`` codes is one turn.
-  The frequency register selects ``step = (17 << frequency) mod 2**16``.
-* CORDIC vector: signed ``(16, 15)``. Cosine and sine are in units of
-  ``2**(-15)``. ``+1`` saturates because it is not a signed code.
-* CORDIC angle: signed ``(16, 14)``, range ``[-2, 2)``, so ``pi/2`` fits.
-  A fraction of 15 bits would saturate the residual angle.
+  The frequency register selects ``step = 1 << frequency``. Codes 0 to
+  15 are valid. Code 15 steps by half a turn (``2**15``), so the
+  accumulator alternates between 0 and ``2**15``.
+* Amplitude register: code ``a`` sets the CORDIC initial-vector length
+  to ``2**(a - 15)``. Code 15 is full scale. ``AC_CONFIG.amplitude`` is
+  a power of two and calls ``4'hF`` full scale; this is that reading.
+* CORDIC vector: signed ``(16, 15)``. Outputs are that magnitude times
+  cosine and sine, in units of ``2**(-15)``. ``+1`` saturates because
+  it is not a signed code. ``1/K`` is applied inside the CORDIC.
+* CORDIC angle: the phase code itself, a U0.16 fraction of a turn.
 * DAC quantizer: arithmetic right shift by 8, then saturate to signed
   8-bit. Adding ``2**7`` makes the unsigned DAC code.
 * Delta-sigma modulator: the same shift and saturation, with the
   quantization error fed back in CORDIC mantissa units.
 
-``convert`` returns integer codes, not volts. The amplitude register is
-stored and is not applied to the waveform.
+``convert`` returns integer codes, not volts.
 """
 
 from __future__ import annotations
 
+import math
+import unittest
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -31,7 +37,9 @@ from numba import njit
 from cordic import CORDIC, PHASE_BITS
 
 
-BASE_PHASE_STEP = 17
+# 4'hF is full scale in dac_registers.rdl. Code ``a`` has magnitude
+# 2**(a - FULL_SCALE_AMPLITUDE).
+FULL_SCALE_AMPLITUDE = 15
 
 
 def _signed_limits(width: int) -> tuple[int, int]:
@@ -154,9 +162,8 @@ class SineGenDAC:
             CORDIC.
         n_cordic_bits : int, optional
             CORDIC vector width and iteration count. Default is 16.
-            The vector fraction is ``n_cordic_bits - 1``. The angle
-            fraction is ``n_cordic_bits - 2`` so the residual can hold
-            ``pi/2``.
+            The vector fraction is ``n_cordic_bits - 1``. The angle is
+            the 16-bit phase code, not a separate radian format.
         fs : float, optional
             Sample rate in hertz. Default is 100 MHz.
         vdd : float, optional
@@ -186,15 +193,12 @@ class SineGenDAC:
         self._n_dac_bits: int = n_dac_bits
         self._n_cordic_bits: int = n_cordic_bits
         self._vector_fraction: int = n_cordic_bits - 1
-        self._angle_fraction: int = n_cordic_bits - 2
         self._fs: float = fs
         self._vdd: float = vdd
         self._cordic: CORDIC = CORDIC(
             n_rotations=n_cordic_bits,
             n_x=n_cordic_bits,
             r_x=self._vector_fraction,
-            n_z=n_cordic_bits,
-            r_z=self._angle_fraction,
         )
         self._time_seconds: np.ndarray = np.zeros(0, dtype=float)
         self._phase: np.ndarray = np.zeros(0, dtype=np.uint16)
@@ -212,7 +216,9 @@ class SineGenDAC:
         Parameters
         ----------
         frequency : int
-            Code from 0 to 15. Each increment doubles the phase step.
+            Code from 0 to 15. The phase step is ``1 << frequency``, so
+            each increment doubles the step. Code 15 steps by half a
+            turn per sample.
 
         Raises
         ------
@@ -229,8 +235,9 @@ class SineGenDAC:
         Parameters
         ----------
         amplitude : int
-            Code from 0 to 15. ``convert`` does not scale by this
-            register.
+            Code from 0 to 15. The CORDIC initial vector has length
+            ``2**(amplitude - 15)``. Code 15 is full scale, and each
+            decrease halves that length.
 
         Raises
         ------
@@ -295,17 +302,37 @@ class SineGenDAC:
         self._reg["osr"] = osr
 
     def _phase_step(self) -> int:
-        """Return the 16-bit phase increment for the frequency register.
+        """Return the phase increment for the frequency register.
+
+        The tuning word is ``1 << frequency``. Valid codes are 0 through
+        15, so the step is 1, 2, 4, ..., ``2**15``. Code 15 is half a
+        turn per sample: the accumulator alternates between 0 and
+        ``2**15``. Every in-range step fits in the 16-bit phase word.
+        The accumulator adds this step modulo ``2**16``.
 
         Returns
         -------
         int
-            ``(17 << frequency)`` masked to ``PHASE_BITS``. The constant
-            17 is the frequency-0 tuning word. It is odd, so that step
-            visits every phase code.
+            Phase step in U0.16 codes.
         """
-        tuning_word = BASE_PHASE_STEP << self._reg["frequency"]
-        return tuning_word & ((1 << PHASE_BITS) - 1)
+        return 1 << self._reg["frequency"]
+
+    def _vector_magnitude(self) -> float:
+        """Return the CORDIC initial-vector length for the amplitude.
+
+        ``AC_CONFIG.amplitude`` is a power of two, and code ``4'hF`` is
+        full scale. Code ``a`` therefore has length ``2**(a - 15)``:
+        15 is 1, 14 is 1/2, and 0 is ``2**(-15)``. The CORDIC quantizes
+        that length into the vector format, so full scale saturates
+        where ``+1`` is not a signed code.
+
+        Returns
+        -------
+        float
+            Initial x component. The initial y component is 0.
+        """
+        code = self._reg["amplitude"]
+        return 2.0 ** (code - FULL_SCALE_AMPLITUDE)
 
     def _calculate_phase(self, n_samples: int) -> None:
         """Fill the phase accumulator for ``n_samples`` clocks.
@@ -327,10 +354,14 @@ class SineGenDAC:
     def _calculate_cordic(self) -> None:
         """Fill sine and cosine mantissas for the current phase.
 
-        The vector format is ``(n_cordic_bits, n_cordic_bits - 1)``.
-        Results are saturated signed codes in that format.
+        The initial vector is ``(amplitude_magnitude, 0)``, so the
+        quadrant pre-rotation and the ``1/K`` scale both see the
+        programmed amplitude. The vector format is
+        ``(n_cordic_bits, n_cordic_bits - 1)``. Results are saturated
+        signed codes in that format.
         """
-        cosine, sine = self._cordic.rotate(1, 0, self._phase)
+        magnitude = self._vector_magnitude()
+        cosine, sine = self._cordic.rotate(magnitude, 0, self._phase)
         self._cos = cosine.values.astype(np.int64)
         self._sin = sine.values.astype(np.int64)
 
@@ -572,6 +603,81 @@ class SineGenDAC:
             The reconstruction filter is not modeled.
         """
         return None
+
+
+class SineGenDACTests(unittest.TestCase):
+    """Tests the phase step and the amplitude-to-magnitude mapping."""
+
+    def _converter(self) -> SineGenDAC:
+        """Return a DAC with no warmup and DACP in AC mode.
+
+        Returns
+        -------
+        SineGenDAC
+            Converter ready for a short ``convert`` call.
+        """
+        dac = SineGenDAC()
+        dac.set_dac_mode(dac_number=0, mode="AC")
+        dac._reg["warmup_cycles"] = 0
+        return dac
+
+    def test_tuning_word_is_one_shifted_by_frequency(self) -> None:
+        """Tests ``step = 1 << frequency``, including the half-turn end."""
+        dac = self._converter()
+        for code in range(16):
+            dac.set_frequency(code)
+            self.assertEqual(dac._phase_step(), 1 << code)
+        dac.set_frequency(0)
+        slow = dac.convert(4)
+        np.testing.assert_array_equal(
+            slow["phase"], np.array([0, 1, 2, 3], dtype=np.uint16)
+        )
+        dac.set_frequency(15)
+        fast = dac.convert(4)
+        half_turn = 1 << (PHASE_BITS - 1)
+        np.testing.assert_array_equal(
+            fast["phase"],
+            np.array([0, half_turn, 0, half_turn], dtype=np.uint16),
+        )
+        with self.assertRaises(ValueError):
+            dac.set_frequency(16)
+
+    def test_amplitude_is_the_cordic_initial_magnitude(self) -> None:
+        """Tests that code 14 rotates a half-scale vector, not a product."""
+        dac = self._converter()
+        dac.set_amplitude(14)
+        dac.set_frequency(0)
+        frame = dac.convert(32)
+        cosine, sine = dac._cordic.rotate(
+            0.5, 0, frame["phase"].to_numpy()
+        )
+        np.testing.assert_array_equal(frame["cordic_cos"], cosine.values)
+        np.testing.assert_array_equal(frame["cordic_sin"], sine.values)
+        self.assertEqual(dac._vector_magnitude(), 0.5)
+
+    def test_full_scale_keeps_gain_compensation_and_saturation(self) -> None:
+        """Tests ``1/K`` and signed saturation at amplitude code 15."""
+        dac = self._converter()
+        dac.set_amplitude(FULL_SCALE_AMPLITUDE)
+        dac.set_frequency(0)
+        # Phase equals the sample index, so index 8192 is pi/4.
+        frame = dac.convert(8193)
+        quarter = frame.iloc[8192]
+        scale = float(1 << (dac._n_cordic_bits - 1))
+        cosine = float(quarter["cordic_cos"]) / scale
+        sine = float(quarter["cordic_sin"]) / scale
+        expected = math.sqrt(2.0) / 2.0
+        self.assertAlmostEqual(cosine, expected, delta=0.01)
+        self.assertAlmostEqual(sine, expected, delta=0.01)
+        # K * cos(pi/4) is about 1.16 and would saturate near 1.
+        self.assertLess(abs(cosine), 0.9)
+        self.assertLess(abs(sine), 0.9)
+        limit = (1 << (dac._n_cordic_bits - 1)) - 1
+        self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
+        self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
+        unit_cos, unit_sin = dac._cordic.rotate(1, 0, np.array([8192]))
+        self.assertEqual(int(quarter["cordic_cos"]), int(unit_cos.values[0]))
+        self.assertEqual(int(quarter["cordic_sin"]), int(unit_sin.values[0]))
 
 
 def main() -> None:
