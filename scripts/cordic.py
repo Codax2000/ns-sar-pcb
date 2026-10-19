@@ -1,129 +1,440 @@
-"""Fixed-point CORDIC rotation and exhaustive cosine validation."""
+"""Fixed-point rotation-mode CORDIC sine and cosine.
+
+Phase is an unsigned 16-bit binary angle: ``2**16`` codes is one full
+turn. The top two bits select the quadrant and the low 14 bits are the
+residual inside that quadrant. One residual code is ``pi / 2**15``
+radians.
+
+The quadrant step is a 90-degree pre-rotation, which is a swap and
+negate in hardware:
+
+* quadrant 0: ``(x, y)``
+* quadrant 1: ``(-y, x)``
+* quadrant 2: ``(-x, -y)``
+* quadrant 3: ``(y, -x)``
+
+The residual is then in ``[0, pi/2)`` and is applied with shift-add
+iterations. Iteration ``i`` grows the vector length by
+``sqrt(1 + 2**(-2*i))``. The product of those factors is the gain
+``K``. The datapath multiplies by a quantized ``1/K`` and saturates
+back to the vector format. For an input of ``(1, 0)``, the returned
+pair is cosine and sine.
+"""
+
+from __future__ import annotations
 
 import argparse
+import math
+import numbers
 import unittest
-from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-try:
-    from .fp_array import FixedPointArray
-except ImportError:
-    from fp_array import FixedPointArray
+from fp_array import FixedPointArray
+
+
+PHASE_BITS = 16
+OFFSET_BITS = 14
+
+
+def cordic_gain(n_rotations: int) -> float:
+    """Return the CORDIC magnitude growth ``K``.
+
+    Iteration ``i`` multiplies the vector length by
+    ``sqrt(1 + 2**(-2*i))``. ``K`` is the product of those factors from
+    ``i = 0`` through ``n_rotations - 1``. Hardware should not recompute
+    this product: quantize ``1/K`` once into the vector format and use
+    that constant.
+
+    Parameters
+    ----------
+    n_rotations : int
+        Number of shift-add iterations. Zero returns 1.
+
+    Returns
+    -------
+    float
+        Gain ``K``.
+
+    Raises
+    ------
+    ValueError
+        If ``n_rotations`` is negative or not an integer.
+    """
+    if isinstance(n_rotations, bool) or not isinstance(
+        n_rotations, numbers.Integral
+    ):
+        raise ValueError("n_rotations must be a non-negative integer")
+    if n_rotations < 0:
+        raise ValueError("n_rotations must be a non-negative integer")
+    gain = 1.0
+    for index in range(int(n_rotations)):
+        gain *= math.sqrt(1.0 + 2.0 ** (-2 * index))
+    return gain
+
+
+def _quadrant_mux(
+    quadrant: np.ndarray,
+    choices: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+) -> np.ndarray:
+    """Select one integer array for each quadrant code.
+
+    Parameters
+    ----------
+    quadrant : numpy.ndarray
+        Quadrant codes 0, 1, 2, and 3.
+    choices : tuple of numpy.ndarray
+        One array per quadrant, broadcastable with ``quadrant``.
+
+    Returns
+    -------
+    numpy.ndarray
+        ``choices[quadrant]`` at each element.
+    """
+    selected = choices[0]
+    for code in range(1, 4):
+        selected = np.where(quadrant == code, choices[code], selected)
+    return selected
 
 
 class CORDIC:
-    """Compute cosine with a fixed-point rotation-mode CORDIC."""
+    """Rotation-mode CORDIC with a 90-degree quadrant pre-rotation.
 
-    def __init__(self, n_rotations=16, n_x=16, r_x=13, n_z=16, r_z=11):
-        """Initialize CORDIC iteration count and vector/angle formats."""
-        self._n_rotations = n_rotations
-        self._n_x = n_x
-        self._r_x = r_x
-        self._n_z = n_z
-        self._r_z = r_z
-        self._angle_lut = FixedPointArray(
-            np.arctan(2.0 ** -np.arange(n_rotations)), n_z, r_z
+    ``x`` and ``y`` use signed format ``(n_x, r_x)``. The residual angle
+    uses signed format ``(n_z, r_z)`` in radians. Phase inputs are
+    unsigned 16-bit codes. Iterations keep full precision; only the
+    gain-compensated output is narrowed to ``(n_x, r_x)``.
+    """
+
+    def __init__(
+        self,
+        n_rotations: int = 16,
+        n_x: int = 16,
+        r_x: int = 13,
+        n_z: int = 16,
+        r_z: int = 11,
+    ) -> None:
+        """Build the arctangent table and the quantized reciprocal gain.
+
+        Parameters
+        ----------
+        n_rotations : int, optional
+            Shift-add iterations. Default is 16.
+        n_x : int, optional
+            Signed width of ``x`` and ``y``. Default is 16.
+        r_x : int, optional
+            Fractional bits of ``x`` and ``y``. Default is 13.
+        n_z : int, optional
+            Signed width of the angle accumulator. Default is 16.
+        r_z : int, optional
+            Fractional bits of the angle accumulator. Default is 11.
+
+        Raises
+        ------
+        ValueError
+            If the iteration count or a format is not valid.
+        """
+        self._gain: float = cordic_gain(n_rotations)
+        self._n_rotations: int = int(n_rotations)
+        self._n_x: int = int(n_x)
+        self._r_x: int = int(r_x)
+        self._n_z: int = int(n_z)
+        self._r_z: int = int(r_z)
+        angles = [
+            math.atan(2.0 ** (-index))
+            for index in range(self._n_rotations)
+        ]
+        self._angle_lut: FixedPointArray = FixedPointArray(
+            angles, self._n_z, self._r_z
         )
-        self._gain = FixedPointArray(1 / 1.64676, n_x, r_x)
+        self._inv_gain: FixedPointArray = FixedPointArray(
+            1.0 / self._gain, self._n_x, self._r_x
+        )
 
-    def _rotation_inputs(self, x, y, phase):
-        """Quantize vector inputs and broadcast unsigned U0.16 phase codes."""
-        x_fp = FixedPointArray(x, self._n_x, self._r_x)
-        y_fp = FixedPointArray(y, self._n_x, self._r_x)
-        phase_codes = np.asarray(phase)
-        if not np.issubdtype(phase_codes.dtype, np.integer):
-            raise TypeError("phase must contain unsigned U0.16 integer codes")
-        if np.any(phase_codes < 0) or np.any(phase_codes > 0xFFFF):
+    @property
+    def n_rotations(self) -> int:
+        """Return the number of shift-add iterations.
+
+        Returns
+        -------
+        int
+            Iteration count used for the gain and the angle table.
+        """
+        return self._n_rotations
+
+    @property
+    def gain(self) -> float:
+        """Return the CORDIC growth ``K`` for this iteration count.
+
+        Returns
+        -------
+        float
+            Product of ``sqrt(1 + 2**(-2*i))`` over the iterations.
+        """
+        return self._gain
+
+    @property
+    def inverse_gain(self) -> FixedPointArray:
+        """Return the quantized ``1/K`` constant in the vector format.
+
+        Returns
+        -------
+        FixedPointArray
+            Reciprocal of :attr:`gain`, floored into ``(n_x, r_x)``.
+            Rotation multiplies by this constant. The returned array is
+            a copy.
+        """
+        return FixedPointArray.from_mantissas(
+            self._inv_gain.values, self._inv_gain.n, self._inv_gain.r
+        )
+
+    @property
+    def vector_format(self) -> tuple[int, int]:
+        """Return the ``(n, r)`` format of ``x`` and ``y``.
+
+        Returns
+        -------
+        tuple of int
+            Signed width and fractional bits of the vector.
+        """
+        return self._n_x, self._r_x
+
+    @property
+    def angle_format(self) -> tuple[int, int]:
+        """Return the ``(n, r)`` format of the residual angle.
+
+        Returns
+        -------
+        tuple of int
+            Signed width and fractional bits, in radians.
+        """
+        return self._n_z, self._r_z
+
+    def _phase_codes(self, phase: Any) -> np.ndarray:
+        """Return phase as integer codes in ``[0, 65535]``.
+
+        Parameters
+        ----------
+        phase : array-like of int
+            Unsigned 16-bit phase codes.
+
+        Returns
+        -------
+        numpy.ndarray
+            Integer codes with the input shape.
+
+        Raises
+        ------
+        TypeError
+            If ``phase`` is not an integer array.
+        ValueError
+            If any code is outside ``[0, 65535]``.
+        """
+        codes = np.asarray(phase)
+        if codes.dtype == object or not np.issubdtype(codes.dtype, np.integer):
+            raise TypeError("phase must be unsigned integer U0.16 codes")
+        if np.any(codes < 0) or np.any(codes > 0xFFFF):
             raise ValueError("U0.16 phase codes must be in [0, 65535]")
+        return codes
+
+    def _prerotate(
+        self,
+        x_vector: FixedPointArray,
+        y_vector: FixedPointArray,
+        quadrant: np.ndarray,
+    ) -> tuple[FixedPointArray, FixedPointArray]:
+        """Pre-rotate ``(x, y)`` by ``quadrant`` right angles.
+
+        Parameters
+        ----------
+        x_vector : FixedPointArray
+            Current x component.
+        y_vector : FixedPointArray
+            Current y component.
+        quadrant : numpy.ndarray
+            Quadrant codes 0, 1, 2, or 3, broadcast with the vector.
+
+        Returns
+        -------
+        tuple of FixedPointArray
+            Quadrant 0 keeps ``(x, y)``, 1 returns ``(-y, x)``, 2 returns
+            ``(-x, -y)``, and 3 returns ``(y, -x)``.
+        """
+        x_codes = x_vector.values
+        y_codes = y_vector.values
+        rotated_x = _quadrant_mux(
+            quadrant,
+            (x_codes, -y_codes, -x_codes, y_codes),
+        )
+        rotated_y = _quadrant_mux(
+            quadrant,
+            (y_codes, x_codes, -y_codes, -x_codes),
+        )
+        width = max(x_vector.n, y_vector.n, (-x_vector).n, (-y_vector).n)
+        return (
+            FixedPointArray.from_mantissas(rotated_x, width, x_vector.r),
+            FixedPointArray.from_mantissas(rotated_y, width, y_vector.r),
+        )
+
+    def _residual_angle(self, offset: np.ndarray) -> FixedPointArray:
+        """Quantize a 14-bit quadrant offset into radians.
+
+        Parameters
+        ----------
+        offset : numpy.ndarray
+            Low 14 phase bits. One code equals ``pi / 2**15`` radians.
+
+        Returns
+        -------
+        FixedPointArray
+            Residual in ``[0, pi/2)``, floored into the angle format.
+        """
+        lsb = math.pi / (1 << (PHASE_BITS - 1))
+        radians = offset.astype(np.float64) * lsb
+        return FixedPointArray(radians, self._n_z, self._r_z)
+
+    def _microrotation(
+        self,
+        x_vector: FixedPointArray,
+        y_vector: FixedPointArray,
+        angle: FixedPointArray,
+        index: int,
+    ) -> tuple[FixedPointArray, FixedPointArray, FixedPointArray]:
+        """Apply one shift-add rotation toward the residual angle.
+
+        Parameters
+        ----------
+        x_vector : FixedPointArray
+            Current x component.
+        y_vector : FixedPointArray
+            Current y component.
+        angle : FixedPointArray
+            Remaining angle. A negative value reverses the rotation.
+        index : int
+            Iteration index. The shifted term is an arithmetic right
+            shift of ``index`` bits, then an add or subtract.
+
+        Returns
+        -------
+        tuple of FixedPointArray
+            Updated ``(x, y, angle)``. Both vector updates use the
+            pre-update components. The angle moves toward zero by
+            ``atan(2**(-index))``.
+        """
+        direction = np.where(angle < 0, -1, 1)
+        shifted_x = x_vector >> index
+        shifted_y = y_vector >> index
+        next_x = x_vector - shifted_y * direction
+        next_y = y_vector + shifted_x * direction
+        step = self._angle_lut[index]
+        next_angle = angle - step * direction
+        return next_x, next_y, next_angle
+
+    def _compensate(
+        self,
+        x_vector: FixedPointArray,
+        y_vector: FixedPointArray,
+    ) -> tuple[FixedPointArray, FixedPointArray]:
+        """Remove the CORDIC gain and narrow to the vector format.
+
+        Parameters
+        ----------
+        x_vector : FixedPointArray
+            X component still scaled by ``K``.
+        y_vector : FixedPointArray
+            Y component still scaled by ``K``.
+
+        Returns
+        -------
+        tuple of FixedPointArray
+            Gain-compensated vector, saturated into ``(n_x, r_x)``.
+        """
+        x_out = (x_vector * self._inv_gain).re_quantize(self._n_x, self._r_x)
+        y_out = (y_vector * self._inv_gain).re_quantize(self._n_x, self._r_x)
+        return x_out, y_out
+
+    def rotate(
+        self, x: Any, y: Any, phase: Any
+    ) -> tuple[FixedPointArray, FixedPointArray]:
+        """Rotate ``(x, y)`` by an unsigned 16-bit phase.
+
+        Parameters
+        ----------
+        x : array-like of float
+            Initial x components.
+        y : array-like of float
+            Initial y components.
+        phase : array-like of int
+            Unsigned phase codes in ``[0, 65535]``. ``2**16`` codes is
+            one full turn.
+
+        Returns
+        -------
+        tuple of FixedPointArray
+            Rotated ``(x, y)`` in the vector format. For input
+            ``(1, 0)`` these are cosine and sine of ``phase``.
+
+        Raises
+        ------
+        TypeError
+            If ``phase`` is not an integer array.
+        ValueError
+            If a phase code is outside ``[0, 65535]``, or if ``x``,
+            ``y``, and ``phase`` do not broadcast.
+        """
+        phase_codes = self._phase_codes(phase)
         try:
-            x_values, y_values, phase_codes = np.broadcast_arrays(
-                x_fp.values, y_fp.values, phase_codes
+            x_real, y_real, phase_codes = np.broadcast_arrays(
+                np.asarray(x, dtype=float),
+                np.asarray(y, dtype=float),
+                phase_codes,
             )
         except ValueError as error:
-            raise ValueError("x, y, and phase must be broadcastable") from error
-        return (
-            FixedPointArray._from_mantissas(x_values, x_fp.n, x_fp.r),
-            FixedPointArray._from_mantissas(y_values, y_fp.n, y_fp.r),
-            phase_codes.astype(np.uint16),
-        )
-
-    def _phase_to_rotation_angle(self, x, y, phase_codes):
-        """Decode quadrant/offset bits into a signed CORDIC angle and vector."""
-        quadrant = (phase_codes >> 14).astype(np.uint8)
-        offset = phase_codes & 0x3FFF
-        offset_radians = offset.astype(float) * (np.pi / (2 * 16384))
-
-        # Rotate by the signed residual and negate only x in quadrants 2 and 3.
-        angle = np.where((quadrant == 0) | (quadrant == 2),
-                         offset_radians, -offset_radians)
-        flip_x = (quadrant == 1) | (quadrant == 2)
-        x[flip_x] = -x[flip_x]
-        z = FixedPointArray(angle, self._n_z, self._r_z)
-        return x, y, z
-
-    def iteration(self, x, y, phase):
-        """Rotate inputs for U0.16 phase codes and return mantissa histories."""
-        x, y, phase_codes = self._rotation_inputs(x, y, phase)
-        x, y, z = self._phase_to_rotation_angle(x, y, phase_codes)
-        count = z.values.size
-        history_size = self._n_rotations + 3
-        x_history = np.zeros((history_size, count), dtype=object)
-        y_history = np.zeros_like(x_history)
-        z_history = np.zeros_like(x_history)
-        directions = np.zeros((self._n_rotations, count), dtype=np.int8)
-
-        x_history[0] = x.values.reshape(-1)
-        y_history[0] = y.values.reshape(-1)
-        z_history[0] = z.values.reshape(-1)
-        x_history[1] = x.values.reshape(-1)
-        y_history[1] = y.values.reshape(-1)
-        z_history[1] = z.values.reshape(-1)
-
+            raise ValueError(
+                "x, y, and phase must be broadcastable"
+            ) from error
+        x_vector = FixedPointArray(x_real, self._n_x, self._r_x)
+        y_vector = FixedPointArray(y_real, self._n_x, self._r_x)
+        quadrant = np.asarray(phase_codes >> OFFSET_BITS, dtype=np.int64)
+        offset = np.asarray(phase_codes & ((1 << OFFSET_BITS) - 1))
+        x_vector, y_vector = self._prerotate(x_vector, y_vector, quadrant)
+        angle = self._residual_angle(offset)
         for index in range(self._n_rotations):
-            direction = np.where(z_history[index + 1] < 0, -1, 1)
-            directions[index] = direction
-            x_current = FixedPointArray._from_mantissas(
-                x_history[index + 1], self._n_x, self._r_x
+            x_vector, y_vector, angle = self._microrotation(
+                x_vector, y_vector, angle, index
             )
-            y_current = FixedPointArray._from_mantissas(
-                y_history[index + 1], self._n_x, self._r_x
-            )
-            z_current = FixedPointArray._from_mantissas(
-                z_history[index + 1], self._n_z, self._r_z
-            )
-            x_next = x_current - (y_current * direction >> index)
-            y_next = y_current + (x_current * direction >> index)
-            z_next = z_current - self._angle_lut[index] * direction
-            x_history[index + 2] = x_next.values
-            y_history[index + 2] = y_next.values
-            z_history[index + 2] = z_next.values
-
-        x_final = FixedPointArray._from_mantissas(
-            x_history[-2], self._n_x, self._r_x
-        ) * self._gain
-        y_final = FixedPointArray._from_mantissas(
-            y_history[-2], self._n_x, self._r_x
-        ) * self._gain
-        x_final.re_quantize(self._n_x, self._r_x)
-        y_final.re_quantize(self._n_x, self._r_x)
-        x_history[-1] = x_final.values
-        y_history[-1] = y_final.values
-        z_history[-1] = z_history[-2]
-        return x_history, y_history, z_history, directions
+        return self._compensate(x_vector, y_vector)
 
 
-def sweep_and_plot(cordic=None, output_path="cordic.png"):
-    """Sweep all U0.16 phases and plot output with absolute quantization error."""
-    cordic = cordic or CORDIC()
-    phase_codes = np.arange(1 << 16, dtype=np.uint16)
-    angles = phase_codes.astype(float) * (2 * np.pi / (1 << 16))
+def sweep_and_plot(
+    cordic: CORDIC | None = None,
+    output_path: str = "cordic.png",
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, plt.Figure]:
+    """Sweep every phase code and plot cosine with its absolute error.
 
-    x_history, _, _, _ = cordic.iteration(1, 0, phase_codes)
-    output = np.asarray(x_history[-1], dtype=float) / (1 << cordic._r_x)
-    ideal_cosine = np.cos(angles)
-    absolute_error = np.abs(ideal_cosine - output)
+    Parameters
+    ----------
+    cordic : CORDIC, optional
+        Model to sweep. The default is a :class:`CORDIC` with the
+        default formats.
+    output_path : str, optional
+        Path of the saved figure. Default is ``cordic.png``.
+
+    Returns
+    -------
+    tuple
+        Phase in radians, CORDIC cosine, absolute error against
+        ``numpy.cos``, and the Matplotlib figure.
+    """
+    model = CORDIC() if cordic is None else cordic
+    phase_codes = np.arange(1 << PHASE_BITS, dtype=np.uint16)
+    angles = phase_codes.astype(float) * (2.0 * math.pi / (1 << PHASE_BITS))
+    cosine, _sine = model.rotate(1, 0, phase_codes)
+    output = np.reshape(cosine.to_float(), -1)
+    ideal = np.cos(angles)
+    absolute_error = np.abs(ideal - output)
 
     figure, (output_axis, error_axis) = plt.subplots(
         2,
@@ -135,7 +446,7 @@ def sweep_and_plot(cordic=None, output_path="cordic.png"):
     output_axis.plot(angles, output, label="Fixed-point CORDIC")
     output_axis.plot(
         angles,
-        ideal_cosine,
+        ideal,
         linestyle="--",
         label="Ideal cos(fixed-point angle)",
     )
@@ -150,52 +461,87 @@ def sweep_and_plot(cordic=None, output_path="cordic.png"):
     return angles, output, absolute_error, figure
 
 
+def _absolute_tolerance(cordic: CORDIC) -> float:
+    """Return an absolute sine/cosine tolerance for ``cordic``.
+
+    Each arctangent constant is floored into the angle format, so the
+    rotated angle can be short by up to one angle LSB per iteration.
+    Sine and cosine change by at most one radian of that error. One
+    more output LSB covers the vector quantizer and ``1/K``.
+
+    Parameters
+    ----------
+    cordic : CORDIC
+        Model whose formats set the tolerance.
+
+    Returns
+    -------
+    float
+        Absolute tolerance.
+    """
+    _vector_bits, fraction_bits = cordic.vector_format
+    _angle_bits, angle_fraction = cordic.angle_format
+    angle_lsb = 2.0 ** (-angle_fraction)
+    output_lsb = 2.0 ** (-fraction_bits)
+    return cordic.n_rotations * angle_lsb + output_lsb
+
+
 class CORDICTests(unittest.TestCase):
-    """Test quadrant mapping and end-to-end CORDIC cosine output."""
+    """Tests sine and cosine across all four quadrants."""
 
-    def test_quadrant_mapping_and_cosine(self):
-        """Check representative offsets in all U0.16 quadrants."""
+    def test_gain_is_the_iteration_product(self) -> None:
+        """Tests that ``K`` is the product of the per-iteration gains."""
         cordic = CORDIC()
-        offset_code = 4096
-        phase_codes = np.array(
-            [offset_code, 16384 + offset_code,
-             32768 + offset_code, 49152 + offset_code],
-            dtype=np.uint16,
-        )
-        x, y, phases = cordic._rotation_inputs(1, 0, phase_codes)
-        x, y, z = cordic._phase_to_rotation_angle(x, y, phases)
-        expected_angles = np.array(
-            [1, 1, -1, -1], dtype=float
-        ) * offset_code * (2 * np.pi / 65536)
+        self.assertEqual(cordic.gain, cordic_gain(16))
+        scale = cordic.inverse_gain
+        product = float(scale.to_float()[0]) * cordic.gain
+        # floor(1/K) is at most one vector LSB below 1/K.
+        shortfall = cordic.gain * (2.0 ** (-scale.r))
+        self.assertAlmostEqual(product, 1.0, delta=shortfall)
+        self.assertLessEqual(product, 1.0)
+
+    def test_axes_match_quadrant_pre_rotation(self) -> None:
+        """Tests the four axes, where the residual angle is zero."""
+        cordic = CORDIC()
+        phases = np.array([0, 16384, 32768, 49152], dtype=np.uint16)
+        cosine, sine = cordic.rotate(1, 0, phases)
+        tolerance = _absolute_tolerance(cordic)
+        expected_cos = np.array([1.0, 0.0, -1.0, 0.0])
+        expected_sin = np.array([0.0, 1.0, 0.0, -1.0])
         np.testing.assert_allclose(
-            z.to_float(), expected_angles, atol=2 ** -cordic._r_z
+            cosine.to_float(), expected_cos, atol=tolerance
         )
-        expected_x_flip = np.array([False, True, True, False])
-        np.testing.assert_array_equal(x.values < 0, expected_x_flip)
-        np.testing.assert_array_equal(y.values, np.zeros(4, dtype=object))
-
-        x_history, _, _, _ = cordic.iteration(1, 0, phase_codes)
-        actual = np.asarray(x_history[-1], dtype=float) / (1 << cordic._r_x)
-        ideal = np.cos(phase_codes.astype(float) * (2 * np.pi / 65536))
-        np.testing.assert_allclose(actual, ideal, atol=0.01)
-        diagnostics = np.column_stack((
-            phase_codes,
-            z.to_float(),
-            x.to_float(),
-            y.to_float(),
-            actual,
-            ideal,
-        ))
-        np.savetxt(
-            Path(__file__).with_name("cordic_quadrant_test.txt"),
-            diagnostics,
-            fmt=["%u", "%.9f", "%.9f", "%.9f", "%.9f", "%.9f"],
-            header="phase_code mapped_angle x_after_map y_after_map cordic_cos ideal_cos",
+        np.testing.assert_allclose(
+            sine.to_float(), expected_sin, atol=tolerance
         )
 
+    def test_sin_cos_all_quadrants(self) -> None:
+        """Tests sine and cosine at every phase code in all quadrants."""
+        cordic = CORDIC()
+        phases = np.arange(0, 1 << PHASE_BITS, dtype=np.uint16)
+        cosine, sine = cordic.rotate(1, 0, phases)
+        angles = phases.astype(float) * (2.0 * math.pi / (1 << PHASE_BITS))
+        tolerance = _absolute_tolerance(cordic)
+        np.testing.assert_allclose(
+            np.reshape(cosine.to_float(), -1), np.cos(angles), atol=tolerance
+        )
+        np.testing.assert_allclose(
+            np.reshape(sine.to_float(), -1), np.sin(angles), atol=tolerance
+        )
 
-def main():
-    """Run CORDIC tests, then sweep and save the resulting plot."""
+    def test_phase_codes_are_rejected_when_out_of_range(self) -> None:
+        """Tests rejection of non-integer and out-of-range phase codes."""
+        cordic = CORDIC()
+        with self.assertRaises(TypeError):
+            cordic.rotate(1, 0, 0.5)
+        with self.assertRaises(ValueError):
+            cordic.rotate(1, 0, -1)
+        with self.assertRaises(ValueError):
+            cordic.rotate(1, 0, 65536)
+
+
+def main() -> None:
+    """Run the CORDIC tests, then save a full-phase cosine plot."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="cordic.png")
     args = parser.parse_args()
