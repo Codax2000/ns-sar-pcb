@@ -1,207 +1,207 @@
-'''
-Aditya Patel
-7/26/26
+"""Fixed-point CORDIC rotation and exhaustive cosine validation."""
 
-File: Creating a CORDIC module that functions in rotation mode. Goal is to plot cos and output of CORDIC module on the same waveform.
+import argparse
+import unittest
+from pathlib import Path
 
-Something that needs to be verified: 1. the magnitude of the inputs vectors. The reason is x_out, y_out, z_out are all declared as 16-bit fixed-point integers, works fine with input vector (1,0) but fails with (2,3) with Q(16,13)
-
-Two fixes: 
-1. Increase int16 to int32 but depends if hardware allows us to do that
-2. Reduce the precision of Q-format. We can make it Q(16, 12).
-'''
-
-import numpy as np
 import matplotlib.pyplot as plt
-from fp_logic import *
+import numpy as np
 
-# Constants/setup - function that builds your tan^-1(2^-j) lookup table for j = 0 --> 15
+try:
+    from .fp_array import FixedPointArray
+except ImportError:
+    from fp_array import FixedPointArray
+
 
 class CORDIC:
+    """Compute cosine with a fixed-point rotation-mode CORDIC."""
 
-    # Q(n,r) = (16,13) for x, y
-    # Q(n,r) = (16,11) for z (angle)
-
-    ''' Excepts the runtime format values for the way x, y, and z should be stored.
-        Since x and y are two coordinates of the same vector, their magnitudes will be the same,
-        and therefore n_Y and r_y is unnecessary.
-    '''
-    def __init__(self, n_rotations=16, n_x=16, r_x=13, n_z=16, r_z=11):      
-
-        self._n_x = n_x
-        self._n_z = n_z
-        self._r_x = r_x
-        self._r_z = r_z
+    def __init__(self, n_rotations=16, n_x=16, r_x=13, n_z=16, r_z=11):
+        """Initialize CORDIC iteration count and vector/angle formats."""
         self._n_rotations = n_rotations
+        self._n_x = n_x
+        self._r_x = r_x
+        self._n_z = n_z
+        self._r_z = r_z
+        self._angle_lut = FixedPointArray(
+            np.arctan(2.0 ** -np.arange(n_rotations)), n_z, r_z
+        )
+        self._gain = FixedPointArray(1 / 1.64676, n_x, r_x)
 
-    def build_lut (self):
-        index = np.arange(self._n_rotations)
-        lut = np.arctan(np.power(2.0, -index))
-        return lut
+    def _rotation_inputs(self, x, y, phase):
+        """Quantize vector inputs and broadcast unsigned U0.16 phase codes."""
+        x_fp = FixedPointArray(x, self._n_x, self._r_x)
+        y_fp = FixedPointArray(y, self._n_x, self._r_x)
+        phase_codes = np.asarray(phase)
+        if not np.issubdtype(phase_codes.dtype, np.integer):
+            raise TypeError("phase must contain unsigned U0.16 integer codes")
+        if np.any(phase_codes < 0) or np.any(phase_codes > 0xFFFF):
+            raise ValueError("U0.16 phase codes must be in [0, 65535]")
+        try:
+            x_values, y_values, phase_codes = np.broadcast_arrays(
+                x_fp.values, y_fp.values, phase_codes
+            )
+        except ValueError as error:
+            raise ValueError("x, y, and phase must be broadcastable") from error
+        return (
+            FixedPointArray._from_mantissas(x_values, x_fp.n, x_fp.r),
+            FixedPointArray._from_mantissas(y_values, y_fp.n, y_fp.r),
+            phase_codes.astype(np.uint16),
+        )
 
-    # converting pi values into Q format
-    def get_pi_constants (self):
+    def _phase_to_rotation_angle(self, x, y, phase_codes):
+        """Decode quadrant/offset bits into a signed CORDIC angle and vector."""
+        quadrant = (phase_codes >> 14).astype(np.uint8)
+        offset = phase_codes & 0x3FFF
+        offset_radians = offset.astype(float) * (np.pi / (2 * 16384))
 
-        ppi         = fp_quantize(np.pi, self._n_z, self._r_z)      # π
-        npi         = fp_quantize(-np.pi, self._n_z, self._r_z)     # -π
-        ppi_half    = fp_quantize((np.pi)/2, self._n_z, self._r_z)  # π/2
-        npi_half    = fp_quantize((-np.pi)/2, self._n_z, self._r_z) # -π/2
-        return ppi, npi, ppi_half, npi_half
-
-    '''
-    Problem: the angles can also be represented betwee ~(-pi/2, pi/2). 
-    We want to be able to represent a full circle from (-pi, pi), so we have
-    rotate the vector and adjust the angle theta accordingly.
-    '''
-    def _glue_logic(self, x, y, z):
-        x = np.array(x)                        # numpy arrays are passed by referenceso any change in the function will change the original contents.
-        y = np.array(y)                        
-        z = np.array(z)
-        # z_qtz = fp_quantize(z, self._n_z, self._r_z)
-
-        ppi, npi, ppi_half, npi_half = self.get_pi_constants()
-
-        filt2 = z < npi_half        # z < -π/2
-        filt3 = z > ppi_half        # z > π/2
-        filt1 = filt2 | filt3
-
-        ''' Add π if z < -π/2, else if z > π/2, subtract π
-        '''
-        z[filt2] = fp_add(z[filt2], ppi, self._n_z, self._n_z, self._r_z, \
-                            self._r_z, self._n_z, self._r_z)
-        z[filt3] = fp_add(z[filt3], npi, self._n_z, self._n_z, self._r_z, \
-                            self._r_z, self._n_z, self._r_z)
-        x[filt1] = -x[filt1]        # bring the vector from Quad II or III into I or IV
-        y[filt1] = -y[filt1]
+        # Rotate by the signed residual and negate only x in quadrants 2 and 3.
+        angle = np.where((quadrant == 0) | (quadrant == 2),
+                         offset_radians, -offset_radians)
+        flip_x = (quadrant == 1) | (quadrant == 2)
+        x[flip_x] = -x[flip_x]
+        z = FixedPointArray(angle, self._n_z, self._r_z)
         return x, y, z
 
-    def iteration(self, x, y, z):
-        ''' CORDIC Engine runnning iterations
-        
-        Parameters:
-        x: int, float, or numpy.ndarray
-            Raw x-coordinate values
-        y: int, float, or numpy.ndarray
-            Raw y-coordinate values
-        z: int, float, or numpy.ndarray
-            Raw z-coordinate values
+    def iteration(self, x, y, phase):
+        """Rotate inputs for U0.16 phase codes and return mantissa histories."""
+        x, y, phase_codes = self._rotation_inputs(x, y, phase)
+        x, y, z = self._phase_to_rotation_angle(x, y, phase_codes)
+        count = z.values.size
+        history_size = self._n_rotations + 3
+        x_history = np.zeros((history_size, count), dtype=object)
+        y_history = np.zeros_like(x_history)
+        z_history = np.zeros_like(x_history)
+        directions = np.zeros((self._n_rotations, count), dtype=np.int8)
 
-        Reuturns:
-        tuple of nump.ndarray
-            Returns (x_out, y_out, z_out, sigma) where histories are tracked across execution rows
-        
-        
-        '''
-        x, y, z = self._fix_types_and_quantize(x, y, z)
-        x_glue, y_glue, z_glue = self._glue_logic(x, y, z)
+        x_history[0] = x.values.reshape(-1)
+        y_history[0] = y.values.reshape(-1)
+        z_history[0] = z.values.reshape(-1)
+        x_history[1] = x.values.reshape(-1)
+        y_history[1] = y.values.reshape(-1)
+        z_history[1] = z.values.reshape(-1)
 
-        K = fp_quantize(1/1.64676, self._n_x, self._r_x)
+        for index in range(self._n_rotations):
+            direction = np.where(z_history[index + 1] < 0, -1, 1)
+            directions[index] = direction
+            x_current = FixedPointArray._from_mantissas(
+                x_history[index + 1], self._n_x, self._r_x
+            )
+            y_current = FixedPointArray._from_mantissas(
+                y_history[index + 1], self._n_x, self._r_x
+            )
+            z_current = FixedPointArray._from_mantissas(
+                z_history[index + 1], self._n_z, self._r_z
+            )
+            x_next = x_current - (y_current * direction >> index)
+            y_next = y_current + (x_current * direction >> index)
+            z_next = z_current - self._angle_lut[index] * direction
+            x_history[index + 2] = x_next.values
+            y_history[index + 2] = y_next.values
+            z_history[index + 2] = z_next.values
 
-        x_length = x.shape[1]
-        broadcaster = np.zeros((1, x_length))
-        K = K + broadcaster
-        print("K:", np.shape([K]))
-        print("x:", np.shape([x]))
-        # creating 2D result arrays, initialized to all 0
-        # np.zeros format = (rows, columns). So rows = n_rotations (16) + 3 = 19 for
-        # original inputs, glue logic values, 16 iterations, and final K scaled output
-
-        x_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)    #x.shape[1] because it returns the horizontal width aka # columns of x array
-        y_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)
-        z_out = np.zeros((self._n_rotations + 3, x.shape[1]), dtype=np.int32)
-        sigma_j = np.zeros((self._n_rotations, x.shape[1]), dtype=np.int32)
-        
-        # the original inputs without any modifications
-        x_out[0, :] = x[0, :]
-        y_out[0, :] = y[0, :]
-        z_out[0, :] = z[0, :]
-
-        # the glue logic values
-        x_out[1, :] = x_glue[0, :]
-        y_out[1, :] = y_glue[0, :]
-        z_out[1, :] = z_glue[0, :]
-
-        # 16 iterations
-        index = np.arange(self._n_rotations)
-        lut = self.build_lut()
-        lut = fp_quantize(lut, self._n_z, self._r_z)
-        
-        for i in range(len(index)):
-            j_current = index[i]
-
-            filt = z_out[i+1, :] < 0
-            sigma_j[i, filt] = -1
-            sigma_j[i, ~filt] = 1
-
-            x_out[i+2, :] = x_out[i+1, :] - (sigma_j[i, :] * y_out[i+1, :] >> j_current)
-            y_out[i+2, :] = y_out[i+1, :] + (sigma_j[i, :] * x_out[i+1, :] >> j_current)
-            z_out[i+2, :] = z_out[i+1, :] - (sigma_j[i, :] * lut[j_current])
-
-            print(f"i:{i}, x:{x_out[i+2,0]/2**self._r_x:.4f}, y:{y_out[i+2,0]/2**self._r_x:.4f}, "      
-                    f"z:{z_out[i+2,0]/2**self._r_z:.4f}, sigma:{sigma_j[i,0]}")
-
-        x_out[-1, :] = fp_mult(x_out[-2, :], K, self._n_x, self._n_x, self._r_x, self._r_x, self._n_x, self._r_x)
-        y_out[-1, :] = fp_mult(y_out[-2, :], K, self._n_x, self._n_x, self._r_x, self._r_x, self._n_x, self._r_x)
-        z_out[-1, :] = z_out[-2, :]
-        
-        print(f"i: 18, x: {x_out[-1, :]}, y: {y_out[-1, :]}, z: {z_out[-1, :]}, sigma: {sigma_j[i, :]}")
-        return x_out, y_out, z_out, sigma_j
-        
-
-    def _fix_types_and_quantize(self, x, y, z):
-
-        if type(x) != type(np.array([1])):
-            x = np.array([x])
-        if type(y) != type(np.array([1])):
-            y = np.array([y])
-        if type(z) != type(np.array([1])):
-            z = np.array([z])
-
-        x = fp_quantize(x, self._n_x, self._r_x)
-        y = fp_quantize(y, self._n_x, self._r_x)
-        z = fp_quantize(z, self._n_z, self._r_z)
-
-        max_length = max([len(x), len(y), len(z)])
-        broadcaster = np.zeros((1, max_length))
-        x = x + broadcaster
-        y = y + broadcaster
-        z = z + broadcaster
-
-        return x , y, z
+        x_final = FixedPointArray._from_mantissas(
+            x_history[-2], self._n_x, self._r_x
+        ) * self._gain
+        y_final = FixedPointArray._from_mantissas(
+            y_history[-2], self._n_x, self._r_x
+        ) * self._gain
+        x_final.re_quantize(self._n_x, self._r_x)
+        y_final.re_quantize(self._n_x, self._r_x)
+        x_history[-1] = x_final.values
+        y_history[-1] = y_final.values
+        z_history[-1] = z_history[-2]
+        return x_history, y_history, z_history, directions
 
 
-''' Testing: Sweep Angles and plot them to verify the CORDIC engine'''
-my_cordic = CORDIC()
+def sweep_and_plot(cordic=None, output_path="cordic.png"):
+    """Sweep all U0.16 phases and plot output with absolute quantization error."""
+    cordic = cordic or CORDIC()
+    phase_codes = np.arange(1 << 16, dtype=np.uint16)
+    angles = phase_codes.astype(float) * (2 * np.pi / (1 << 16))
 
-# x0 = 1
-# y0 = 0
+    x_history, _, _, _ = cordic.iteration(1, 0, phase_codes)
+    output = np.asarray(x_history[-1], dtype=float) / (1 << cordic._r_x)
+    ideal_cosine = np.cos(angles)
+    absolute_error = np.abs(ideal_cosine - output)
 
-x02 = 2
-y02 = 3
+    figure, (output_axis, error_axis) = plt.subplots(
+        2,
+        1,
+        sharex=True,
+        figsize=(12, 7),
+        gridspec_kw={"height_ratios": [3, 1]},
+    )
+    output_axis.plot(angles, output, label="Fixed-point CORDIC")
+    output_axis.plot(
+        angles,
+        ideal_cosine,
+        linestyle="--",
+        label="Ideal cos(fixed-point angle)",
+    )
+    output_axis.set_ylabel("Output value")
+    output_axis.legend()
+    error_axis.plot(angles, absolute_error)
+    error_axis.set_xlabel("Phase angle (radians; input is U0.16 turns)")
+    error_axis.set_ylabel("Absolute error")
+    error_axis.set_title("CORDIC quantization noise")
+    figure.tight_layout()
+    figure.savefig(output_path)
+    return angles, output, absolute_error, figure
 
-thetas = np.linspace(-np.pi, np.pi, 200)
 
-# run the iteration
-x_out, y_out, z_out, sigma_j = my_cordic.iteration(1, 0, thetas)
-# x_out, y_out, z_out, sigma_j = my_cordic.iteration(1, 0, np.pi/4)
-# x_out2, y_out2, z_out2, sigma_j2 = my_cordic.iteration(x02, y02, thetas)
+class CORDICTests(unittest.TestCase):
+    """Test quadrant mapping and end-to-end CORDIC cosine output."""
 
-#plot
-cordic_cos = x_out[-1, :]
-cordic_cos = cordic_cos / (2**my_cordic._r_x)
-# cordic_mix_x = x_out2[-1, :]
-# cordic_mix_y = y_out2[-1, :]
-# cordic_mix_x = cordic_mix_x/ (2**my_cordic._r_x)
-# cordic_mix_y = cordic_mix_y/ (2**my_cordic._r_x)
+    def test_quadrant_mapping_and_cosine(self):
+        """Check representative offsets in all U0.16 quadrants."""
+        cordic = CORDIC()
+        offset_code = 4096
+        phase_codes = np.array(
+            [offset_code, 16384 + offset_code,
+             32768 + offset_code, 49152 + offset_code],
+            dtype=np.uint16,
+        )
+        x, y, phases = cordic._rotation_inputs(1, 0, phase_codes)
+        x, y, z = cordic._phase_to_rotation_angle(x, y, phases)
+        expected_angles = np.array(
+            [1, 1, -1, -1], dtype=float
+        ) * offset_code * (2 * np.pi / 65536)
+        np.testing.assert_allclose(
+            z.to_float(), expected_angles, atol=2 ** -cordic._r_z
+        )
+        expected_x_flip = np.array([False, True, True, False])
+        np.testing.assert_array_equal(x.values < 0, expected_x_flip)
+        np.testing.assert_array_equal(y.values, np.zeros(4, dtype=object))
+
+        x_history, _, _, _ = cordic.iteration(1, 0, phase_codes)
+        actual = np.asarray(x_history[-1], dtype=float) / (1 << cordic._r_x)
+        ideal = np.cos(phase_codes.astype(float) * (2 * np.pi / 65536))
+        np.testing.assert_allclose(actual, ideal, atol=0.01)
+        diagnostics = np.column_stack((
+            phase_codes,
+            z.to_float(),
+            x.to_float(),
+            y.to_float(),
+            actual,
+            ideal,
+        ))
+        np.savetxt(
+            Path(__file__).with_name("cordic_quadrant_test.txt"),
+            diagnostics,
+            fmt=["%u", "%.9f", "%.9f", "%.9f", "%.9f", "%.9f"],
+            header="phase_code mapped_angle x_after_map y_after_map cordic_cos ideal_cos",
+        )
 
 
-plt.plot(thetas, cordic_cos, label='CORDIC')        #compare the cordic computed cos against numpy's in-built cos
-# plt.plot(thetas, cordic_mix_x, label='cordic mix x', color='blue')
-# plt.plot(thetas, cordic_mix_y, label='cordic mix y', color='green')
+def main():
+    """Run CORDIC tests, then sweep and save the resulting plot."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", default="cordic.png")
+    args = parser.parse_args()
+    unittest.main(argv=["cordic"], exit=False)
+    sweep_and_plot(output_path=args.output)
 
-plt.plot(thetas, np.cos(thetas), label='numpy cos', linestyle='dashed')
-# plt.plot(thetas, 2*np.cos(thetas) - 3*np.sin(thetas), label='2cos-3sin', linestyle="dashed", color='red')
-# plt.plot(thetas, 2*np.sin(thetas) + 3*np.cos(thetas), label='2sin+3cos', linestyle="dashed", color='brown')
-# plt.plot(thetas, cordic_cos - np.cos(thetas), label='error', linestyle='dashdot')
-plt.legend()
-plt.savefig('cordic_2.png')
+
+if __name__ == "__main__":
+    main()
