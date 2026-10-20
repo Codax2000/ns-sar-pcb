@@ -681,10 +681,16 @@ class SineGenDACTests(unittest.TestCase):
 
 
 def main() -> None:
-    """Plot one DAC waveform with and without the delta-sigma modulator."""
+    """Plot one DAC waveform with and without the delta-sigma modulator.
+
+    Frequency code 8 steps 256 phase codes per sample. Over ``2**16``
+    samples that is 256 cycles, so the tone is FFT bin 256. That bin is
+    inside the oversampled band scored by :meth:`SineGenDAC.get_sqnr_db`
+    and clear of the DC bins that helper skips.
+    """
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0x1)
+    dac.set_frequency(0x8)
     dac.set_amplitude(0xE)
     dac.set_osr(64)
     dac.set_dac_mode(dac_number=0, mode="AC")
