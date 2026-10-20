@@ -21,6 +21,11 @@ modulator. Widths below are the defaults (16-bit CORDIC, 8-bit DAC):
   quantization error fed back in CORDIC mantissa units.
 
 ``convert`` returns integer codes, not volts.
+
+``get_sqnr_db`` reports in-band SQNR. No analog reconstruction-filter
+cutoff is specified. The default band is the ADC signal band from
+``scripts/nssar.py`` (OSR 32), so noise stops at ``fs / (2 * 32)``.
+Pass ``osr=1`` for the full Nyquist band.
 """
 
 from __future__ import annotations
@@ -44,6 +49,9 @@ FULL_SCALE_AMPLITUDE = 15
 # tone, so the main lobe is that peak and three bins on either side.
 # The same three bins above DC are the window's DC leakage.
 BLACKMAN_HALF_WIDTH = 3
+# scripts/nssar.py default. The reconstruction-filter cutoff is not
+# given, so this OSR is the signal band: fs / (2 * DEFAULT_OSR).
+DEFAULT_OSR = 32
 
 
 def _signed_limits(width: int) -> tuple[int, int]:
@@ -192,7 +200,7 @@ class SineGenDAC:
             "dacp_dc_value": 0x0,
             "dacn_dc_value": 0x0,
             "warmup_cycles": 1000,
-            "osr": 8,
+            "osr": DEFAULT_OSR,
         }
         self._n_dac_bits: int = n_dac_bits
         self._n_cordic_bits: int = n_cordic_bits
@@ -288,14 +296,15 @@ class SineGenDAC:
         self._reg["dsm_enable"] = enable
 
     def set_osr(self, osr: int) -> None:
-        """Store the oversampling ratio used by the spectrum marker.
+        """Store the oversampling ratio of the signal band.
 
         Parameters
         ----------
         osr : int
-            Positive integer. :meth:`plot_output_fft` draws the line
-            ``fs / (2 * osr)`` when asked. Pass the same value to
-            :meth:`get_sqnr_db` to score that band.
+            Positive integer. The band edge is ``fs / (2 * osr)``.
+            :meth:`get_sqnr_db` uses this value when no OSR is passed.
+            :meth:`plot_output_fft` draws that edge when asked. The
+            default is :data:`DEFAULT_OSR`.
 
         Raises
         ------
@@ -566,16 +575,16 @@ class SineGenDAC:
         axis.grid(True, which="both", ls="-")
         return figure
 
-    def _band_last_bin(self, count: int, osr: int | None) -> int:
+    def _band_last_bin(self, count: int, osr: int) -> int:
         """Return the last FFT bin included in the noise sum.
 
         Parameters
         ----------
         count : int
             Length of the FFT, which is the number of time samples.
-        osr : int or None
-            Oversampling ratio. ``None`` keeps every bin through Nyquist.
-            Otherwise the last bin is the one at ``fs / (2 * osr)``.
+        osr : int
+            Oversampling ratio. The last bin is the one at
+            ``fs / (2 * osr)``. ``1`` keeps every bin through Nyquist.
 
         Returns
         -------
@@ -589,8 +598,6 @@ class SineGenDAC:
             DC leakage bins.
         """
         nyquist = count // 2
-        if osr is None:
-            return nyquist
         if isinstance(osr, bool) or not isinstance(osr, int) or osr < 1:
             raise ValueError("OSR must be a positive integer")
         last = count // (2 * osr)
@@ -605,19 +612,23 @@ class SineGenDAC:
         the strongest bin above the Blackman DC leakage. ``numpy.blackman``
         has its first nulls three bins from a coherent tone, so the
         signal sum is that peak and three bins on either side. Noise is
-        every other bin in the analysis band. Bins 0 through 3 are DC
+        every other bin up to the signal band. Bins 0 through 3 are DC
         and the window leakage around it, and are left out of both sums.
+
+        The default band is the OSR register (:data:`DEFAULT_OSR`, from
+        the ADC model). There is no reconstruction-filter cutoff in the
+        repo. Pass ``osr=1`` to integrate through Nyquist instead.
 
         Parameters
         ----------
         osr : int or None, optional
-            Oversampling ratio. Noise stops at ``fs / (2 * osr)``.
-            ``None`` scores the full Nyquist band. Default is ``None``.
+            Noise stops at ``fs / (2 * osr)``. ``None`` uses the OSR
+            register. ``1`` is the full Nyquist band. Default is ``None``.
 
         Returns
         -------
         float
-            SQNR in dB, or infinity when the noise power is zero.
+            In-band SQNR in dB, or infinity when the noise power is zero.
 
         Raises
         ------
@@ -629,6 +640,8 @@ class SineGenDAC:
             raise ValueError(
                 "plot_output_fft must be run first to populate FFT data."
             )
+        if osr is None:
+            osr = self._reg["osr"]
         fft_data = self._fft_data
         count = len(fft_data)
         last_bin = self._band_last_bin(count, osr)
@@ -756,22 +769,31 @@ class SineGenDACTests(unittest.TestCase):
         """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
         dac = self._converter()
         dac._fft_data = self._quantized_sine_spectrum()
-        measured = dac.get_sqnr_db()
+        measured = dac.get_sqnr_db(osr=1)
         expected = 6.02 * 8 + 1.76
         self.assertAlmostEqual(measured, expected, delta=1.0)
+
+    def test_default_sqnr_is_the_signal_band(self) -> None:
+        """Tests that the default SQNR uses the OSR register."""
+        dac = self._converter()
+        dac._fft_data = self._quantized_sine_spectrum()
+        self.assertEqual(dac._reg["osr"], DEFAULT_OSR)
+        default = dac.get_sqnr_db()
+        self.assertAlmostEqual(default, dac.get_sqnr_db(osr=DEFAULT_OSR))
+        self.assertGreater(default, dac.get_sqnr_db(osr=1))
 
     def test_in_band_sqnr_drops_the_out_of_band_noise(self) -> None:
         """Tests that a narrower band raises the SQNR of white noise."""
         dac = self._converter()
         dac._fft_data = self._quantized_sine_spectrum()
-        full_band = dac.get_sqnr_db()
+        full_band = dac.get_sqnr_db(osr=1)
         in_band = dac.get_sqnr_db(osr=16)
         # OSR 16 keeps 1/16 of a white spectrum, about +12 dB.
         self.assertGreater(in_band, full_band + 10.0)
         self.assertLess(in_band, full_band + 18.0)
 
     def test_dc_offset_is_not_scored_as_the_tone(self) -> None:
-        """Tests that adding DC does not change the full-band SQNR."""
+        """Tests that adding DC does not change the in-band SQNR."""
         dac = self._converter()
         spectrum = self._quantized_sine_spectrum()
         dac._fft_data = spectrum
@@ -788,14 +810,14 @@ def main() -> None:
     """Plot one DAC waveform with and without the delta-sigma modulator.
 
     Frequency code 8 steps 256 phase codes per sample. Over ``2**16``
-    samples that is 256 cycles, so the tone is FFT bin 256, inside the
-    OSR-64 band and clear of DC.
+    samples that is bin 256. The default signal band is OSR 32, whose
+    edge is bin 1024, so the tone is in band and clear of DC.
     """
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
     dac.set_frequency(0x8)
     dac.set_amplitude(0xE)
-    dac.set_osr(64)
+    dac.set_osr(DEFAULT_OSR)
     dac.set_dac_mode(dac_number=0, mode="AC")
     dac.set_dac_mode(dac_number=1, mode="AC")
 
@@ -807,12 +829,8 @@ def main() -> None:
     dac.plot_output(n_plot_cycles, ax=time_axis)
     dac.plot_output_fft(ax=spectrum_axis)
     demo_osr = dac._reg["osr"]
-    sqnr_no_dsm = dac.get_sqnr_db(osr=demo_osr)
-    full_no_dsm = dac.get_sqnr_db()
-    print(
-        f"Bypass full-band {full_no_dsm:.2f} dB, "
-        f"in-band OSR {demo_osr} {sqnr_no_dsm:.2f} dB"
-    )
+    sqnr_no_dsm = dac.get_sqnr_db()
+    print(f"Bypass in-band SQNR {sqnr_no_dsm:.2f} dB (OSR {demo_osr})")
     time_axis.lines[-2].set_label("DACP Output (No DSM)")
     time_axis.lines[-1].set_label("DACN Output (No DSM)")
 
@@ -822,12 +840,8 @@ def main() -> None:
 
     dac.plot_output(n_plot_cycles, ax=time_axis)
     dac.plot_output_fft(ax=spectrum_axis, add_osrline=True)
-    sqnr_dsm = dac.get_sqnr_db(osr=demo_osr)
-    full_dsm = dac.get_sqnr_db()
-    print(
-        f"DSM full-band {full_dsm:.2f} dB, "
-        f"in-band OSR {demo_osr} {sqnr_dsm:.2f} dB"
-    )
+    sqnr_dsm = dac.get_sqnr_db()
+    print(f"DSM in-band SQNR {sqnr_dsm:.2f} dB (OSR {demo_osr})")
     time_axis.lines[-2].set_label("DACP Output (With DSM)")
     time_axis.lines[-1].set_label("DACN Output (With DSM)")
 
