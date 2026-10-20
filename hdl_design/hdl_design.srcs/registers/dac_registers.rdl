@@ -14,13 +14,10 @@ addrmap dac_regs {
 
     reg {
         field {
-            desc = "Frequency setting of the DAC sine gen. Describes a power of 2, so increase of 1 in this field will generate a frequency twice as high as the previous.";
-        } frequency [3:0];
-        field {
             desc = "Amplitude setting of the DAC. Describes a power of 2, so increase of 1 in this field will generate an amplitude twice as large as the previous code. 4'hF translates to full-scale.";
             reset=0xF;
         } amplitude [7:4];
-        // bits [15:8] reserved
+        // bits [3:0] and [15:8] reserved
     } AC_CONFIG;
 
     reg {
@@ -77,4 +74,10 @@ addrmap dac_regs {
         } dsm_locked [4:4];
         // bits [15:5] reserved
     } STATUS;
+
+    reg {
+        field {
+            desc = "DDS frequency tuning word (FTW). The phase accumulator updates as phase <= (phase + FTW) mod 2^16. The output frequency is f_out = FTW * fs / 2^16.";
+        } frequency [15:0];
+    } FREQUENCY;
 };
