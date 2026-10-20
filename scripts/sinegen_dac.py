@@ -5,9 +5,9 @@ truncating DAC quantizer, and an optional second-order error-feedback
 modulator. Widths below are the defaults (16-bit CORDIC, 8-bit DAC):
 
 * Phase accumulator: unsigned 16-bit word. ``2**16`` codes is one turn.
-  The frequency register selects ``step = 1 << frequency``. Codes 0 to
-  15 are valid. Code 15 steps by half a turn (``2**15``), so the
-  accumulator alternates between 0 and ``2**15``.
+  The frequency register is a DDS tuning word (FTW). The step is the
+  word itself: ``phase <= (phase + FTW) mod 2**16``. The tone is
+  ``f_out = FTW * fs / 2**16``. Valid words are 0 through 65535.
 * Amplitude register: code ``a`` sets the CORDIC initial-vector length
   to ``2**(a - 15)``. Code 15 is full scale. ``AC_CONFIG.amplitude`` is
   a power of two and calls ``4'hF`` full scale; this is that reading.
@@ -223,22 +223,22 @@ class SineGenDAC:
         self._fft_data: np.ndarray | None = None
 
     def set_frequency(self, frequency: int) -> None:
-        """Store the 4-bit frequency code.
+        """Store the 16-bit frequency tuning word.
 
         Parameters
         ----------
         frequency : int
-            Code from 0 to 15. The phase step is ``1 << frequency``, so
-            each increment doubles the step. Code 15 steps by half a
-            turn per sample.
+            Tuning word from 0 to 65535. The phase step is this word,
+            so ``phase <= (phase + FTW) mod 2**16`` and
+            ``f_out = FTW * fs / 2**16``.
 
         Raises
         ------
         ValueError
-            If ``frequency`` is outside 0 to 15.
+            If ``frequency`` is outside 0 to 65535.
         """
-        if frequency < 0 or frequency > 2**4 - 1:
-            raise ValueError("Frequency must be between 0 and 15")
+        if frequency < 0 or frequency > 2**16 - 1:
+            raise ValueError("Frequency must be between 0 and 65535")
         self._reg["frequency"] = frequency
 
     def set_amplitude(self, amplitude: int) -> None:
@@ -318,18 +318,17 @@ class SineGenDAC:
     def _phase_step(self) -> int:
         """Return the phase increment for the frequency register.
 
-        The tuning word is ``1 << frequency``. Valid codes are 0 through
-        15, so the step is 1, 2, 4, ..., ``2**15``. Code 15 is half a
-        turn per sample: the accumulator alternates between 0 and
-        ``2**15``. Every in-range step fits in the 16-bit phase word.
-        The accumulator adds this step modulo ``2**16``.
+        The tuning word is the register value. Valid words are 0
+        through 65535, and the accumulator adds that step modulo
+        ``2**16``. Word 0 holds the phase at 0. Word 32768 steps by
+        half a turn per sample.
 
         Returns
         -------
         int
             Phase step in U0.16 codes.
         """
-        return 1 << self._reg["frequency"]
+        return self._reg["frequency"]
 
     def _vector_magnitude(self) -> float:
         """Return the CORDIC initial-vector length for the amplitude.
@@ -687,26 +686,34 @@ class SineGenDACTests(unittest.TestCase):
         dac._reg["warmup_cycles"] = 0
         return dac
 
-    def test_tuning_word_is_one_shifted_by_frequency(self) -> None:
-        """Tests ``step = 1 << frequency``, including the half-turn end."""
+    def test_tuning_word_is_the_frequency_register(self) -> None:
+        """Tests that the phase step is the 16-bit tuning word."""
         dac = self._converter()
-        for code in range(16):
-            dac.set_frequency(code)
-            self.assertEqual(dac._phase_step(), 1 << code)
-        dac.set_frequency(0)
+        for word in (0, 1, 257, 32768, 65535):
+            dac.set_frequency(word)
+            self.assertEqual(dac._phase_step(), word)
+        dac.set_frequency(1)
         slow = dac.convert(4)
         np.testing.assert_array_equal(
             slow["phase"], np.array([0, 1, 2, 3], dtype=np.uint16)
         )
-        dac.set_frequency(15)
+        dac.set_frequency(32768)
         fast = dac.convert(4)
         half_turn = 1 << (PHASE_BITS - 1)
         np.testing.assert_array_equal(
             fast["phase"],
             np.array([0, half_turn, 0, half_turn], dtype=np.uint16),
         )
+        dac.set_frequency(65535)
+        wrapped = dac.convert(4)
+        np.testing.assert_array_equal(
+            wrapped["phase"],
+            np.array([0, 65535, 65534, 65533], dtype=np.uint16),
+        )
         with self.assertRaises(ValueError):
-            dac.set_frequency(16)
+            dac.set_frequency(-1)
+        with self.assertRaises(ValueError):
+            dac.set_frequency(65536)
 
     def test_amplitude_is_the_cordic_initial_magnitude(self) -> None:
         """Tests that code 14 rotates a half-scale vector, not a product."""
@@ -725,7 +732,7 @@ class SineGenDACTests(unittest.TestCase):
         """Tests ``1/K`` and signed saturation at amplitude code 15."""
         dac = self._converter()
         dac.set_amplitude(FULL_SCALE_AMPLITUDE)
-        dac.set_frequency(0)
+        dac.set_frequency(1)
         # Phase equals the sample index, so index 8192 is pi/4.
         frame = dac.convert(8193)
         quarter = frame.iloc[8192]
@@ -809,13 +816,13 @@ class SineGenDACTests(unittest.TestCase):
 def main() -> None:
     """Plot one DAC waveform with and without the delta-sigma modulator.
 
-    Frequency code 8 steps 256 phase codes per sample. Over ``2**16``
-    samples that is bin 256. The default signal band is OSR 32, whose
+    Tuning word 257 is prime, so ``2**16`` samples hold 257 cycles and
+    the tone is FFT bin 257. The default signal band is OSR 32, whose
     edge is bin 1024, so the tone is in band and clear of DC.
     """
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0x8)
+    dac.set_frequency(257)
     dac.set_amplitude(0xE)
     dac.set_osr(DEFAULT_OSR)
     dac.set_dac_mode(dac_number=0, mode="AC")
