@@ -40,6 +40,10 @@ from cordic import CORDIC, PHASE_BITS
 # 4'hF is full scale in dac_registers.rdl. Code ``a`` has magnitude
 # 2**(a - FULL_SCALE_AMPLITUDE).
 FULL_SCALE_AMPLITUDE = 15
+# numpy.blackman places its first nulls three bins away from a coherent
+# tone, so the main lobe is that peak and three bins on either side.
+# The same three bins above DC are the window's DC leakage.
+BLACKMAN_HALF_WIDTH = 3
 
 
 def _signed_limits(width: int) -> tuple[int, int]:
@@ -284,13 +288,14 @@ class SineGenDAC:
         self._reg["dsm_enable"] = enable
 
     def set_osr(self, osr: int) -> None:
-        """Store the oversampling ratio used by the spectrum helpers.
+        """Store the oversampling ratio used by the spectrum marker.
 
         Parameters
         ----------
         osr : int
-            Positive integer. The noise band in :meth:`get_sqnr_db` and
-            the FFT marker use ``fs / (2 * osr)``.
+            Positive integer. :meth:`plot_output_fft` draws the line
+            ``fs / (2 * osr)`` when asked. Pass the same value to
+            :meth:`get_sqnr_db` to score that band.
 
         Raises
         ------
@@ -520,8 +525,10 @@ class SineGenDAC:
         warmup = self._reg["warmup_cycles"]
         n_samples_for_fft = len(self._results) - warmup
         data_for_fft = self._results.iloc[warmup:]
+        # Unsigned codes are the signed word plus 2**(n-1), so midscale
+        # is that offset. Half of it (64 for 8 bits) leaves a DC term.
         full_scale = 2 ** (self._n_dac_bits - 1)
-        dc_offset = full_scale / 2.0
+        dc_offset = float(full_scale)
         dacp_no_dc = data_for_fft["dacp_output"] - dc_offset
         window = np.blackman(n_samples_for_fft)
         windowed_dacp = dacp_no_dc * window
@@ -559,13 +566,53 @@ class SineGenDAC:
         axis.grid(True, which="both", ls="-")
         return figure
 
-    def get_sqnr_db(self) -> float:
+    def _band_last_bin(self, count: int, osr: int | None) -> int:
+        """Return the last FFT bin included in the noise sum.
+
+        Parameters
+        ----------
+        count : int
+            Length of the FFT, which is the number of time samples.
+        osr : int or None
+            Oversampling ratio. ``None`` keeps every bin through Nyquist.
+            Otherwise the last bin is the one at ``fs / (2 * osr)``.
+
+        Returns
+        -------
+        int
+            Inclusive last bin index.
+
+        Raises
+        ------
+        ValueError
+            If ``osr`` is less than 1, or the band does not clear the
+            DC leakage bins.
+        """
+        nyquist = count // 2
+        if osr is None:
+            return nyquist
+        if isinstance(osr, bool) or not isinstance(osr, int) or osr < 1:
+            raise ValueError("OSR must be a positive integer")
+        last = count // (2 * osr)
+        if last <= BLACKMAN_HALF_WIDTH:
+            raise ValueError("band does not clear the DC leakage bins")
+        return min(last, nyquist)
+
+    def get_sqnr_db(self, osr: int | None = None) -> float:
         """Return the signal-to-quantization-noise ratio in decibels.
 
-        The signal is the peak FFT bin plus two bins on either side.
-        Noise is the remaining positive-frequency power inside the
-        oversampled band, excluding DC. :meth:`plot_output_fft` must
-        run first.
+        Uses the windowed FFT from :meth:`plot_output_fft`. The tone is
+        the strongest bin above the Blackman DC leakage. ``numpy.blackman``
+        has its first nulls three bins from a coherent tone, so the
+        signal sum is that peak and three bins on either side. Noise is
+        every other bin in the analysis band. Bins 0 through 3 are DC
+        and the window leakage around it, and are left out of both sums.
+
+        Parameters
+        ----------
+        osr : int or None, optional
+            Oversampling ratio. Noise stops at ``fs / (2 * osr)``.
+            ``None`` scores the full Nyquist band. Default is ``None``.
 
         Returns
         -------
@@ -575,7 +622,8 @@ class SineGenDAC:
         Raises
         ------
         ValueError
-            If the FFT has not been calculated.
+            If the FFT has not been calculated, ``osr`` is not a positive
+            integer, or the band has no bins above the DC leakage.
         """
         if self._fft_data is None:
             raise ValueError(
@@ -583,13 +631,18 @@ class SineGenDAC:
             )
         fft_data = self._fft_data
         count = len(fft_data)
-        positive = fft_data[3:count // 2]
-        peak_index = np.argmax(np.abs(positive)) + 1
+        last_bin = self._band_last_bin(count, osr)
         power = np.abs(fft_data) ** 2
-        signal_bins = np.arange(peak_index - 2, peak_index + 3)
-        signal_power = np.sum(power[signal_bins])
-        noise_bins = np.arange(4, count // (2 * self._reg["osr"]))
-        noise_power = np.sum(power[noise_bins]) - signal_power
+        guard = BLACKMAN_HALF_WIDTH
+        search = np.arange(guard + 1, last_bin + 1)
+        peak = int(search[np.argmax(power[search])])
+        signal_bins = np.arange(peak - guard, peak + guard + 1)
+        signal_bins = signal_bins[
+            (signal_bins >= 0) & (signal_bins <= count // 2)
+        ]
+        noise_bins = search[~np.isin(search, signal_bins)]
+        signal_power = float(np.sum(power[signal_bins]))
+        noise_power = float(np.sum(power[noise_bins]))
         if noise_power == 0:
             return float("inf")
         return float(10 * np.log10(signal_power / noise_power))
@@ -679,14 +732,64 @@ class SineGenDACTests(unittest.TestCase):
         self.assertEqual(int(quarter["cordic_cos"]), int(unit_cos.values[0]))
         self.assertEqual(int(quarter["cordic_sin"]), int(unit_sin.values[0]))
 
+    def _quantized_sine_spectrum(self) -> np.ndarray:
+        """Return the Blackman FFT of a coherent 8-bit sine.
+
+        Returns
+        -------
+        numpy.ndarray
+            Complex spectrum. The tone is bin 64 of 16384 samples, with
+            peak code 127 so the quantizer does not clip.
+        """
+        n_bits = 8
+        n_samples = 2 ** 14
+        tone_bin = 64
+        amplitude = (1 << (n_bits - 1)) - 1
+        index = np.arange(n_samples)
+        sine = amplitude * np.sin(
+            2.0 * np.pi * tone_bin * index / n_samples
+        )
+        codes = np.round(sine)
+        return np.fft.fft(codes * np.blackman(n_samples))
+
+    def test_full_band_sqnr_matches_quantizer_formula(self) -> None:
+        """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
+        dac = self._converter()
+        dac._fft_data = self._quantized_sine_spectrum()
+        measured = dac.get_sqnr_db()
+        expected = 6.02 * 8 + 1.76
+        self.assertAlmostEqual(measured, expected, delta=1.0)
+
+    def test_in_band_sqnr_drops_the_out_of_band_noise(self) -> None:
+        """Tests that a narrower band raises the SQNR of white noise."""
+        dac = self._converter()
+        dac._fft_data = self._quantized_sine_spectrum()
+        full_band = dac.get_sqnr_db()
+        in_band = dac.get_sqnr_db(osr=16)
+        # OSR 16 keeps 1/16 of a white spectrum, about +12 dB.
+        self.assertGreater(in_band, full_band + 10.0)
+        self.assertLess(in_band, full_band + 18.0)
+
+    def test_dc_offset_is_not_scored_as_the_tone(self) -> None:
+        """Tests that adding DC does not change the full-band SQNR."""
+        dac = self._converter()
+        spectrum = self._quantized_sine_spectrum()
+        dac._fft_data = spectrum
+        baseline = dac.get_sqnr_db()
+        n_samples = len(spectrum)
+        dc_term = 1000.0 * np.blackman(n_samples)
+        dac._fft_data = spectrum + np.fft.fft(dc_term)
+        self.assertAlmostEqual(dac.get_sqnr_db(), baseline, delta=0.5)
+        with self.assertRaises(ValueError):
+            dac.get_sqnr_db(osr=0)
+
 
 def main() -> None:
     """Plot one DAC waveform with and without the delta-sigma modulator.
 
     Frequency code 8 steps 256 phase codes per sample. Over ``2**16``
-    samples that is 256 cycles, so the tone is FFT bin 256. That bin is
-    inside the oversampled band scored by :meth:`SineGenDAC.get_sqnr_db`
-    and clear of the DC bins that helper skips.
+    samples that is 256 cycles, so the tone is FFT bin 256, inside the
+    OSR-64 band and clear of DC.
     """
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
@@ -703,7 +806,13 @@ def main() -> None:
     figure, (time_axis, spectrum_axis) = plt.subplots(1, 2, figsize=(15, 6))
     dac.plot_output(n_plot_cycles, ax=time_axis)
     dac.plot_output_fft(ax=spectrum_axis)
-    sqnr_no_dsm = dac.get_sqnr_db()
+    demo_osr = dac._reg["osr"]
+    sqnr_no_dsm = dac.get_sqnr_db(osr=demo_osr)
+    full_no_dsm = dac.get_sqnr_db()
+    print(
+        f"Bypass full-band {full_no_dsm:.2f} dB, "
+        f"in-band OSR {demo_osr} {sqnr_no_dsm:.2f} dB"
+    )
     time_axis.lines[-2].set_label("DACP Output (No DSM)")
     time_axis.lines[-1].set_label("DACN Output (No DSM)")
 
@@ -713,15 +822,20 @@ def main() -> None:
 
     dac.plot_output(n_plot_cycles, ax=time_axis)
     dac.plot_output_fft(ax=spectrum_axis, add_osrline=True)
-    sqnr_dsm = dac.get_sqnr_db()
+    sqnr_dsm = dac.get_sqnr_db(osr=demo_osr)
+    full_dsm = dac.get_sqnr_db()
+    print(
+        f"DSM full-band {full_dsm:.2f} dB, "
+        f"in-band OSR {demo_osr} {sqnr_dsm:.2f} dB"
+    )
     time_axis.lines[-2].set_label("DACP Output (With DSM)")
     time_axis.lines[-1].set_label("DACN Output (With DSM)")
 
     spectrum_axis.lines[-3].set_label(
-        f"SQNR={np.round(sqnr_no_dsm, 3)}, NO DSM"
+        f"In-band SQNR={np.round(sqnr_no_dsm, 1)} dB, no DSM"
     )
     spectrum_axis.lines[-2].set_label(
-        f"SQNR={np.round(sqnr_dsm, 3)}, WITH DSM"
+        f"In-band SQNR={np.round(sqnr_dsm, 1)} dB, with DSM"
     )
 
     time_axis.set_title(f"Sine Wave Generator DAC Output ({n_cycles} cycles)")
