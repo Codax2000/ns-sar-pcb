@@ -8,12 +8,16 @@ modulator. Widths below are the defaults (16-bit CORDIC, 8-bit DAC):
   The frequency register is a DDS tuning word (FTW). The step is the
   word itself: ``phase <= (phase + FTW) mod 2**16``. The tone is
   ``f_out = FTW * fs / 2**16``. Valid words are 0 through 65535.
-* Amplitude register: code ``a`` sets the CORDIC initial-vector length
-  to ``2**(a - 15)``. Code 15 is full scale. ``AC_CONFIG.amplitude`` is
-  a power of two and calls ``4'hF`` full scale; this is that reading.
-* CORDIC vector: signed ``(16, 15)``. Outputs are that magnitude times
-  cosine and sine, in units of ``2**(-15)``. ``+1`` saturates because
-  it is not a signed code. ``1/K`` is applied inside the CORDIC.
+* Amplitude: unsigned scale ``a`` (U0.4, reset 8) and exponent ``b``
+  (reset 15). The CORDIC preload is the shift-add ``C * a / 16``.
+  The CORDIC output then shifts right by ``15 - b``. That shift is
+  arithmetic, toward negative infinity, so the dropped bits are
+  truncated. The amplitude is about ``(a/16) * 2**(b-15)`` of full
+  scale. Scale 15 is the largest preload that still fits in the
+  signed 16-bit CORDIC word.
+* CORDIC vector: signed ``(16, 15)``. There is no ``1/K`` multiply.
+  Outputs are the preloaded rotation, in units of ``2**(-15)``,
+  after the exponent shift.
 * CORDIC angle: the phase code itself, a U0.16 fraction of a turn.
 * DAC quantizer: arithmetic right shift by 8, then saturate to signed
   8-bit. Adding ``2**7`` makes the unsigned DAC code.
@@ -42,9 +46,10 @@ from numba import njit
 from cordic import CORDIC, PHASE_BITS
 
 
-# 4'hF is full scale in dac_registers.rdl. Code ``a`` has magnitude
-# 2**(a - FULL_SCALE_AMPLITUDE).
-FULL_SCALE_AMPLITUDE = 15
+# AC_CONFIG.amplitude reset. Exponent 15 applies no extra right shift.
+FULL_SCALE_EXPONENT = 15
+# AC_CONFIG.amplitude_scale reset. U0.4 code 8 has weight 1/2.
+DEFAULT_AMPLITUDE_SCALE = 8
 # numpy.blackman places its first nulls three bins away from a coherent
 # tone, so the main lobe is that peak and three bins on either side.
 # The same three bins above DC are the window's DC leakage.
@@ -193,7 +198,8 @@ class SineGenDAC:
             raise ValueError("DAC width cannot exceed the CORDIC width")
         self._reg: dict[str, Any] = {
             "frequency": 0x0,
-            "amplitude": 0xF,
+            "amplitude_scale": DEFAULT_AMPLITUDE_SCALE,
+            "amplitude": FULL_SCALE_EXPONENT,
             "dacp_mode": "DC",
             "dacn_mode": "DC",
             "dsm_enable": False,
@@ -241,15 +247,33 @@ class SineGenDAC:
             raise ValueError("Frequency must be between 0 and 65535")
         self._reg["frequency"] = frequency
 
+    def set_amplitude_scale(self, scale: int) -> None:
+        """Store the unsigned 4-bit amplitude scale.
+
+        Parameters
+        ----------
+        scale : int
+            Code ``a`` from 0 to 15, with weight ``a/16``. The CORDIC
+            preload is the shift-add of the CORDIC constant over the
+            set bits of this code.
+
+        Raises
+        ------
+        ValueError
+            If ``scale`` is outside 0 to 15.
+        """
+        if scale < 0 or scale > 2**4 - 1:
+            raise ValueError("Amplitude scale must be between 0 and 15")
+        self._reg["amplitude_scale"] = scale
+
     def set_amplitude(self, amplitude: int) -> None:
-        """Store the 4-bit amplitude code.
+        """Store the 4-bit amplitude exponent.
 
         Parameters
         ----------
         amplitude : int
-            Code from 0 to 15. The CORDIC initial vector has length
-            ``2**(amplitude - 15)``. Code 15 is full scale, and each
-            decrease halves that length.
+            Exponent ``b`` from 0 to 15. The CORDIC output shifts right
+            by ``15 - b``. Code 15 is the full-scale exponent.
 
         Raises
         ------
@@ -257,7 +281,7 @@ class SineGenDAC:
             If ``amplitude`` is outside 0 to 15.
         """
         if amplitude < 0 or amplitude > 2**4 - 1:
-            raise ValueError("Amplitude must be between 0 and 15")
+            raise ValueError("Amplitude exponent must be between 0 and 15")
         self._reg["amplitude"] = amplitude
 
     def set_dac_mode(self, dac_number: int = 0, mode: str = "DC") -> None:
@@ -330,22 +354,19 @@ class SineGenDAC:
         """
         return self._reg["frequency"]
 
-    def _vector_magnitude(self) -> float:
-        """Return the CORDIC initial-vector length for the amplitude.
+    def _exponent_shift(self) -> int:
+        """Return the arithmetic right shift ``15 - b``.
 
-        ``AC_CONFIG.amplitude`` is a power of two, and code ``4'hF`` is
-        full scale. Code ``a`` therefore has length ``2**(a - 15)``:
-        15 is 1, 14 is 1/2, and 0 is ``2**(-15)``. The CORDIC quantizes
-        that length into the vector format, so full scale saturates
-        where ``+1`` is not a signed code.
+        The shift moves the CORDIC mantissa toward negative infinity.
+        Exponent 15 shifts by 0 and leaves the codes unchanged. A
+        negative code becomes more negative when a dropped bit is set.
 
         Returns
         -------
-        float
-            Initial x component. The initial y component is 0.
+        int
+            Shift count from 0 to 15.
         """
-        code = self._reg["amplitude"]
-        return 2.0 ** (code - FULL_SCALE_AMPLITUDE)
+        return FULL_SCALE_EXPONENT - self._reg["amplitude"]
 
     def _calculate_phase(self, n_samples: int) -> None:
         """Fill the phase accumulator for ``n_samples`` clocks.
@@ -367,16 +388,17 @@ class SineGenDAC:
     def _calculate_cordic(self) -> None:
         """Fill sine and cosine mantissas for the current phase.
 
-        The initial vector is ``(amplitude_magnitude, 0)``, so the
-        quadrant pre-rotation and the ``1/K`` scale both see the
-        programmed amplitude. The vector format is
-        ``(n_cordic_bits, n_cordic_bits - 1)``. Results are saturated
-        signed codes in that format.
+        The initial vector is the scale preload ``(C * a / 16, 0)``.
+        The CORDIC result is then shifted right by ``15 - b``. The
+        shift is arithmetic, toward negative infinity. The vector
+        format is ``(n_cordic_bits, n_cordic_bits - 1)``.
         """
-        magnitude = self._vector_magnitude()
-        cosine, sine = self._cordic.rotate(magnitude, 0, self._phase)
-        self._cos = cosine.values.astype(np.int64)
-        self._sin = sine.values.astype(np.int64)
+        cosine, sine = self._cordic.rotate_preload(
+            self._reg["amplitude_scale"], self._phase
+        )
+        shift = self._exponent_shift()
+        self._cos = np.asarray(cosine.values, dtype=np.int64) >> shift
+        self._sin = np.asarray(sine.values, dtype=np.int64) >> shift
 
     def _quantize(self) -> None:
         """Quantize cosine to the signed DAC width and record the error.
@@ -671,7 +693,7 @@ class SineGenDAC:
 
 
 class SineGenDACTests(unittest.TestCase):
-    """Tests the phase step and the amplitude-to-magnitude mapping."""
+    """Tests the phase step, the scale preload, and the exponent shift."""
 
     def _converter(self) -> SineGenDAC:
         """Return a DAC with no warmup and DACP in AC mode.
@@ -715,42 +737,65 @@ class SineGenDACTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             dac.set_frequency(65536)
 
-    def test_amplitude_is_the_cordic_initial_magnitude(self) -> None:
-        """Tests that code 14 rotates a half-scale vector, not a product."""
-        dac = self._converter()
-        dac.set_amplitude(14)
-        dac.set_frequency(0)
-        frame = dac.convert(32)
-        cosine, sine = dac._cordic.rotate(
-            0.5, 0, frame["phase"].to_numpy()
-        )
-        np.testing.assert_array_equal(frame["cordic_cos"], cosine.values)
-        np.testing.assert_array_equal(frame["cordic_sin"], sine.values)
-        self.assertEqual(dac._vector_magnitude(), 0.5)
+    def test_reset_amplitude_is_scale_8_exponent_15(self) -> None:
+        """Tests the register resets for scale and exponent."""
+        dac = SineGenDAC()
+        self.assertEqual(dac._reg["amplitude_scale"], DEFAULT_AMPLITUDE_SCALE)
+        self.assertEqual(dac._reg["amplitude"], FULL_SCALE_EXPONENT)
 
-    def test_full_scale_keeps_gain_compensation_and_saturation(self) -> None:
-        """Tests ``1/K`` and signed saturation at amplitude code 15."""
+    def test_exponent_shifts_the_preloaded_cordic(self) -> None:
+        """Tests the scale preload and an arithmetic shift by ``15 - b``."""
         dac = self._converter()
-        dac.set_amplitude(FULL_SCALE_AMPLITUDE)
+        dac.set_amplitude_scale(8)
+        dac.set_amplitude(FULL_SCALE_EXPONENT)
+        dac.set_frequency(16384)
+        frame = dac.convert(4)
+        cosine, sine = dac._cordic.rotate_preload(
+            8, frame["phase"].to_numpy()
+        )
+        cos_codes = np.asarray(cosine.values, dtype=np.int64)
+        sin_codes = np.asarray(sine.values, dtype=np.int64)
+        np.testing.assert_array_equal(frame["cordic_cos"], cos_codes)
+        np.testing.assert_array_equal(frame["cordic_sin"], sin_codes)
+        self.assertLess(int(cos_codes.min()), 0)
+        dac.set_amplitude(14)
+        shifted = dac.convert(4)
+        # Arithmetic shift toward -inf: -3 >> 1 is -2.
+        np.testing.assert_array_equal(shifted["cordic_cos"], cos_codes >> 1)
+        np.testing.assert_array_equal(shifted["cordic_sin"], sin_codes >> 1)
+        with self.assertRaises(ValueError):
+            dac.set_amplitude_scale(16)
+        with self.assertRaises(ValueError):
+            dac.set_amplitude(-1)
+
+    def test_full_scale_preload_stays_in_the_cordic_word(self) -> None:
+        """Tests that scale 15 and exponent 15 do not saturate."""
+        dac = self._converter()
+        dac.set_amplitude_scale(15)
+        dac.set_amplitude(FULL_SCALE_EXPONENT)
         dac.set_frequency(1)
         # Phase equals the sample index, so index 8192 is pi/4.
         frame = dac.convert(8193)
         quarter = frame.iloc[8192]
-        scale = float(1 << (dac._n_cordic_bits - 1))
-        cosine = float(quarter["cordic_cos"]) / scale
-        sine = float(quarter["cordic_sin"]) / scale
-        expected = math.sqrt(2.0) / 2.0
-        self.assertAlmostEqual(cosine, expected, delta=0.01)
-        self.assertAlmostEqual(sine, expected, delta=0.01)
-        # K * cos(pi/4) is about 1.16 and would saturate near 1.
-        self.assertLess(abs(cosine), 0.9)
-        self.assertLess(abs(sine), 0.9)
+        preload = dac._cordic.preload(15)
+        radius = preload * dac._cordic.gain
+        expected = radius * math.sqrt(2.0) / 2.0
+        self.assertAlmostEqual(
+            float(quarter["cordic_cos"]), expected, delta=20
+        )
+        self.assertAlmostEqual(
+            float(quarter["cordic_sin"]), expected, delta=20
+        )
         limit = (1 << (dac._n_cordic_bits - 1)) - 1
         self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
         self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
-        unit_cos, unit_sin = dac._cordic.rotate(1, 0, np.array([8192]))
-        self.assertEqual(int(quarter["cordic_cos"]), int(unit_cos.values[0]))
-        self.assertEqual(int(quarter["cordic_sin"]), int(unit_sin.values[0]))
+        direct_cos, direct_sin = dac._cordic.rotate_preload(
+            15, np.array([8192])
+        )
+        self.assertEqual(
+            int(quarter["cordic_cos"]), int(direct_cos.values[0])
+        )
+        self.assertEqual(int(quarter["cordic_sin"]), int(direct_sin.values[0]))
 
     def _quantized_sine_spectrum(self) -> np.ndarray:
         """Return the Blackman FFT of a coherent 8-bit sine.
@@ -816,6 +861,7 @@ class SineGenDACTests(unittest.TestCase):
 def main() -> None:
     """Plot one DAC waveform with and without the delta-sigma modulator.
 
+    Amplitude stays at the register resets: scale 8 and exponent 15.
     Tuning word 257 is prime, so ``2**16`` samples hold 257 cycles and
     the tone is FFT bin 257. The default signal band is OSR 32, whose
     edge is bin 1024, so the tone is in band and clear of DC.
@@ -823,7 +869,8 @@ def main() -> None:
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
     dac.set_frequency(257)
-    dac.set_amplitude(0xE)
+    dac.set_amplitude_scale(DEFAULT_AMPLITUDE_SCALE)
+    dac.set_amplitude(FULL_SCALE_EXPONENT)
     dac.set_osr(DEFAULT_OSR)
     dac.set_dac_mode(dac_number=0, mode="AC")
     dac.set_dac_mode(dac_number=1, mode="AC")
