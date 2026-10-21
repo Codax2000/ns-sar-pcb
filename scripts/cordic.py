@@ -18,9 +18,11 @@ negate in hardware:
 The residual is then in ``[0, 1/4)`` turn and is applied with shift-add
 iterations. Iteration ``i`` grows the vector length by
 ``sqrt(1 + 2**(-2*i))``. The product of those factors is the gain
-``K``. The datapath multiplies by a quantized ``1/K`` and saturates
-back to the vector format. For an input of ``(1, 0)``, the returned
-pair is cosine and sine.
+``K``. The sine generator does not multiply by ``1/K`` afterwards. It
+starts from a preloaded magnitude ``C * a / 16``, built by shifting and
+adding ``C`` over the bits of the unsigned scale ``a``. ``C`` is the
+largest integer that keeps every iteration inside a signed 16-bit word
+for every scale and every phase.
 """
 
 from __future__ import annotations
@@ -43,6 +45,14 @@ OFFSET_BITS = 14
 # codes and the first table entry is 2**13 codes, so a 16-bit signed
 # word holds both and still has room when an iteration steps past zero.
 ANGLE_WIDTH = 16
+SCALE_BITS = 4
+# Largest preload constant for 16 iterations of a signed 16-bit vector.
+# An exhaustive search over scales 0..15 and all 65536 phases, using the
+# rounded arctangent table, accepts 21223 (peak code ±32766) and rejects
+# 21224 (peak code ±32772). The floored Q(16, 15) 1/K mantissa is 19898.
+# This constant is larger so scale 15 fills the CORDIC word. The worst
+# error against K * preload * (cos, sin) on that sweep is 12.20 LSB.
+PRELOAD_C = 21223
 
 
 def cordic_gain(n_rotations: int) -> float:
@@ -50,9 +60,8 @@ def cordic_gain(n_rotations: int) -> float:
 
     Iteration ``i`` multiplies the vector length by
     ``sqrt(1 + 2**(-2*i))``. ``K`` is the product of those factors from
-    ``i = 0`` through ``n_rotations - 1``. Hardware should not recompute
-    this product: quantize ``1/K`` once into the vector format and use
-    that constant.
+    ``i = 0`` through ``n_rotations - 1``. The sine-generator datapath
+    does not multiply by ``1/K``. It preloads :data:`PRELOAD_C` instead.
 
     Parameters
     ----------
@@ -79,6 +88,65 @@ def cordic_gain(n_rotations: int) -> float:
     for index in range(int(n_rotations)):
         gain *= math.sqrt(1.0 + 2.0 ** (-2 * index))
     return gain
+
+
+def scale_preload(constant: int, scale: int) -> int:
+    """Return the shift-add preload ``constant * scale / 16``.
+
+    Bit ``i`` of ``scale`` (bit 0 is the LSB) contributes
+    ``constant >> (SCALE_BITS - i)``. Each shift truncates toward
+    negative infinity, and the terms are added. There is no multiply
+    and no lookup table.
+
+    Parameters
+    ----------
+    constant : int
+        Preload constant ``C``. A positive code truncates toward zero.
+    scale : int
+        Unsigned scale from 0 to 15. Code ``a`` has weight ``a/16``.
+
+    Returns
+    -------
+    int
+        Initial x mantissa.
+
+    Raises
+    ------
+    ValueError
+        If ``scale`` is outside 0 to 15.
+    """
+    if isinstance(scale, bool) or not isinstance(scale, numbers.Integral):
+        raise ValueError("scale must be an integer from 0 to 15")
+    if scale < 0 or scale > (1 << SCALE_BITS) - 1:
+        raise ValueError("scale must be an integer from 0 to 15")
+    total = 0
+    for bit in range(SCALE_BITS):
+        if (int(scale) >> bit) & 1:
+            total += int(constant) >> (SCALE_BITS - bit)
+    return total
+
+
+def _rounded_angle_codes(n_rotations: int) -> list[int]:
+    """Return arctangent codes rounded half up into U0.16.
+
+    Parameters
+    ----------
+    n_rotations : int
+        Number of table entries, one per shift-add iteration.
+
+    Returns
+    -------
+    list of int
+        Entry ``i`` is ``atan(2**(-i)) / (2*pi)`` in phase-code LSBs.
+        Half-LSB ties round away from zero. ``atan(1) / (2*pi)`` is
+        exactly 1/8 of a turn, so the first code is ``2**13``.
+    """
+    scale = 1 << PHASE_BITS
+    codes = []
+    for index in range(n_rotations):
+        turns = math.atan(2.0 ** (-index)) / (2.0 * math.pi)
+        codes.append(int(math.floor(turns * scale + 0.5)))
+    return codes
 
 
 def _quadrant_mux(
@@ -111,8 +179,9 @@ class CORDIC:
     ``x`` and ``y`` use signed format ``(n_x, r_x)``. The residual angle
     is a signed fraction of a turn with ``PHASE_BITS`` fractional bits,
     the same LSB as the U0.16 phase code. Phase inputs are unsigned
-    16-bit codes. Iterations keep full precision; only the
-    gain-compensated output is narrowed to ``(n_x, r_x)``.
+    16-bit codes. Iterations keep full precision. :meth:`rotate_preload`
+    starts from :data:`PRELOAD_C` and does not multiply by ``1/K`` or
+    saturate: a legal scale leaves every code in the signed vector word.
     """
 
     def __init__(
@@ -121,11 +190,11 @@ class CORDIC:
         n_x: int = 16,
         r_x: int = 13,
     ) -> None:
-        """Build the arctangent table and the quantized reciprocal gain.
+        """Build the rounded arctangent table.
 
-        Table entry ``i`` is ``atan(2**(-i)) / (2*pi)``, floored into
-        the phase-code LSB. ``atan(1) / (2*pi)`` is exactly 1/8 of a
-        turn, so the first code is ``2**13``.
+        Table entry ``i`` is ``atan(2**(-i)) / (2*pi)``, rounded half
+        up into the phase-code LSB. ``atan(1) / (2*pi)`` is exactly
+        1/8 of a turn, so the first code is ``2**13``.
 
         Parameters
         ----------
@@ -145,15 +214,10 @@ class CORDIC:
         self._n_rotations: int = int(n_rotations)
         self._n_x: int = int(n_x)
         self._r_x: int = int(r_x)
-        turns = [
-            math.atan(2.0 ** (-index)) / (2.0 * math.pi)
-            for index in range(self._n_rotations)
-        ]
-        self._angle_lut: FixedPointArray = FixedPointArray(
-            turns, ANGLE_WIDTH, PHASE_BITS
-        )
-        self._inv_gain: FixedPointArray = FixedPointArray(
-            1.0 / self._gain, self._n_x, self._r_x
+        self._angle_lut: FixedPointArray = FixedPointArray.from_mantissas(
+            _rounded_angle_codes(self._n_rotations),
+            ANGLE_WIDTH,
+            PHASE_BITS,
         )
 
     @property
@@ -178,20 +242,34 @@ class CORDIC:
         """
         return self._gain
 
-    @property
-    def inverse_gain(self) -> FixedPointArray:
-        """Return the quantized ``1/K`` constant in the vector format.
+    def preload(self, scale: int) -> int:
+        """Return the initial x mantissa for unsigned scale ``scale``.
+
+        The constant is :data:`PRELOAD_C`, valid for 16 iterations of a
+        signed 16-bit vector. See :func:`scale_preload` for the
+        shift-add.
+
+        Parameters
+        ----------
+        scale : int
+            Unsigned scale from 0 to 15.
 
         Returns
         -------
-        FixedPointArray
-            Reciprocal of :attr:`gain`, floored into ``(n_x, r_x)``.
-            Rotation multiplies by this constant. The returned array is
-            a copy.
+        int
+            Initial x mantissa. The initial y mantissa is 0.
+
+        Raises
+        ------
+        ValueError
+            If ``scale`` is outside 0 to 15, or this CORDIC is not the
+            16-iteration 16-bit vector the constant was chosen for.
         """
-        return FixedPointArray.from_mantissas(
-            self._inv_gain.values, self._inv_gain.n, self._inv_gain.r
-        )
+        if self._n_rotations != 16 or self._n_x != 16:
+            raise ValueError(
+                "PRELOAD_C is for 16 iterations and a 16-bit vector"
+            )
+        return scale_preload(PRELOAD_C, scale)
 
     @property
     def vector_format(self) -> tuple[int, int]:
@@ -327,28 +405,81 @@ class CORDIC:
         next_angle = angle - step * direction
         return next_x, next_y, next_angle
 
-    def _compensate(
+    def _rotate_codes(
         self,
-        x_vector: FixedPointArray,
-        y_vector: FixedPointArray,
+        x_codes: np.ndarray,
+        y_codes: np.ndarray,
+        phase_codes: np.ndarray,
     ) -> tuple[FixedPointArray, FixedPointArray]:
-        """Remove the CORDIC gain and narrow to the vector format.
+        """Rotate integer mantissas by each phase code.
 
         Parameters
         ----------
-        x_vector : FixedPointArray
-            X component still scaled by ``K``.
-        y_vector : FixedPointArray
-            Y component still scaled by ``K``.
+        x_codes : numpy.ndarray
+            Initial x mantissas, broadcast with ``phase_codes``.
+        y_codes : numpy.ndarray
+            Initial y mantissas, broadcast with ``phase_codes``.
+        phase_codes : numpy.ndarray
+            Unsigned phase codes in ``[0, 65535]``.
 
         Returns
         -------
         tuple of FixedPointArray
-            Gain-compensated vector, saturated into ``(n_x, r_x)``.
+            Rotated ``(x, y)``. The CORDIC gain ``K`` is still in the
+            codes. Nothing saturates them back to ``n_x`` bits.
         """
-        x_out = (x_vector * self._inv_gain).re_quantize(self._n_x, self._r_x)
-        y_out = (y_vector * self._inv_gain).re_quantize(self._n_x, self._r_x)
-        return x_out, y_out
+        x_vector = FixedPointArray.from_mantissas(
+            x_codes, self._n_x, self._r_x
+        )
+        y_vector = FixedPointArray.from_mantissas(
+            y_codes, self._n_x, self._r_x
+        )
+        quadrant = np.asarray(phase_codes >> OFFSET_BITS, dtype=np.int64)
+        offset = np.asarray(phase_codes & ((1 << OFFSET_BITS) - 1))
+        x_vector, y_vector = self._prerotate(x_vector, y_vector, quadrant)
+        angle = self._residual_angle(offset)
+        for index in range(self._n_rotations):
+            x_vector, y_vector, angle = self._microrotation(
+                x_vector, y_vector, angle, index
+            )
+        return x_vector, y_vector
+
+    def rotate_preload(
+        self, scale: int, phase: Any
+    ) -> tuple[FixedPointArray, FixedPointArray]:
+        """Rotate the shift-add preload for ``scale`` by ``phase``.
+
+        The initial vector is ``(preload, 0)``. There is no ``1/K``
+        multiply. For scale 15 the result uses the full signed vector
+        range and stays inside it.
+
+        Parameters
+        ----------
+        scale : int
+            Unsigned amplitude scale from 0 to 15.
+        phase : array-like of int
+            Unsigned phase codes in ``[0, 65535]``. ``2**16`` codes is
+            one full turn.
+
+        Returns
+        -------
+        tuple of FixedPointArray
+            Rotated ``(x, y)``. These are about ``K * preload`` times
+            cosine and sine of ``phase``.
+
+        Raises
+        ------
+        TypeError
+            If ``phase`` is not an integer array.
+        ValueError
+            If ``scale`` or a phase code is out of range, or this
+            CORDIC is not the 16-bit preload geometry.
+        """
+        phase_codes = np.atleast_1d(self._phase_codes(phase))
+        code = self.preload(scale)
+        x_codes = np.full(phase_codes.shape, code, dtype=np.int64)
+        y_codes = np.zeros(phase_codes.shape, dtype=np.int64)
+        return self._rotate_codes(x_codes, y_codes, phase_codes)
 
     def rotate(
         self, x: Any, y: Any, phase: Any
@@ -369,8 +500,8 @@ class CORDIC:
         Returns
         -------
         tuple of FixedPointArray
-            Rotated ``(x, y)`` in the vector format. For input
-            ``(1, 0)`` these are cosine and sine of ``phase``.
+            Rotated ``(x, y)``. The gain ``K`` remains in the codes.
+            :meth:`rotate_preload` is the sine-generator entry point.
 
         Raises
         ------
@@ -380,7 +511,7 @@ class CORDIC:
             If a phase code is outside ``[0, 65535]``, or if ``x``,
             ``y``, and ``phase`` do not broadcast.
         """
-        phase_codes = self._phase_codes(phase)
+        phase_codes = np.atleast_1d(self._phase_codes(phase))
         try:
             x_real, y_real, phase_codes = np.broadcast_arrays(
                 np.asarray(x, dtype=float),
@@ -393,15 +524,9 @@ class CORDIC:
             ) from error
         x_vector = FixedPointArray(x_real, self._n_x, self._r_x)
         y_vector = FixedPointArray(y_real, self._n_x, self._r_x)
-        quadrant = np.asarray(phase_codes >> OFFSET_BITS, dtype=np.int64)
-        offset = np.asarray(phase_codes & ((1 << OFFSET_BITS) - 1))
-        x_vector, y_vector = self._prerotate(x_vector, y_vector, quadrant)
-        angle = self._residual_angle(offset)
-        for index in range(self._n_rotations):
-            x_vector, y_vector, angle = self._microrotation(
-                x_vector, y_vector, angle, index
-            )
-        return self._compensate(x_vector, y_vector)
+        return self._rotate_codes(
+            x_vector.values, y_vector.values, phase_codes
+        )
 
 
 def sweep_and_plot(
@@ -424,12 +549,13 @@ def sweep_and_plot(
         Phase in radians, CORDIC cosine, absolute error against
         ``numpy.cos``, and the Matplotlib figure.
     """
-    model = CORDIC() if cordic is None else cordic
+    model = CORDIC(r_x=15) if cordic is None else cordic
     phase_codes = np.arange(1 << PHASE_BITS, dtype=np.uint16)
     angles = phase_codes.astype(float) * (2.0 * math.pi / (1 << PHASE_BITS))
-    cosine, _sine = model.rotate(1, 0, phase_codes)
+    cosine, _sine = model.rotate_preload(15, phase_codes)
     output = np.reshape(cosine.to_float(), -1)
-    ideal = np.cos(angles)
+    preload = model.preload(15) / (1 << model.vector_format[1])
+    ideal = preload * model.gain * np.cos(angles)
     absolute_error = np.abs(ideal - output)
 
     figure, (output_axis, error_axis) = plt.subplots(
@@ -457,48 +583,51 @@ def sweep_and_plot(
     return angles, output, absolute_error, figure
 
 
-def _absolute_tolerance(cordic: CORDIC) -> float:
-    """Return an absolute sine/cosine tolerance for ``cordic``.
+def _code_tolerance(cordic: CORDIC, preload: int) -> float:
+    """Return an absolute code tolerance for a preloaded rotation.
 
-    The angle LSB is one phase code, ``2*pi/2**PHASE_BITS`` radians.
-    Flooring each arctangent constant can miss the residual by one such
-    LSB per iteration, and ``|d(sin)/d(theta)|`` and ``|d(cos)/d(theta)|``
-    are at most 1. Each microrotation also truncates a shifted component
-    by up to one vector LSB. The floored ``1/K`` shortens a magnitude-K
-    vector by up to ``K`` vector LSBs, and the output quantizer adds one
-    more.
+    The ideal code is ``K * preload * cos`` (or sine). Rounding each
+    arctangent constant misses the residual by at most half a phase
+    LSB, and ``|d(sin)/d(theta)|`` and ``|d(cos)/d(theta)|`` are at
+    most 1, so that miss moves the output by at most ``K * preload``
+    times the angle error. Each microrotation truncates a shifted
+    component by less than one code, and later iterations can grow
+    that error by the remaining gain, bounded here by ``K``.
 
     Parameters
     ----------
     cordic : CORDIC
-        Model whose iteration count and vector format set the tolerance.
+        Model whose iteration count sets the tolerance.
+    preload : int
+        Initial x mantissa being rotated.
 
     Returns
     -------
     float
-        Absolute tolerance.
+        Absolute tolerance in vector LSBs.
     """
-    _vector_bits, fraction_bits = cordic.vector_format
     angle_lsb = 2.0 * math.pi / (1 << PHASE_BITS)
-    vector_lsb = 2.0 ** (-fraction_bits)
-    angle_error = cordic.n_rotations * angle_lsb
-    shift_error = cordic.n_rotations * vector_lsb
-    gain_error = (cordic.gain + 1.0) * vector_lsb
-    return angle_error + shift_error + gain_error
+    angle_error = 0.5 * cordic.n_rotations * angle_lsb
+    shift_error = cordic.n_rotations * cordic.gain
+    return abs(preload) * cordic.gain * angle_error + shift_error
 
 
 class CORDICTests(unittest.TestCase):
     """Tests sine and cosine across all four quadrants."""
 
     def test_arctangent_table_is_a_binary_angle(self) -> None:
-        """Tests that table codes are ``atan(2**-i)`` in U0.16 turns."""
+        """Tests that table codes round ``atan(2**-i)`` into U0.16."""
         cordic = CORDIC()
         scale = 1 << PHASE_BITS
         for index, code in enumerate(cordic._angle_lut.values):
             turns = math.atan(2.0 ** (-index)) / (2.0 * math.pi)
-            expected = math.floor(turns * scale)
+            expected = math.floor(turns * scale + 0.5)
             self.assertEqual(int(code), expected)
         self.assertEqual(int(cordic._angle_lut.values[0]), 1 << 13)
+        # The last two floored entries were 0. Half-up rounding lifts
+        # iteration 14 to 1 and leaves iteration 15 at 0.
+        self.assertEqual(int(cordic._angle_lut.values[14]), 1)
+        self.assertEqual(int(cordic._angle_lut.values[15]), 0)
 
     def test_residual_keeps_the_phase_code(self) -> None:
         """Tests that a quadrant offset is stored without scaling."""
@@ -512,51 +641,108 @@ class CORDICTests(unittest.TestCase):
         """Tests that ``K`` is the product of the per-iteration gains."""
         cordic = CORDIC()
         self.assertEqual(cordic.gain, cordic_gain(16))
-        scale = cordic.inverse_gain
-        product = float(scale.to_float()[0]) * cordic.gain
-        # floor(1/K) is at most one vector LSB below 1/K.
-        shortfall = cordic.gain * (2.0 ** (-scale.r))
-        self.assertAlmostEqual(product, 1.0, delta=shortfall)
-        self.assertLessEqual(product, 1.0)
+        self.assertGreater(PRELOAD_C, 0)
+
+    def test_preload_is_a_shift_add(self) -> None:
+        """Tests per-bit shifts, including truncation before the add."""
+        cordic = CORDIC()
+        self.assertEqual(cordic.preload(0), 0)
+        self.assertEqual(cordic.preload(1), PRELOAD_C >> 4)
+        self.assertEqual(cordic.preload(8), PRELOAD_C >> 1)
+        shifted = (
+            (PRELOAD_C >> 1)
+            + (PRELOAD_C >> 2)
+            + (PRELOAD_C >> 3)
+            + (PRELOAD_C >> 4)
+        )
+        self.assertEqual(cordic.preload(15), shifted)
+        # A single shift of the product keeps bits each term drops.
+        self.assertNotEqual(shifted, (PRELOAD_C * 15) >> 4)
+        with self.assertRaises(ValueError):
+            cordic.preload(-1)
+        with self.assertRaises(ValueError):
+            cordic.preload(16)
 
     def test_axes_match_quadrant_pre_rotation(self) -> None:
         """Tests the four axes, where the residual angle is zero."""
-        cordic = CORDIC()
+        cordic = CORDIC(r_x=15)
         phases = np.array([0, 16384, 32768, 49152], dtype=np.uint16)
-        cosine, sine = cordic.rotate(1, 0, phases)
-        tolerance = _absolute_tolerance(cordic)
-        expected_cos = np.array([1.0, 0.0, -1.0, 0.0])
-        expected_sin = np.array([0.0, 1.0, 0.0, -1.0])
-        np.testing.assert_allclose(
-            cosine.to_float(), expected_cos, atol=tolerance
+        cosine, sine = cordic.rotate_preload(15, phases)
+        preload = cordic.preload(15)
+        tolerance = _code_tolerance(cordic, preload)
+        expected_cos = preload * cordic.gain * np.array(
+            [1.0, 0.0, -1.0, 0.0]
+        )
+        expected_sin = preload * cordic.gain * np.array(
+            [0.0, 1.0, 0.0, -1.0]
         )
         np.testing.assert_allclose(
-            sine.to_float(), expected_sin, atol=tolerance
+            cosine.values.astype(float), expected_cos, atol=tolerance
+        )
+        np.testing.assert_allclose(
+            sine.values.astype(float), expected_sin, atol=tolerance
         )
 
-    def test_sin_cos_all_quadrants(self) -> None:
-        """Tests sine and cosine at every phase code in all quadrants."""
-        cordic = CORDIC()
+    def test_scale_15_stays_inside_signed_16_bits(self) -> None:
+        """Tests that the max scale never needs a 17th bit."""
+        cordic = CORDIC(r_x=15)
         phases = np.arange(0, 1 << PHASE_BITS, dtype=np.uint16)
-        cosine, sine = cordic.rotate(1, 0, phases)
+        cosine, sine = cordic.rotate_preload(15, phases)
+        low = -(1 << 15)
+        high = (1 << 15) - 1
+        for codes in (cosine.values, sine.values):
+            self.assertGreaterEqual(int(np.min(codes)), low)
+            self.assertLessEqual(int(np.max(codes)), high)
+        peak = max(
+            int(np.max(np.abs(cosine.values))),
+            int(np.max(np.abs(sine.values))),
+        )
+        self.assertEqual(peak, 32766)
+
+    def test_sin_cos_all_quadrants(self) -> None:
+        """Tests the preloaded rotation at every phase code."""
+        cordic = CORDIC(r_x=15)
+        phases = np.arange(0, 1 << PHASE_BITS, dtype=np.uint16)
+        cosine, sine = cordic.rotate_preload(15, phases)
         angles = phases.astype(float) * (2.0 * math.pi / (1 << PHASE_BITS))
-        tolerance = _absolute_tolerance(cordic)
-        np.testing.assert_allclose(
-            np.reshape(cosine.to_float(), -1), np.cos(angles), atol=tolerance
+        preload = cordic.preload(15)
+        tolerance = _code_tolerance(cordic, preload)
+        ideal_cos = preload * cordic.gain * np.cos(angles)
+        ideal_sin = preload * cordic.gain * np.sin(angles)
+        cos_codes = np.reshape(cosine.values, -1).astype(float)
+        sin_codes = np.reshape(sine.values, -1).astype(float)
+        np.testing.assert_allclose(cos_codes, ideal_cos, atol=tolerance)
+        np.testing.assert_allclose(sin_codes, ideal_sin, atol=tolerance)
+        worst = max(
+            float(np.max(np.abs(cos_codes - ideal_cos))),
+            float(np.max(np.abs(sin_codes - ideal_sin))),
         )
-        np.testing.assert_allclose(
-            np.reshape(sine.to_float(), -1), np.sin(angles), atol=tolerance
+        # The exhaustive sweep's worst code error, in vector LSBs.
+        self.assertAlmostEqual(worst, 12.20, delta=0.05)
+
+    def test_next_constant_leaves_signed_16_bits(self) -> None:
+        """Tests that one LSB above ``PRELOAD_C`` needs 17 bits."""
+        cordic = CORDIC(r_x=15)
+        code = scale_preload(PRELOAD_C + 1, 15)
+        phases = np.arange(1 << PHASE_BITS, dtype=np.uint16)
+        x_codes = np.full(phases.shape, code, dtype=np.int64)
+        y_codes = np.zeros(phases.shape, dtype=np.int64)
+        cosine, sine = cordic._rotate_codes(x_codes, y_codes, phases)
+        peak = max(
+            int(np.max(np.abs(cosine.values))),
+            int(np.max(np.abs(sine.values))),
         )
+        self.assertGreater(peak, (1 << 15) - 1)
 
     def test_phase_codes_are_rejected_when_out_of_range(self) -> None:
         """Tests rejection of non-integer and out-of-range phase codes."""
         cordic = CORDIC()
         with self.assertRaises(TypeError):
-            cordic.rotate(1, 0, 0.5)
+            cordic.rotate_preload(15, 0.5)
         with self.assertRaises(ValueError):
-            cordic.rotate(1, 0, -1)
+            cordic.rotate_preload(15, -1)
         with self.assertRaises(ValueError):
-            cordic.rotate(1, 0, 65536)
+            cordic.rotate_preload(15, 65536)
 
 
 def main() -> None:
