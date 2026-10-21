@@ -1,8 +1,7 @@
-"""Signed fixed-point arrays with a tracked ``(n, r)`` format.
+"""Signed fixed-point arrays.
 
-``n`` is the two's-complement width and ``r`` is the fractional-bit count.
-Real inputs are floored and saturated. Sums and products keep every result
-bit until :meth:`FixedPointArray.re_quantize` narrows them.
+Each value has format ``(n, r)``: ``n`` is the two's-complement width
+and ``r`` is the number of fractional bits.
 """
 
 from __future__ import annotations
@@ -223,23 +222,14 @@ def _truncate_toward_zero(mantissas: np.ndarray, bits: int) -> np.ndarray:
 
 
 class FixedPointArray:
-    """An array of signed fixed-point values in ``(n, r)`` format.
+    """An array of signed fixed-point values in format ``(n, r)``.
 
-    ``n`` is the two's-complement mantissa width, including the sign bit.
-    ``r`` is the number of fractional bits. Mantissa ``m`` represents the
-    real value ``m / 2**r``.
-
-    Real inputs are floored toward ``-inf`` and then saturated to
-    ``[-(2**(n - 1)), 2**(n - 1) - 1]``. Addition and multiplication keep
-    every result bit and grow ``n`` instead of rounding. Multiplying two
-    fixed-point arrays also adds their fractional widths. Narrow a result
-    with :meth:`re_quantize`, which truncates dropped fraction bits toward
-    zero and saturates. Right shifts are a separate operation: they move
-    the mantissa toward ``-inf`` and leave ``(n, r)`` unchanged.
-
-    Stored mantissas are exact integers, so a product can grow past 64
-    bits without wrapping. Build an array from codes that are already
-    quantized with :meth:`from_mantissas`.
+    Code ``m`` is the real value ``m / 2**r``. Real inputs are floored
+    toward negative infinity, then saturated to the signed ``n``-bit
+    range. Addition and multiplication keep every result bit.
+    :meth:`re_quantize` drops fractional bits toward zero and
+    saturates. A right shift is arithmetic and does not change
+    ``(n, r)``.
     """
 
     def __init__(self, values: Any, n: int = 16, r: int = 8) -> None:
@@ -346,7 +336,7 @@ class FixedPointArray:
         mantissas : numpy.ndarray
             Integer mantissas produced by an exact arithmetic step.
         n : int
-            Minimum signed width required by the operation's growth rule.
+            Smallest signed width the caller requires.
         r : int
             Fractional bit count of the result.
 
