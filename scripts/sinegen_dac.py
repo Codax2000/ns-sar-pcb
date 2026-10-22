@@ -1,353 +1,850 @@
-'''
-Alex Knowlton
-6/14/2026
+"""Differential sine-wave DAC model with an optional delta-sigma modulator.
 
-Class definition for modeling a differential AC/DC sine wave generator with a DAC.
-This includes a delta-sigma modulator to reduce quantization noise in AC mode and
-differential outputs that can be either in AC or DC mode.
-'''
+The phase accumulator is unsigned 16-bit. It is passed to the CORDIC
+as signed ``(16, 16)`` with the same bits. Cosine is signed ``(16, 15)``.
+The DAC quantizer is signed 8-bit, then stored as an unsigned integer.
+``convert`` returns integers. ``get_sqnr_db`` defaults to the signal
+band at OSR 32.
+"""
+
+from __future__ import annotations
+
+import unittest
+from typing import Any
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numba import njit
-import matplotlib.pyplot as plt
-import pdb
 
-from CORDIC import CORDIC
-from fp_logic import fp_quantize # Import fp_quantize
+from cordic import cordic_rotate
+from fp_array import FixedPointArray
 
-class SineGenDAC:
-    def __init__(self, n_dac_bits=8, n_cordic_bits=16, fs=100e6, vdd=3.3):
-        '''
-        set class with hardware constraints and initialize register fields
-        with default functions
-        '''
-        self._reg = {
-            'frequency': 0x0,
-            'amplitude': 0xF,
-            'dacp_mode': 'DC',
-            'dacn_mode': 'DC',
-            'dsm_enable': False,
-            'dacp_dc_value': 0x0,
-            'dacn_dc_value': 0x0,
-            'warmup_cycles': 1000,
-            'osr': 8
-        }
-        self._n_dac_bits = n_dac_bits
-        self._n_cordic_bits = n_cordic_bits
-        self._fs = fs
-        self._vdd = vdd
-        self._cordic = CORDIC(n_rotations=n_cordic_bits, n_x=n_cordic_bits, r_x=n_cordic_bits - 1, n_z=n_cordic_bits, r_z=n_cordic_bits - 1)
-    
-    def set_frequency(self, frequency):
-        if frequency < 0 or frequency > 2**4 - 1:
-            raise ValueError("Frequency must be between 0 and 15")
-        self._reg['frequency'] = frequency
 
-    def set_amplitude(self, amplitude):
-        if amplitude < 0 or amplitude > 2**4 - 1:
-            raise ValueError("Amplitude must be between 0 and 15")
-        self._reg['amplitude'] = amplitude
+# Reset value of AC_CONFIG.amplitude. 15 means no right shift.
+FULL_SCALE_EXPONENT = 15
+# Reset value of AC_CONFIG.amplitude_scale. About 8/15 of full scale.
+DEFAULT_AMPLITUDE_SCALE = 8
+# Blackman main lobe: the peak bin and three bins on either side.
+BLACKMAN_HALF_WIDTH = 3
+# Default signal band for get_sqnr_db. OSR 32.
+DEFAULT_OSR = 32
 
-    def set_dac_mode(self, dac_number=0, mode='DC'):
-        if mode not in ['DC', 'AC']:
-            raise ValueError("DACP mode must be either DC or AC")
-        if dac_number not in [0, 1]:
-            raise ValueError("DAC number must be 0 or 1")
-        if dac_number == 0:
-            self._reg['dacp_mode'] = mode
-        else:
-            self._reg['dacn_mode'] = mode
 
-    def set_dsm_enable(self, enable=True):
-        self._reg['dsm_enable'] = enable
+def _get_signed_limits(width: int) -> tuple[int, int]:
+    """Return the inclusive range of a signed word.
 
-    def convert(self, n_samples):
-        '''
-        Runs DAC conversion using the set registers and returns the output data in
-        a pandas DataFrame.
-        '''
-        self._t = np.arange(n_samples + self._reg['warmup_cycles']) / self._fs
-        self._calculate_phase(n_samples + self._reg['warmup_cycles'])
-        self._calculate_cordic()
+    Parameters
+    ----------
+    width : int
+        Bit width, including the sign bit.
 
-        if self._reg['dsm_enable']:
-            # The _run_dsm_loop function expects the input signal and the shift value.
-            # _cos is the input signal, and (self._n_cordic_bits - self._n_dac_bits) is the shift value.
-            self._quant, self._error = _run_dsm_loop(self._cos, self._n_cordic_bits - self._n_dac_bits)
-        else:
-            self._quant = self._cos >> (self._n_cordic_bits - self._n_dac_bits)
-            self._error = self._cos - (self._quant << (self._n_cordic_bits - self._n_dac_bits))
-        
-        # Generate inverse sine wave
-        self._quant_bar = -self._quant
-        
-        # set to unsigned by adding Qrange / 2
-        self._quant     += (2 ** (self._n_dac_bits - 1))
-        self._quant_bar += (2 ** (self._n_dac_bits - 1))
+    Returns
+    -------
+    tuple of int
+        ``(-(2**(width - 1)), 2**(width - 1) - 1)``.
+    """
+    half = 1 << (width - 1)
+    return -half, half - 1
 
-        self._results = pd.DataFrame({
-            'time_seconds': self._t
-        })
 
-        has_ac_mode = self._reg['dacp_mode'] == 'AC' or self._reg['dacn_mode'] == 'AC'
+def _saturate(values: np.ndarray, width: int) -> np.ndarray:
+    """Saturate integer ``values`` to a signed word.
 
-        self._results['phase']      = self._phase if has_ac_mode else 0
-        self._results['cordic_sin'] = self._sin if has_ac_mode else 0
-        self._results['cordic_cos'] = self._cos if has_ac_mode else 0
-        self._results['dacp_output'] = self._quant     if self._reg['dacp_mode'] == 'AC' else self._reg['dacp_dc_value']
-        # self._results['dacp_output'] *= self._vdd / ((1 << self._n_dac_bits) - 1) 
-        self._results['dacn_output'] = self._quant_bar if self._reg['dacn_mode'] == 'AC' else self._reg['dacn_dc_value']
-        # self._results['dacn_output'] *= self._vdd / ((1 << self._n_dac_bits) - 1) 
-        self._results['error'] = self._error if has_ac_mode else 0
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Integers.
+    width : int
+        Signed width, including the sign bit.
 
-        return self._results.copy()
-
-    def plot_output(self, n_samples, ax=None):
-        '''
-        Plots the DAC output data in the interval (n_offset, n_offset + reg['warmup_cycles']
-        on the given axis and returns a handle to the figure on which it is
-        plotted. If ax is provided, plots on that axis and does nothing else.
-
-        If ax is not provided, plots DAC output, labels axes, and returns a new figure.
-        '''
-        # Generate enough samples, including warmup cycles, then slice for plotting
-        total_samples = n_samples + self._reg['warmup_cycles']
-
-        if not hasattr(self, '_results'):
-            raise ValueError('Must run conversion before plotting is attempted')
-
-        data = self._results
-        plot_data = data.iloc[self._reg['warmup_cycles']:total_samples]
-
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(10, 6))
-        else:
-            fig = ax.figure
-
-        ax.plot(plot_data['time_seconds'], plot_data['dacp_output'], label='DACP Output')
-        ax.plot(plot_data['time_seconds'], plot_data['dacn_output'], label='DACN Output')
-        
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('DAC Output Value')
-        ax.set_title('Sine Wave Generator DAC Output')
-        ax.legend()
-        ax.grid()
-
-        return fig
-
-    def plot_output_fft(self, ax=None, add_osrline=False):
-        '''
-        Plots the FFT of the DAC output data in the interval (n_offset, n_offset + n_samples)
-        on the given axis and returns a handle to the figure on which it is
-        plotted. If it the axis is None, a new figure is created and returned.
-        '''
-        if not hasattr(self, '_results'):
-            raise ValueError('Must run conversion before plotting is attempted')
-
-        # Use the number of samples available after warmup for FFT
-        n_samples_for_fft = len(self._results) - self._reg['warmup_cycles']
-        
-        # Extract data after warmup cycles
-        data_for_fft = self._results.iloc[self._reg['warmup_cycles']:]
-        
-        # Subtract DC offset (full-scale / 2) before FFT
-        # Full scale is 2^n_dac_bits
-        full_scale = 2**(self._n_dac_bits - 1)
-        dc_offset = full_scale / 2.0
-        dacp_no_dc = data_for_fft['dacp_output'] - dc_offset
-
-        # Apply Blackman window
-        window = np.blackman(n_samples_for_fft)
-        windowed_dacp = dacp_no_dc * window
-
-        # Perform FFT
-        fft_output_dacp = np.fft.fft(windowed_dacp)
-        self._fft_data = fft_output_dacp
-
-        # Calculate frequency bins
-        fs = self._fs
-        freq_bins = np.fft.fftfreq(n_samples_for_fft, d=1/fs)
-
-        # Convert to dB-full-scale
-        # Scale by 2/N for two-sided spectrum magnitude, then convert to dBFS
-        # dBFS = 20 * log10(Magnitude / FullScale)
-        fft_magnitude_dacp_db = 20 * np.log10(np.abs(fft_output_dacp) * 2 / (full_scale * n_samples_for_fft))
-        
-        # Select positive frequencies
-        positive_freq_mask = freq_bins >= 0
-        freq_bins = freq_bins[positive_freq_mask]
-        fft_magnitude_dacp_db = fft_magnitude_dacp_db[positive_freq_mask]
-
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.set_xscale('log') # Set x-axis to log scale for new figures
-        else:
-            fig = ax.figure
-
-        ax.plot(freq_bins, fft_magnitude_dacp_db, label='DACP FFT')
-
-        if add_osrline:
-            osr = self._reg.get('osr', 64)
-            cutoff_freq = (fs / 2) / osr
-            ax.axvline(
-                x=cutoff_freq, 
-                color='r', 
-                linestyle='--', 
-                linewidth=1.5,
-                label=f'$OSR={self._reg['osr']}$, $f_{{max}}={np.round(self._fs / 2 / self._reg['osr'] / 1e6, 3)}$ MHz'
-            )
-        
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_ylabel('Magnitude [dBFS]')
-        ax.set_title('Sine Wave Generator DAC Output FFT')
-        ax.legend()
-        ax.grid(True, which="both", ls="-") # Use both major and minor grids
-
-        return fig
-
-    def get_sqnr_db(self):
-        '''
-        Calculates the Signal-to-Quantization-Noise Ratio (SQNR) in dB from the 
-        calculated FFT data. Captures window smearing across 5 bins (peak +/- 2).
-        '''
-        # TODO: Break out calculating the FFT from plot_output_fft into a standalone helper function.
-        if not hasattr(self, '_fft_data'):
-            raise ValueError("plot_output_fft must be run first to populate FFT data.")
-
-        # 1. Get the raw full FFT data (including negative frequencies)
-        fft_data = self._fft_data
-        N = len(fft_data)
-        
-        # 2. Only look at the positive frequencies (excluding DC at index 0)
-        # Starting at index 3 prevents a high DC offset from being picked up as the signal peak
-        # Want to avoid DC smearing as well
-        pos_fft = fft_data[3:N//2]
-        
-        # 3. Find the peak bin location in the positive frequency spectrum
-        # We add 1 to offset back to the original fft_data indexing
-        peak_idx = np.argmax(np.abs(pos_fft)) + 1
-        
-        # 4. Calculate power spectrum (magnitude squared)
-        power_spectrum = np.abs(fft_data) ** 2
-        
-        # 5. Extract Signal Power: Sum the peak bin and 2 bins on either side
-        signal_bins = np.arange(peak_idx - 2, peak_idx + 3)
-        signal_power = np.sum(power_spectrum[signal_bins])
-        
-        # 6. Extract Noise Power: Sum all positive frequencies, excluding DC and the signal bins
-        all_pos_bins = np.arange(4, N//(2*self._reg['osr']))
-        noise_power = np.sum(power_spectrum[all_pos_bins]) - signal_power
-        
-        # 7. Calculate SQNR in decibels
-        if noise_power == 0:
-            return float('inf') # Perfect quantization/no noise edge case
-            
-        sqnr_db = 10 * np.log10(signal_power / noise_power)
-        return sqnr_db
-
-    def get_filtered_output(self):
-        '''
-        Returns the output data, like convert, but with a filter applied to the
-        output that matches what would be implemented on PCB. This is meant to be
-        passed into the ADC, as if after an anti-aliasing filter.
-        '''
-        pass
-
-    def _calculate_phase(self, n_samples):
-        '''
-        Calculates the phase of the sine wave for the given number of samples.
-        Calculation done in rotations (i.e. 0 to 1) and is used to generate the
-        inputs to the CORDIC. Stores in the class variable _phase.
-        '''
-        self._phase = np.arange(n_samples) * (1 << self._reg['frequency']) * 17
-
-    def _calculate_cordic(self):
-        '''
-        Calculates the sine and cosine of the _phase using the CORDIC algorithm.
-        Stores in the class variables _sin and _cos.
-        '''
-        # TODO: use fixed-point CORDIC to calculate the sine and cosine
-        self._sin = np.floor(np.sin(self._phase * np.pi * 2 / 0x10000) * (2**15)).astype(int)
-        self._cos = np.floor(np.cos(self._phase * np.pi * 2 / 0x10000) * (2**15)).astype(int)
+    Returns
+    -------
+    numpy.ndarray
+        ``int64`` integers clipped to the signed range.
+    """
+    low, high = _get_signed_limits(width)
+    return np.clip(values, low, high).astype(np.int64)
 
 
 @njit
-def _run_dsm_loop(u, shift):
-    '''
-    Runs the delta-sigma modulator loop to decimate the input signal.
-    Args:
-        u (np.array): The input signal (quantized values).
-        shift (int): The number of bits to shift for decimation.
-    Returns:
-        tuple: A tuple containing:
-            - v (np.array): The decimated output signal.
-            - e (np.array): The quantization error.
-    '''
-    N = len(u)
-    q = np.zeros(N)
-    e = np.zeros(N)
-    v = np.zeros(N, dtype=np.int64)
+def _run_dsm_loop(
+    samples: np.ndarray,
+    shift: int,
+    low: int,
+    high: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Run a second-order delta-sigma quantizer on integer samples.
 
-    for k in range(N):
-        if k == 0:
-            e_r  = 0
-            e_rr = 0
-        elif k == 1:
-            e_r = -e[k - 1]
-            e_rr = 0
+    Parameters
+    ----------
+    samples : numpy.ndarray
+        ``int64`` CORDIC integers.
+    shift : int
+        Bits dropped by the quantizer. The shift is arithmetic.
+    low : int
+        Smallest signed DAC integer.
+    high : int
+        Largest signed DAC integer.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Saturated DAC integers and the feedback error, both ``int64``.
+    """
+    count = samples.shape[0]
+    quantized = np.empty(count, dtype=np.int64)
+    error = np.empty(count, dtype=np.int64)
+    for index in range(count):
+        if index == 0:
+            previous = 0
+            older = 0
+        elif index == 1:
+            previous = -error[0]
+            older = 0
         else:
-            e_r  = -e[k - 1]
-            e_rr =  e[k - 2]
+            previous = -error[index - 1]
+            older = error[index - 2]
+        accumulator = samples[index] + older + (2 * previous)
+        truncated = accumulator >> shift
+        if truncated > high:
+            dac_integer = high
+        elif truncated < low:
+            dac_integer = low
+        else:
+            dac_integer = truncated
+        quantized[index] = dac_integer
+        # Opposite sign from the bypass error in _quantize.
+        error[index] = (dac_integer << shift) - accumulator
+    return quantized, error
 
-        q[k] = u[k] + e_rr + (2 * e_r)
-        v[k] = int(q[k]) >> shift
-        e[k] = (v[k] << shift) - q[k]
-        
-    return v, e
 
-def main():
-    # Test 1: DAC output without Delta-Sigma Modulation
+class SineGenDAC:
+    """Model a differential AC/DC sine generator and its DAC.
+
+    AC mode drives the DAC from the fixed-point CORDIC. DC mode holds
+    the programmed value. The two DAC channels can be set independently.
+    """
+
+    def __init__(
+        self,
+        n_dac_bits: int = 8,
+        n_cordic_bits: int = 16,
+        fs: float = 100e6,
+        vdd: float = 3.3,
+    ) -> None:
+        """Set the word widths, sample rate, and default registers.
+
+        Parameters
+        ----------
+        n_dac_bits : int, optional
+            Signed DAC width before the unsigned offset. Default is 8.
+            Must be at least 1 and no wider than the CORDIC.
+        n_cordic_bits : int, optional
+            Width of the cosine word before the DAC quantizer. Default
+            is 16, matching the CORDIC. The quantizer drops
+            ``n_cordic_bits - n_dac_bits`` bits.
+        fs : float, optional
+            Sample rate in hertz. Default is 100 MHz.
+        vdd : float, optional
+            DAC supply in volts. ``convert`` returns integers. Default
+            is 3.3.
+
+        Raises
+        ------
+        ValueError
+            If a width cannot represent the CORDIC or DAC formats.
+        """
+        if n_cordic_bits < 2 or n_dac_bits < 1:
+            raise ValueError("CORDIC width must be >= 2 and DAC width >= 1")
+        if n_dac_bits > n_cordic_bits:
+            raise ValueError("DAC width cannot exceed the CORDIC width")
+        self._reg: dict[str, Any] = {
+            "frequency": 0x0,
+            "amplitude_scale": DEFAULT_AMPLITUDE_SCALE,
+            "amplitude": FULL_SCALE_EXPONENT,
+            "dacp_mode": "DC",
+            "dacn_mode": "DC",
+            "dsm_enable": False,
+            "dacp_dc_value": 0x0,
+            "dacn_dc_value": 0x0,
+            "warmup_cycles": 1000,
+            "osr": DEFAULT_OSR,
+        }
+        self._n_dac_bits: int = n_dac_bits
+        self._n_cordic_bits: int = n_cordic_bits
+        self._fs: float = fs
+        self._vdd: float = vdd
+        self._time_seconds: np.ndarray = np.zeros(0, dtype=float)
+        self._phase: np.ndarray = np.zeros(0, dtype=np.uint16)
+        self._cos: np.ndarray = np.zeros(0, dtype=np.int64)
+        self._quant: np.ndarray = np.zeros(0, dtype=np.int64)
+        self._quant_bar: np.ndarray = np.zeros(0, dtype=np.int64)
+        self._error: np.ndarray = np.zeros(0, dtype=np.int64)
+        self._results: pd.DataFrame | None = None
+        self._fft_data: np.ndarray | None = None
+
+    def set_frequency(self, frequency: int) -> None:
+        """Store the 16-bit frequency tuning word.
+
+        Parameters
+        ----------
+        frequency : int
+            Tuning word from 0 to 65535. The phase accumulator adds
+            this word modulo ``2**16``. ``f_out = frequency * fs /
+            2**16``.
+
+        Raises
+        ------
+        ValueError
+            If ``frequency`` is outside 0 to 65535.
+        """
+        if frequency < 0 or frequency > 2**16 - 1:
+            raise ValueError("Frequency must be between 0 and 65535")
+        self._reg["frequency"] = frequency
+
+    def set_amplitude_scale(self, scale: int) -> None:
+        """Store ``AC_CONFIG.amplitude_scale``.
+
+        Parameters
+        ----------
+        scale : int
+            Unsigned integer from 0 to 15. Scale 15 is full scale, so
+            the output is about ``scale / 15`` of the level set by
+            :meth:`set_amplitude`.
+
+        Raises
+        ------
+        ValueError
+            If ``scale`` is outside 0 to 15.
+        """
+        if scale < 0 or scale > 2**4 - 1:
+            raise ValueError("Amplitude scale must be between 0 and 15")
+        self._reg["amplitude_scale"] = scale
+
+    def set_amplitude(self, amplitude: int) -> None:
+        """Store ``AC_CONFIG.amplitude``.
+
+        Parameters
+        ----------
+        amplitude : int
+            Integer from 0 to 15. The CORDIC output is divided by
+            ``2**(15 - amplitude)``. 15 leaves the integers unchanged.
+
+        Raises
+        ------
+        ValueError
+            If ``amplitude`` is outside 0 to 15.
+        """
+        if amplitude < 0 or amplitude > 2**4 - 1:
+            raise ValueError("Amplitude exponent must be between 0 and 15")
+        self._reg["amplitude"] = amplitude
+
+    def set_dac_mode(self, dac_number: int = 0, mode: str = "DC") -> None:
+        """Select AC or DC for one DAC channel.
+
+        Parameters
+        ----------
+        dac_number : int, optional
+            ``0`` for DACP and ``1`` for DACN. Default is 0.
+        mode : str, optional
+            ``"DC"`` or ``"AC"``. Default is ``"DC"``.
+
+        Raises
+        ------
+        ValueError
+            If the channel or mode is not recognized.
+        """
+        if mode not in ("DC", "AC"):
+            raise ValueError("DAC mode must be either DC or AC")
+        if dac_number not in (0, 1):
+            raise ValueError("DAC number must be 0 or 1")
+        if dac_number == 0:
+            self._reg["dacp_mode"] = mode
+        else:
+            self._reg["dacn_mode"] = mode
+
+    def set_dsm_enable(self, enable: bool = True) -> None:
+        """Enable or disable the delta-sigma modulator.
+
+        Parameters
+        ----------
+        enable : bool, optional
+            True runs the error-feedback quantizer. False truncates by
+            a shift. Default is True.
+        """
+        self._reg["dsm_enable"] = enable
+
+    def set_osr(self, osr: int) -> None:
+        """Store the oversampling ratio of the signal band.
+
+        Parameters
+        ----------
+        osr : int
+            Positive integer. The band edge is ``fs / (2 * osr)``.
+            :meth:`get_sqnr_db` uses this value when no OSR is passed.
+            :meth:`plot_output_fft` draws that edge when asked. The
+            default is :data:`DEFAULT_OSR`.
+
+        Raises
+        ------
+        ValueError
+            If ``osr`` is less than 1.
+        """
+        if osr < 1:
+            raise ValueError("OSR must be a positive integer")
+        self._reg["osr"] = osr
+
+    def _get_phase_step(self) -> int:
+        """Return the tuning word, which is the phase step.
+
+        Returns
+        -------
+        int
+            Step added by the phase accumulator, modulo ``2**16``.
+        """
+        return self._reg["frequency"]
+
+    def _get_output_shift(self) -> int:
+        """Return how many bits to shift the CORDIC output right.
+
+        Returns
+        -------
+        int
+            ``15 - amplitude``. The shift is arithmetic, toward
+            negative infinity. Zero when amplitude is 15.
+        """
+        return FULL_SCALE_EXPONENT - self._reg["amplitude"]
+
+    def _calculate_phase(self, n_samples: int) -> None:
+        """Fill the phase accumulator for ``n_samples`` clocks.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of clocks, including warmup.
+        """
+        step = np.uint64(self._get_phase_step())
+        modulus = np.uint64(1 << 16)
+        sample_index = np.arange(n_samples, dtype=np.uint64)
+        # phase[k] = (k * step) mod 2**16, starting from 0.
+        self._phase = ((sample_index * step) % modulus).astype(np.uint16)
+
+    def _calculate_cordic(self) -> None:
+        """Fill cosine integers for the current phase.
+
+        The amplitude scale is the 4-bit register value. The phase
+        accumulator is wrapped as signed ``(16, 16)`` with the same
+        16 bits. The cosine is then shifted right by ``15 - amplitude``.
+        """
+        signed_phase = self._phase.astype(np.int16).astype(np.int64)
+        angles = FixedPointArray.from_mantissas(
+            signed_phase, 16, 16
+        )
+        cosine = cordic_rotate(self._reg["amplitude_scale"], angles)
+        shift = self._get_output_shift()
+        # Arithmetic right shift. Truncates toward negative infinity.
+        cosine_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
+        self._cos = cosine_integers >> shift
+
+    def _quantize(self) -> None:
+        """Quantize cosine to the signed DAC width and record the error.
+
+        Without the modulator, the integer is an arithmetic right shift
+        by ``n_cordic_bits - n_dac_bits``, then saturated. The stored
+        error is ``cosine - (quantized << shift)``. With the modulator,
+        :func:`_run_dsm_loop` does that quantizer. DACN is the
+        saturated negation of the DACP integer.
+        """
+        shift = self._n_cordic_bits - self._n_dac_bits
+        low, high = _get_signed_limits(self._n_dac_bits)
+        if self._reg["dsm_enable"]:
+            self._quant, self._error = _run_dsm_loop(
+                self._cos, shift, low, high
+            )
+        else:
+            truncated = self._cos >> shift
+            self._quant = _saturate(truncated, self._n_dac_bits)
+            self._error = self._cos - (self._quant << shift)
+        self._quant_bar = _saturate(-self._quant, self._n_dac_bits)
+
+    def convert(self, n_samples: int) -> pd.DataFrame:
+        """Run ``n_samples`` conversions and return the waveform table.
+
+        Warmup cycles from the register map are prepended. DAC outputs
+        in AC mode are unsigned integers: the signed quantizer word
+        plus ``2**(n_dac_bits - 1)``. DC mode uses the programmed DC
+        value.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of samples after warmup.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Columns ``time_seconds``, ``phase``, ``cordic_cos``,
+            ``dacp_output``, ``dacn_output``, and ``error``. A copy
+            is returned.
+        """
+        total = n_samples + self._reg["warmup_cycles"]
+        self._time_seconds = np.arange(total) / self._fs
+        self._calculate_phase(total)
+        self._calculate_cordic()
+        self._quantize()
+        offset = 1 << (self._n_dac_bits - 1)
+        dacp_ac = self._quant + offset
+        dacn_ac = self._quant_bar + offset
+        has_ac_mode = (
+            self._reg["dacp_mode"] == "AC" or self._reg["dacn_mode"] == "AC"
+        )
+        if self._reg["dacp_mode"] == "AC":
+            dacp_output = dacp_ac
+        else:
+            dacp_output = self._reg["dacp_dc_value"]
+        if self._reg["dacn_mode"] == "AC":
+            dacn_output = dacn_ac
+        else:
+            dacn_output = self._reg["dacn_dc_value"]
+        self._results = pd.DataFrame({
+            "time_seconds": self._time_seconds,
+            "phase": self._phase if has_ac_mode else 0,
+            "cordic_cos": self._cos if has_ac_mode else 0,
+            "dacp_output": dacp_output,
+            "dacn_output": dacn_output,
+            "error": self._error if has_ac_mode else 0,
+        })
+        return self._results.copy()
+
+    def plot_output(
+        self,
+        n_samples: int,
+        ax: plt.Axes | None = None,
+    ) -> plt.Figure:
+        """Plot DACP and DACN over ``n_samples`` after warmup.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of samples to plot after the warmup cycles.
+        ax : matplotlib.axes.Axes, optional
+            Axis to draw on. A new figure is created when omitted.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure that contains the plot.
+
+        Raises
+        ------
+        ValueError
+            If :meth:`convert` has not been called.
+        """
+        if self._results is None:
+            raise ValueError(
+                "Must run conversion before plotting is attempted"
+            )
+        total_samples = n_samples + self._reg["warmup_cycles"]
+        warmup = self._reg["warmup_cycles"]
+        plot_data = self._results.iloc[warmup:total_samples]
+        if ax is None:
+            figure, axis = plt.subplots(figsize=(10, 6))
+        else:
+            figure = ax.figure
+            axis = ax
+        axis.plot(
+            plot_data["time_seconds"],
+            plot_data["dacp_output"],
+            label="DACP Output",
+        )
+        axis.plot(
+            plot_data["time_seconds"],
+            plot_data["dacn_output"],
+            label="DACN Output",
+        )
+        axis.set_xlabel("Time (s)")
+        axis.set_ylabel("DAC Output Value")
+        axis.set_title("Sine Wave Generator DAC Output")
+        axis.legend()
+        axis.grid()
+        return figure
+
+    def plot_output_fft(
+        self,
+        ax: plt.Axes | None = None,
+        add_osrline: bool = False,
+    ) -> plt.Figure:
+        """Plot the DACP spectrum after warmup.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes, optional
+            Axis to draw on. A new figure uses a logarithmic frequency
+            axis.
+        add_osrline : bool, optional
+            Draw a vertical line at ``fs / (2 * osr)``. Default is False.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure that contains the spectrum.
+
+        Raises
+        ------
+        ValueError
+            If :meth:`convert` has not been called.
+        """
+        if self._results is None:
+            raise ValueError(
+                "Must run conversion before plotting is attempted"
+            )
+        warmup = self._reg["warmup_cycles"]
+        n_samples_for_fft = len(self._results) - warmup
+        data_for_fft = self._results.iloc[warmup:]
+        # Unsigned midscale is 2**(n-1).
+        full_scale = 2 ** (self._n_dac_bits - 1)
+        dc_offset = float(full_scale)
+        dacp_no_dc = data_for_fft["dacp_output"] - dc_offset
+        window = np.blackman(n_samples_for_fft)
+        windowed_dacp = dacp_no_dc * window
+        fft_output_dacp = np.fft.fft(windowed_dacp)
+        self._fft_data = fft_output_dacp
+        freq_bins = np.fft.fftfreq(n_samples_for_fft, d=1 / self._fs)
+        magnitude = np.abs(fft_output_dacp) * 2
+        magnitude = magnitude / (full_scale * n_samples_for_fft)
+        fft_magnitude_db = 20 * np.log10(magnitude)
+        positive_freq = freq_bins >= 0
+        freq_bins = freq_bins[positive_freq]
+        fft_magnitude_db = fft_magnitude_db[positive_freq]
+        if ax is None:
+            figure, axis = plt.subplots(figsize=(10, 6))
+            axis.set_xscale("log")
+        else:
+            figure = ax.figure
+            axis = ax
+        axis.plot(freq_bins, fft_magnitude_db, label="DACP FFT")
+        if add_osrline:
+            osr = self._reg["osr"]
+            cutoff_hz = (self._fs / 2) / osr
+            cutoff_mhz = np.round(cutoff_hz / 1e6, 3)
+            axis.axvline(
+                x=cutoff_hz,
+                color="r",
+                linestyle="--",
+                linewidth=1.5,
+                label=f"$OSR={osr}$, $f_{{max}}={cutoff_mhz}$ MHz",
+            )
+        axis.set_xlabel("Frequency [Hz]")
+        axis.set_ylabel("Magnitude [dBFS]")
+        axis.set_title("Sine Wave Generator DAC Output FFT")
+        axis.legend()
+        axis.grid(True, which="both", ls="-")
+        return figure
+
+    def _find_band_edge_bin(self, count: int, osr: int) -> int:
+        """Return the last FFT bin included in the noise sum.
+
+        Parameters
+        ----------
+        count : int
+            Length of the FFT, which is the number of time samples.
+        osr : int
+            Oversampling ratio. The last bin is the one at
+            ``fs / (2 * osr)``. ``1`` keeps every bin through Nyquist.
+
+        Returns
+        -------
+        int
+            Inclusive last bin index.
+
+        Raises
+        ------
+        ValueError
+            If ``osr`` is less than 1, or the band does not clear the
+            DC leakage bins.
+        """
+        nyquist = count // 2
+        if isinstance(osr, bool) or not isinstance(osr, int) or osr < 1:
+            raise ValueError("OSR must be a positive integer")
+        last = count // (2 * osr)
+        if last <= BLACKMAN_HALF_WIDTH:
+            raise ValueError("band does not clear the DC leakage bins")
+        return min(last, nyquist)
+
+    def get_sqnr_db(self, osr: int | None = None) -> float:
+        """Return the signal-to-quantization-noise ratio in decibels.
+
+        Uses the windowed FFT from :meth:`plot_output_fft`. The tone is
+        the strongest bin above DC. Signal power is that bin and three
+        bins on either side, the Blackman main lobe. Noise is the other
+        bins from bin 4 through the signal band. Bins 0 to 3 are left
+        out.
+
+        Parameters
+        ----------
+        osr : int or None, optional
+            Band edge is ``fs / (2 * osr)``. ``None`` uses the OSR
+            register (:data:`DEFAULT_OSR`). ``1`` is the Nyquist band.
+
+        Returns
+        -------
+        float
+            SQNR in dB, or infinity when the noise power is zero.
+
+        Raises
+        ------
+        ValueError
+            If the FFT is missing, ``osr`` is invalid, or the band has
+            no bins above DC.
+        """
+        if self._fft_data is None:
+            raise ValueError(
+                "plot_output_fft must be run first to populate FFT data."
+            )
+        if osr is None:
+            osr = self._reg["osr"]
+        fft_data = self._fft_data
+        count = len(fft_data)
+        last_bin = self._find_band_edge_bin(count, osr)
+        power = np.abs(fft_data) ** 2
+        guard = BLACKMAN_HALF_WIDTH
+        search = np.arange(guard + 1, last_bin + 1)
+        peak = int(search[np.argmax(power[search])])
+        signal_bins = np.arange(peak - guard, peak + guard + 1)
+        signal_bins = signal_bins[
+            (signal_bins >= 0) & (signal_bins <= count // 2)
+        ]
+        noise_bins = search[~np.isin(search, signal_bins)]
+        signal_power = float(np.sum(power[signal_bins]))
+        noise_power = float(np.sum(power[noise_bins]))
+        if noise_power == 0:
+            return float("inf")
+        return float(10 * np.log10(signal_power / noise_power))
+
+    def get_filtered_output(self) -> None:
+        """Return the waveform after the board reconstruction filter.
+
+        Returns
+        -------
+        None
+            The reconstruction filter is not modeled.
+        """
+        return None
+
+
+class SineGenDACTests(unittest.TestCase):
+    """Tests the tuning word and the amplitude registers."""
+
+    def _make_converter(self) -> SineGenDAC:
+        """Return a DAC with no warmup and DACP in AC mode.
+
+        Returns
+        -------
+        SineGenDAC
+            Converter ready for a short ``convert`` call.
+        """
+        dac = SineGenDAC()
+        dac.set_dac_mode(dac_number=0, mode="AC")
+        dac._reg["warmup_cycles"] = 0
+        return dac
+
+    def test_tuning_word_is_the_frequency_register(self) -> None:
+        """Tests that the phase step is the 16-bit tuning word."""
+        dac = self._make_converter()
+        for word in (0, 1, 257, 32768, 65535):
+            dac.set_frequency(word)
+            self.assertEqual(dac._get_phase_step(), word)
+        dac.set_frequency(1)
+        slow = dac.convert(4)
+        np.testing.assert_array_equal(
+            slow["phase"], np.array([0, 1, 2, 3], dtype=np.uint16)
+        )
+        dac.set_frequency(32768)
+        fast = dac.convert(4)
+        half_turn = 1 << 15
+        np.testing.assert_array_equal(
+            fast["phase"],
+            np.array([0, half_turn, 0, half_turn], dtype=np.uint16),
+        )
+        dac.set_frequency(65535)
+        wrapped = dac.convert(4)
+        np.testing.assert_array_equal(
+            wrapped["phase"],
+            np.array([0, 65535, 65534, 65533], dtype=np.uint16),
+        )
+        with self.assertRaises(ValueError):
+            dac.set_frequency(-1)
+        with self.assertRaises(ValueError):
+            dac.set_frequency(65536)
+
+    def test_reset_amplitude_scale_is_8_and_amplitude_is_15(self) -> None:
+        """Tests the reset values of the amplitude registers."""
+        dac = SineGenDAC()
+        self.assertEqual(dac._reg["amplitude_scale"], DEFAULT_AMPLITUDE_SCALE)
+        self.assertEqual(dac._reg["amplitude"], FULL_SCALE_EXPONENT)
+
+    def test_scale_and_output_shift(self) -> None:
+        """Tests the scale and a right shift by ``15 - amplitude``."""
+        dac = self._make_converter()
+        dac.set_amplitude_scale(8)
+        dac.set_amplitude(FULL_SCALE_EXPONENT)
+        dac.set_frequency(16384)
+        frame = dac.convert(4)
+        signed_phase = frame["phase"].to_numpy().astype(np.int16)
+        angles = FixedPointArray.from_mantissas(
+            signed_phase.astype(np.int64), 16, 16
+        )
+        cosine = cordic_rotate(np.array(8, dtype=np.uint8), angles)
+        cos_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
+        np.testing.assert_array_equal(frame["cordic_cos"], cos_integers)
+        self.assertLess(int(cos_integers.min()), 0)
+        dac.set_amplitude(14)
+        shifted = dac.convert(4)
+        np.testing.assert_array_equal(
+            shifted["cordic_cos"], cos_integers >> 1
+        )
+        with self.assertRaises(ValueError):
+            dac.set_amplitude_scale(16)
+        with self.assertRaises(ValueError):
+            dac.set_amplitude(-1)
+
+    def test_full_scale_stays_inside_16_bits(self) -> None:
+        """Tests that scale 15 and amplitude 15 stay inside 16 bits."""
+        dac = self._make_converter()
+        dac.set_amplitude_scale(15)
+        dac.set_amplitude(FULL_SCALE_EXPONENT)
+        dac.set_frequency(1)
+        # Phase equals the sample index, so index 8192 is pi/4.
+        frame = dac.convert(8193)
+        quarter = frame.iloc[8192]
+        limit = (1 << (dac._n_cordic_bits - 1)) - 1
+        self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
+        self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
+        angles = FixedPointArray.from_mantissas(
+            np.array([8192], dtype=np.int64), 16, 16
+        )
+        direct_cos = cordic_rotate(15, angles)
+        self.assertEqual(
+            int(quarter["cordic_cos"]), int(direct_cos.get_mantissas()[0])
+        )
+
+    def _calculate_quantized_sine_spectrum(self) -> np.ndarray:
+        """Return the Blackman FFT of a coherent 8-bit sine.
+
+        Returns
+        -------
+        numpy.ndarray
+            Complex spectrum. The tone is bin 64 of 16384 samples, with
+            peak integer 127 so the quantizer does not clip.
+        """
+        n_bits = 8
+        n_samples = 2 ** 14
+        tone_bin = 64
+        amplitude = (1 << (n_bits - 1)) - 1
+        index = np.arange(n_samples)
+        sine = amplitude * np.sin(
+            2.0 * np.pi * tone_bin * index / n_samples
+        )
+        quantized = np.round(sine)
+        return np.fft.fft(quantized * np.blackman(n_samples))
+
+    def test_full_band_sqnr_matches_quantizer_formula(self) -> None:
+        """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
+        measured = dac.get_sqnr_db(osr=1)
+        expected = 6.02 * 8 + 1.76
+        self.assertAlmostEqual(measured, expected, delta=1.0)
+
+    def test_default_sqnr_is_the_signal_band(self) -> None:
+        """Tests that the default SQNR uses the OSR register."""
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
+        self.assertEqual(dac._reg["osr"], DEFAULT_OSR)
+        default = dac.get_sqnr_db()
+        self.assertAlmostEqual(default, dac.get_sqnr_db(osr=DEFAULT_OSR))
+        self.assertGreater(default, dac.get_sqnr_db(osr=1))
+
+    def test_in_band_sqnr_drops_the_out_of_band_noise(self) -> None:
+        """Tests that a narrower band raises the SQNR of white noise."""
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
+        full_band = dac.get_sqnr_db(osr=1)
+        in_band = dac.get_sqnr_db(osr=16)
+        # A white spectrum gains about 12 dB when the band shrinks by 16.
+        self.assertGreater(in_band, full_band + 10.0)
+        self.assertLess(in_band, full_band + 18.0)
+
+    def test_dc_offset_does_not_change_sqnr(self) -> None:
+        """Tests that adding DC does not change the in-band SQNR."""
+        dac = self._make_converter()
+        spectrum = self._calculate_quantized_sine_spectrum()
+        dac._fft_data = spectrum
+        baseline = dac.get_sqnr_db()
+        n_samples = len(spectrum)
+        dc_term = 1000.0 * np.blackman(n_samples)
+        dac._fft_data = spectrum + np.fft.fft(dc_term)
+        self.assertAlmostEqual(dac.get_sqnr_db(), baseline, delta=0.5)
+        with self.assertRaises(ValueError):
+            dac.get_sqnr_db(osr=0)
+
+
+def main() -> None:
+    """Plot one DAC waveform with and without the delta-sigma modulator.
+
+    Uses amplitude scale 8, amplitude 15, and tuning word 257.
+    ``2**16`` samples put the tone at FFT bin 257, inside the default
+    OSR-32 band.
+    """
     print("Running SineGenDAC test without DSM...")
     dac = SineGenDAC()
-    dac.set_frequency(0x1)
-    dac.set_amplitude(0xE)
-    dac._reg['osr'] = 64
-    dac.set_dac_mode(dac_number=0, mode='AC')
-    dac.set_dac_mode(dac_number=1, mode='AC')
-    
+    dac.set_frequency(257)
+    dac.set_amplitude_scale(DEFAULT_AMPLITUDE_SCALE)
+    dac.set_amplitude(FULL_SCALE_EXPONENT)
+    dac.set_osr(DEFAULT_OSR)
+    dac.set_dac_mode(dac_number=0, mode="AC")
+    dac.set_dac_mode(dac_number=1, mode="AC")
+
     n_cycles = 2**16
     n_plot_cycles = 750
     dac.convert(n_cycles)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-    dac.plot_output(n_plot_cycles, ax=ax1)
-    dac.plot_output_fft(ax=ax2)
+    figure, (time_axis, spectrum_axis) = plt.subplots(1, 2, figsize=(15, 6))
+    dac.plot_output(n_plot_cycles, ax=time_axis)
+    dac.plot_output_fft(ax=spectrum_axis)
+    demo_osr = dac._reg["osr"]
     sqnr_no_dsm = dac.get_sqnr_db()
-    ax1.lines[-2].set_label('DACP Output (No DSM)') # Adjust label for previous plot
-    ax1.lines[-1].set_label('DACN Output (No DSM)') # Adjust label for previous plot
+    print(f"Bypass in-band SQNR {sqnr_no_dsm:.2f} dB (OSR {demo_osr})")
+    time_axis.lines[-2].set_label("DACP Output (No DSM)")
+    time_axis.lines[-1].set_label("DACN Output (No DSM)")
 
-    # Test 2: DAC output with Delta-Sigma Modulation
     print("Running SineGenDAC test with DSM...")
     dac.set_dsm_enable(enable=True)
     dac.convert(n_cycles)
-    
-    dac.plot_output(n_plot_cycles, ax=ax1)
-    dac.plot_output_fft(ax=ax2, add_osrline=True)
+
+    dac.plot_output(n_plot_cycles, ax=time_axis)
+    dac.plot_output_fft(ax=spectrum_axis, add_osrline=True)
     sqnr_dsm = dac.get_sqnr_db()
-    ax1.lines[-2].set_label('DACP Output (With DSM)')
-    ax1.lines[-1].set_label('DACN Output (With DSM)')
+    print(f"DSM in-band SQNR {sqnr_dsm:.2f} dB (OSR {demo_osr})")
+    time_axis.lines[-2].set_label("DACP Output (With DSM)")
+    time_axis.lines[-1].set_label("DACN Output (With DSM)")
 
-    ax2.lines[-3].set_label(f'SQNR={np.round(sqnr_no_dsm, 3)}, NO DSM')
-    ax2.lines[-2].set_label(f'SQNR={np.round(sqnr_dsm, 3)}, WITH DSM')
+    spectrum_axis.lines[-3].set_label(
+        f"In-band SQNR={np.round(sqnr_no_dsm, 1)} dB, no DSM"
+    )
+    spectrum_axis.lines[-2].set_label(
+        f"In-band SQNR={np.round(sqnr_dsm, 1)} dB, with DSM"
+    )
 
-    ax1.set_title(f'Sine Wave Generator DAC Output ({n_cycles} cycles)')
-    ax1.legend()
-    ax2.legend()
-    ax1.grid()
-    ax2.grid()
-    ax2.set_xscale('log') # Set x-axis to log scale for new figures
-    fig.tight_layout()
-    fig.savefig('./dac_dsm_tseries.png')
+    time_axis.set_title(f"Sine Wave Generator DAC Output ({n_cycles} cycles)")
+    time_axis.legend()
+    spectrum_axis.legend()
+    time_axis.grid()
+    spectrum_axis.grid()
+    spectrum_axis.set_xscale("log")
+    figure.tight_layout()
+    figure.savefig("./dac_dsm_tseries.png")
     print("Test complete.")
 
 
