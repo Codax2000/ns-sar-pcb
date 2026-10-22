@@ -2,7 +2,7 @@
 
 The phase accumulator is unsigned 16-bit. The CORDIC vector format is
 signed ``(16, 15)``. The DAC quantizer is signed 8-bit, then stored as
-an unsigned code. ``convert`` returns integer codes. ``get_sqnr_db``
+an unsigned integer. ``convert`` returns integers. ``get_sqnr_db``
 defaults to the signal band at OSR 32.
 """
 
@@ -22,15 +22,15 @@ from cordic import CORDIC, PHASE_BITS
 
 # Reset value of AC_CONFIG.amplitude. 15 means no right shift.
 FULL_SCALE_EXPONENT = 15
-# Reset value of AC_CONFIG.amplitude_scale. Weight is 8/16.
+# Reset value of AC_CONFIG.amplitude_scale. About 8/15 of full scale.
 DEFAULT_AMPLITUDE_SCALE = 8
 # Blackman main lobe: the peak bin and three bins on either side.
 BLACKMAN_HALF_WIDTH = 3
-# Default signal band for get_sqnr_db. Same OSR as scripts/nssar.py.
+# Default signal band for get_sqnr_db. OSR 32.
 DEFAULT_OSR = 32
 
 
-def _signed_limits(width: int) -> tuple[int, int]:
+def _get_signed_limits(width: int) -> tuple[int, int]:
     """Return the inclusive range of a signed word.
 
     Parameters
@@ -53,16 +53,16 @@ def _saturate(values: np.ndarray, width: int) -> np.ndarray:
     Parameters
     ----------
     values : numpy.ndarray
-        Integer codes.
+        Integers.
     width : int
         Signed width, including the sign bit.
 
     Returns
     -------
     numpy.ndarray
-        ``int64`` codes clipped to the signed range.
+        ``int64`` integers clipped to the signed range.
     """
-    low, high = _signed_limits(width)
+    low, high = _get_signed_limits(width)
     return np.clip(values, low, high).astype(np.int64)
 
 
@@ -78,21 +78,21 @@ def _run_dsm_loop(
     Parameters
     ----------
     samples : numpy.ndarray
-        ``int64`` CORDIC codes.
+        ``int64`` CORDIC integers.
     shift : int
         Bits dropped by the quantizer. The shift is arithmetic.
     low : int
-        Smallest signed DAC code.
+        Smallest signed DAC integer.
     high : int
-        Largest signed DAC code.
+        Largest signed DAC integer.
 
     Returns
     -------
     tuple of numpy.ndarray
-        Saturated DAC codes and the feedback error, both ``int64``.
+        Saturated DAC integers and the feedback error, both ``int64``.
     """
     count = samples.shape[0]
-    codes = np.empty(count, dtype=np.int64)
+    quantized = np.empty(count, dtype=np.int64)
     error = np.empty(count, dtype=np.int64)
     for index in range(count):
         if index == 0:
@@ -107,22 +107,22 @@ def _run_dsm_loop(
         accumulator = samples[index] + older + (2 * previous)
         truncated = accumulator >> shift
         if truncated > high:
-            code = high
+            dac_integer = high
         elif truncated < low:
-            code = low
+            dac_integer = low
         else:
-            code = truncated
-        codes[index] = code
+            dac_integer = truncated
+        quantized[index] = dac_integer
         # Opposite sign from the bypass error in _quantize.
-        error[index] = (code << shift) - accumulator
-    return codes, error
+        error[index] = (dac_integer << shift) - accumulator
+    return quantized, error
 
 
 class SineGenDAC:
     """Model a differential AC/DC sine generator and its DAC.
 
     AC mode drives the DAC from the fixed-point CORDIC. DC mode holds
-    the programmed code. The two DAC channels can be set independently.
+    the programmed value. The two DAC channels can be set independently.
     """
 
     def __init__(
@@ -145,7 +145,7 @@ class SineGenDAC:
         fs : float, optional
             Sample rate in hertz. Default is 100 MHz.
         vdd : float, optional
-            DAC supply in volts. ``convert`` returns codes. Default
+            DAC supply in volts. ``convert`` returns integers. Default
             is 3.3.
 
         Raises
@@ -214,8 +214,9 @@ class SineGenDAC:
         Parameters
         ----------
         scale : int
-            Unsigned code from 0 to 15. Weight is ``scale / 16`` of
-            the amplitude set by :meth:`set_amplitude`.
+            Unsigned integer from 0 to 15. Scale 15 is full scale, so
+            the output is about ``scale / 15`` of the level set by
+            :meth:`set_amplitude`.
 
         Raises
         ------
@@ -232,8 +233,8 @@ class SineGenDAC:
         Parameters
         ----------
         amplitude : int
-            Code from 0 to 15. The CORDIC output is shifted right by
-            ``15 - amplitude``. Code 15 leaves the codes unchanged.
+            Integer from 0 to 15. The CORDIC output is divided by
+            ``2**(15 - amplitude)``. 15 leaves the integers unchanged.
 
         Raises
         ------
@@ -299,7 +300,7 @@ class SineGenDAC:
             raise ValueError("OSR must be a positive integer")
         self._reg["osr"] = osr
 
-    def _phase_step(self) -> int:
+    def _get_phase_step(self) -> int:
         """Return the tuning word, which is the phase step.
 
         Returns
@@ -309,7 +310,7 @@ class SineGenDAC:
         """
         return self._reg["frequency"]
 
-    def _exponent_shift(self) -> int:
+    def _get_output_shift(self) -> int:
         """Return how many bits to shift the CORDIC output right.
 
         Returns
@@ -328,14 +329,14 @@ class SineGenDAC:
         n_samples : int
             Number of clocks, including warmup.
         """
-        step = np.uint64(self._phase_step())
+        step = np.uint64(self._get_phase_step())
         modulus = np.uint64(1 << PHASE_BITS)
         sample_index = np.arange(n_samples, dtype=np.uint64)
         # phase[k] = (k * step) mod 2**16, starting from 0.
         self._phase = ((sample_index * step) % modulus).astype(np.uint16)
 
     def _calculate_cordic(self) -> None:
-        """Fill sine and cosine codes for the current phase.
+        """Fill sine and cosine integers for the current phase.
 
         The vector format is ``(n_cordic_bits, n_cordic_bits - 1)``.
         The initial magnitude comes from ``amplitude_scale``.
@@ -343,7 +344,7 @@ class SineGenDAC:
         cosine, sine = self._cordic.rotate_initial_vector(
             self._reg["amplitude_scale"], self._phase
         )
-        shift = self._exponent_shift()
+        shift = self._get_output_shift()
         # Arithmetic right shift. Truncates toward negative infinity.
         self._cos = np.asarray(cosine.values, dtype=np.int64) >> shift
         self._sin = np.asarray(sine.values, dtype=np.int64) >> shift
@@ -351,14 +352,14 @@ class SineGenDAC:
     def _quantize(self) -> None:
         """Quantize cosine to the signed DAC width and record the error.
 
-        Without the modulator, the code is an arithmetic right shift
+        Without the modulator, the integer is an arithmetic right shift
         by ``n_cordic_bits - n_dac_bits``, then saturated. The stored
-        error is ``cosine - (code << shift)``. With the modulator,
+        error is ``cosine - (quantized << shift)``. With the modulator,
         :func:`_run_dsm_loop` does that quantizer. DACN is the
-        saturated negation of the DACP code.
+        saturated negation of the DACP integer.
         """
         shift = self._n_cordic_bits - self._n_dac_bits
-        low, high = _signed_limits(self._n_dac_bits)
+        low, high = _get_signed_limits(self._n_dac_bits)
         if self._reg["dsm_enable"]:
             self._quant, self._error = _run_dsm_loop(
                 self._cos, shift, low, high
@@ -373,8 +374,9 @@ class SineGenDAC:
         """Run ``n_samples`` conversions and return the waveform table.
 
         Warmup cycles from the register map are prepended. DAC outputs
-        in AC mode are unsigned codes: the signed quantizer word plus
-        ``2**(n_dac_bits - 1)``. DC mode uses the programmed DC code.
+        in AC mode are unsigned integers: the signed quantizer word
+        plus ``2**(n_dac_bits - 1)``. DC mode uses the programmed DC
+        value.
 
         Parameters
         ----------
@@ -543,7 +545,7 @@ class SineGenDAC:
         axis.grid(True, which="both", ls="-")
         return figure
 
-    def _band_last_bin(self, count: int, osr: int) -> int:
+    def _find_band_edge_bin(self, count: int, osr: int) -> int:
         """Return the last FFT bin included in the noise sum.
 
         Parameters
@@ -607,7 +609,7 @@ class SineGenDAC:
             osr = self._reg["osr"]
         fft_data = self._fft_data
         count = len(fft_data)
-        last_bin = self._band_last_bin(count, osr)
+        last_bin = self._find_band_edge_bin(count, osr)
         power = np.abs(fft_data) ** 2
         guard = BLACKMAN_HALF_WIDTH
         search = np.arange(guard + 1, last_bin + 1)
@@ -637,7 +639,7 @@ class SineGenDAC:
 class SineGenDACTests(unittest.TestCase):
     """Tests the tuning word and the amplitude registers."""
 
-    def _converter(self) -> SineGenDAC:
+    def _make_converter(self) -> SineGenDAC:
         """Return a DAC with no warmup and DACP in AC mode.
 
         Returns
@@ -652,10 +654,10 @@ class SineGenDACTests(unittest.TestCase):
 
     def test_tuning_word_is_the_frequency_register(self) -> None:
         """Tests that the phase step is the 16-bit tuning word."""
-        dac = self._converter()
+        dac = self._make_converter()
         for word in (0, 1, 257, 32768, 65535):
             dac.set_frequency(word)
-            self.assertEqual(dac._phase_step(), word)
+            self.assertEqual(dac._get_phase_step(), word)
         dac.set_frequency(1)
         slow = dac.convert(4)
         np.testing.assert_array_equal(
@@ -679,15 +681,15 @@ class SineGenDACTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             dac.set_frequency(65536)
 
-    def test_reset_amplitude_is_scale_8_exponent_15(self) -> None:
+    def test_reset_amplitude_scale_is_8_and_amplitude_is_15(self) -> None:
         """Tests the reset values of the amplitude registers."""
         dac = SineGenDAC()
         self.assertEqual(dac._reg["amplitude_scale"], DEFAULT_AMPLITUDE_SCALE)
         self.assertEqual(dac._reg["amplitude"], FULL_SCALE_EXPONENT)
 
-    def test_exponent_shifts_the_preloaded_cordic(self) -> None:
+    def test_scale_and_output_shift(self) -> None:
         """Tests the scale and a right shift by ``15 - amplitude``."""
-        dac = self._converter()
+        dac = self._make_converter()
         dac.set_amplitude_scale(8)
         dac.set_amplitude(FULL_SCALE_EXPONENT)
         dac.set_frequency(16384)
@@ -695,23 +697,27 @@ class SineGenDACTests(unittest.TestCase):
         cosine, sine = dac._cordic.rotate_initial_vector(
             8, frame["phase"].to_numpy()
         )
-        cos_codes = np.asarray(cosine.values, dtype=np.int64)
-        sin_codes = np.asarray(sine.values, dtype=np.int64)
-        np.testing.assert_array_equal(frame["cordic_cos"], cos_codes)
-        np.testing.assert_array_equal(frame["cordic_sin"], sin_codes)
-        self.assertLess(int(cos_codes.min()), 0)
+        cos_integers = np.asarray(cosine.values, dtype=np.int64)
+        sin_integers = np.asarray(sine.values, dtype=np.int64)
+        np.testing.assert_array_equal(frame["cordic_cos"], cos_integers)
+        np.testing.assert_array_equal(frame["cordic_sin"], sin_integers)
+        self.assertLess(int(cos_integers.min()), 0)
         dac.set_amplitude(14)
         shifted = dac.convert(4)
-        np.testing.assert_array_equal(shifted["cordic_cos"], cos_codes >> 1)
-        np.testing.assert_array_equal(shifted["cordic_sin"], sin_codes >> 1)
+        np.testing.assert_array_equal(
+            shifted["cordic_cos"], cos_integers >> 1
+        )
+        np.testing.assert_array_equal(
+            shifted["cordic_sin"], sin_integers >> 1
+        )
         with self.assertRaises(ValueError):
             dac.set_amplitude_scale(16)
         with self.assertRaises(ValueError):
             dac.set_amplitude(-1)
 
-    def test_full_scale_preload_stays_in_the_cordic_word(self) -> None:
+    def test_full_scale_stays_inside_16_bits(self) -> None:
         """Tests that scale 15 and amplitude 15 stay inside 16 bits."""
-        dac = self._converter()
+        dac = self._make_converter()
         dac.set_amplitude_scale(15)
         dac.set_amplitude(FULL_SCALE_EXPONENT)
         dac.set_frequency(1)
@@ -738,14 +744,14 @@ class SineGenDACTests(unittest.TestCase):
         )
         self.assertEqual(int(quarter["cordic_sin"]), int(direct_sin.values[0]))
 
-    def _quantized_sine_spectrum(self) -> np.ndarray:
+    def _calculate_quantized_sine_spectrum(self) -> np.ndarray:
         """Return the Blackman FFT of a coherent 8-bit sine.
 
         Returns
         -------
         numpy.ndarray
             Complex spectrum. The tone is bin 64 of 16384 samples, with
-            peak code 127 so the quantizer does not clip.
+            peak integer 127 so the quantizer does not clip.
         """
         n_bits = 8
         n_samples = 2 ** 14
@@ -755,21 +761,21 @@ class SineGenDACTests(unittest.TestCase):
         sine = amplitude * np.sin(
             2.0 * np.pi * tone_bin * index / n_samples
         )
-        codes = np.round(sine)
-        return np.fft.fft(codes * np.blackman(n_samples))
+        quantized = np.round(sine)
+        return np.fft.fft(quantized * np.blackman(n_samples))
 
     def test_full_band_sqnr_matches_quantizer_formula(self) -> None:
         """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
-        dac = self._converter()
-        dac._fft_data = self._quantized_sine_spectrum()
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
         measured = dac.get_sqnr_db(osr=1)
         expected = 6.02 * 8 + 1.76
         self.assertAlmostEqual(measured, expected, delta=1.0)
 
     def test_default_sqnr_is_the_signal_band(self) -> None:
         """Tests that the default SQNR uses the OSR register."""
-        dac = self._converter()
-        dac._fft_data = self._quantized_sine_spectrum()
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
         self.assertEqual(dac._reg["osr"], DEFAULT_OSR)
         default = dac.get_sqnr_db()
         self.assertAlmostEqual(default, dac.get_sqnr_db(osr=DEFAULT_OSR))
@@ -777,18 +783,18 @@ class SineGenDACTests(unittest.TestCase):
 
     def test_in_band_sqnr_drops_the_out_of_band_noise(self) -> None:
         """Tests that a narrower band raises the SQNR of white noise."""
-        dac = self._converter()
-        dac._fft_data = self._quantized_sine_spectrum()
+        dac = self._make_converter()
+        dac._fft_data = self._calculate_quantized_sine_spectrum()
         full_band = dac.get_sqnr_db(osr=1)
         in_band = dac.get_sqnr_db(osr=16)
         # A white spectrum gains about 12 dB when the band shrinks by 16.
         self.assertGreater(in_band, full_band + 10.0)
         self.assertLess(in_band, full_band + 18.0)
 
-    def test_dc_offset_is_not_scored_as_the_tone(self) -> None:
+    def test_dc_offset_does_not_change_sqnr(self) -> None:
         """Tests that adding DC does not change the in-band SQNR."""
-        dac = self._converter()
-        spectrum = self._quantized_sine_spectrum()
+        dac = self._make_converter()
+        spectrum = self._calculate_quantized_sine_spectrum()
         dac._fft_data = spectrum
         baseline = dac.get_sqnr_db()
         n_samples = len(spectrum)

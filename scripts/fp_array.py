@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 
-def _bit_width(value: int) -> int:
+def _calculate_bit_width(value: int) -> int:
     """Return the two's-complement width of one integer.
 
     Parameters
@@ -31,7 +31,7 @@ def _bit_width(value: int) -> int:
     return (~value).bit_length() + 1
 
 
-def _signed_width(values: np.ndarray) -> int:
+def _calculate_signed_width(values: np.ndarray) -> int:
     """Return the signed width that holds every mantissa.
 
     Parameters
@@ -48,10 +48,10 @@ def _signed_width(values: np.ndarray) -> int:
         return 1
     low = int(np.min(values))
     high = int(np.max(values))
-    return max(_bit_width(low), _bit_width(high))
+    return max(_calculate_bit_width(low), _calculate_bit_width(high))
 
 
-def _integer_array(values: Any) -> np.ndarray:
+def _convert_to_integer_array(values: Any) -> np.ndarray:
     """Return ``values`` as an object array of Python integers.
 
     Parameters
@@ -89,7 +89,9 @@ def _integer_array(values: Any) -> np.ndarray:
     return np.reshape(result, array.shape)
 
 
-def _scaled_integers(values: Any, fractional_bits: int) -> np.ndarray:
+def _calculate_scaled_integers(
+    values: Any, fractional_bits: int
+) -> np.ndarray:
     """Scale integer operands into ``fractional_bits``.
 
     Parameters
@@ -104,7 +106,7 @@ def _scaled_integers(values: Any, fractional_bits: int) -> np.ndarray:
     numpy.ndarray
         ``values * 2**fractional_bits`` as Python integers.
     """
-    return _integer_array(values) * (1 << fractional_bits)
+    return _convert_to_integer_array(values) * (1 << fractional_bits)
 
 
 def _is_integral_operand(value: Any) -> bool:
@@ -124,7 +126,7 @@ def _is_integral_operand(value: Any) -> bool:
     return isinstance(value, (numbers.Integral, np.ndarray, list, tuple))
 
 
-def _object_ints(values: np.ndarray) -> np.ndarray:
+def _convert_to_object_integers(values: np.ndarray) -> np.ndarray:
     """Convert integral numbers to an object array of Python integers.
 
     Parameters
@@ -166,10 +168,10 @@ def _quantize(values: Any, n: int, r: int) -> np.ndarray:
     if scaled.ndim == 0:
         scaled = scaled.reshape(1)
     if scaled.dtype == object or np.issubdtype(scaled.dtype, np.floating):
-        codes = _object_ints(scaled)
+        integers = _convert_to_object_integers(scaled)
     else:
-        codes = scaled.astype(object)
-    return _saturate(codes, n)
+        integers = scaled.astype(object)
+    return _saturate(integers, n)
 
 
 def _saturate(mantissas: np.ndarray, n: int) -> np.ndarray:
@@ -209,7 +211,7 @@ def _truncate_toward_zero(mantissas: np.ndarray, bits: int) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Truncated mantissas. Negative codes move toward zero, not toward
+        Truncated mantissas. Negative integers move toward zero, not toward
         ``-inf``.
     """
     if bits == 0:
@@ -224,7 +226,7 @@ def _truncate_toward_zero(mantissas: np.ndarray, bits: int) -> np.ndarray:
 class FixedPointArray:
     """An array of signed fixed-point values in format ``(n, r)``.
 
-    Code ``m`` is the real value ``m / 2**r``. Real inputs are floored
+    Integer ``m`` is the real value ``m / 2**r``. Real inputs are floored
     toward negative infinity, then saturated to the signed ``n``-bit
     range. Addition and multiplication keep every result bit.
     :meth:`re_quantize` drops fractional bits toward zero and
@@ -258,12 +260,13 @@ class FixedPointArray:
     def from_mantissas(
         cls, mantissas: Any, n: int, r: int
     ) -> FixedPointArray:
-        """Build an array from integer codes that are already quantized.
+        """Build an array from integers that are already quantized.
 
-        ``mantissas`` are numerators, not real values. Code ``m``
-        represents ``m / 2**r``. Codes outside the signed ``n``-bit range
-        saturate. Use this when an earlier stage already produced
-        fixed-point codes, instead of quantizing those codes as reals.
+        ``mantissas`` are numerators, not real values. Integer ``m``
+        represents ``m / 2**r``. Integers outside the signed ``n``-bit
+        range saturate. Use this when an earlier stage already produced
+        fixed-point integers, instead of quantizing those integers as
+        reals.
 
         Parameters
         ----------
@@ -277,7 +280,7 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Array of those codes in format ``(n, r)``. A scalar code
+            Array of those integers in format ``(n, r)``. A scalar
             becomes a length-1 array.
 
         Raises
@@ -288,15 +291,15 @@ class FixedPointArray:
             If ``n`` or ``r`` is not a valid format.
         """
         cls._validate_format(n, r)
-        codes = _integer_array(mantissas)
-        if codes.ndim == 0:
-            codes = codes.reshape(1)
+        integers = _convert_to_integer_array(mantissas)
+        if integers.ndim == 0:
+            integers = integers.reshape(1)
         width = int(n)
         fraction = int(r)
-        return cls._new(_saturate(codes, width), width, fraction)
+        return cls._create_array(_saturate(integers, width), width, fraction)
 
     @classmethod
-    def _new(
+    def _create_array(
         cls, mantissas: np.ndarray, n: int, r: int
     ) -> FixedPointArray:
         """Return an array that stores ``mantissas`` exactly.
@@ -314,19 +317,19 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Array viewing those codes in format ``(n, r)``.
+            Array viewing those integers in format ``(n, r)``.
         """
-        codes = np.asarray(mantissas, dtype=object)
-        if codes.ndim == 0:
-            codes = codes.reshape(1)
+        integers = np.asarray(mantissas, dtype=object)
+        if integers.ndim == 0:
+            integers = integers.reshape(1)
         result = cls.__new__(cls)
         result._n: int = int(n)
         result._r: int = int(r)
-        result._mantissas: np.ndarray = codes
+        result._mantissas: np.ndarray = integers
         return result
 
     @classmethod
-    def _exact(
+    def _create_exact_array(
         cls, mantissas: np.ndarray, n: int, r: int
     ) -> FixedPointArray:
         """Return an array, widening ``n`` until ``mantissas`` fit.
@@ -345,9 +348,9 @@ class FixedPointArray:
         FixedPointArray
             Result whose width is ``max(n, width(mantissas))``.
         """
-        codes = np.asarray(mantissas, dtype=object)
-        width = max(int(n), _signed_width(codes))
-        return cls._new(codes, width, int(r))
+        integers = np.asarray(mantissas, dtype=object)
+        width = max(int(n), _calculate_signed_width(integers))
+        return cls._create_array(integers, width, int(r))
 
     @staticmethod
     def _validate_format(n: Any, r: Any) -> None:
@@ -377,11 +380,11 @@ class FixedPointArray:
         Returns
         -------
         numpy.ndarray
-            ``int64`` when every code fits in a signed 64-bit word, and an
+            ``int64`` when every integer fits in a signed 64-bit word, and an
             object array of Python integers otherwise. Mutating the copy
             does not change this array.
         """
-        if _signed_width(self._mantissas) <= 64:
+        if _calculate_signed_width(self._mantissas) <= 64:
             return self._mantissas.astype(np.int64)
         return self._mantissas.copy()
 
@@ -407,8 +410,7 @@ class FixedPointArray:
         """
         return self._r
 
-    @property
-    def quantization(self) -> tuple[int, int]:
+    def get_quantization(self) -> tuple[int, int]:
         """Return the ``(n, r)`` format.
 
         Returns
@@ -419,7 +421,7 @@ class FixedPointArray:
         return self._n, self._r
 
     def set_values(self, values: Any) -> None:
-        """Replace the stored codes by quantizing real ``values``.
+        """Replace the stored integers by quantizing real ``values``.
 
         The current ``(n, r)`` format is kept. Inputs are floored toward
         ``-inf`` and saturated.
@@ -447,7 +449,7 @@ class FixedPointArray:
         """Change this array's format in place and return it.
 
         Dropped fractional bits are truncated toward zero. Growing the
-        fraction shifts mantissas left. Codes that do not fit in the new
+        fraction shifts mantissas left. Integers that do not fit in the new
         width saturate. The operand arrays passed to earlier operations
         are not affected because this updates only this array.
 
@@ -503,7 +505,7 @@ class FixedPointArray:
             self._n + (common_r - self._r),
             other._n + (common_r - other._r),
         ) + 1
-        return self._exact(left + right, grown, common_r)
+        return self._create_exact_array(left + right, grown, common_r)
 
     def __add__(self, other: Any) -> Any:
         """Return the sum at full precision.
@@ -524,8 +526,10 @@ class FixedPointArray:
         if isinstance(other, FixedPointArray):
             return self._add_fixed(other)
         if _is_integral_operand(other):
-            total = self._mantissas + _scaled_integers(other, self._r)
-            return self._exact(total, self._n, self._r)
+            total = self._mantissas + _calculate_scaled_integers(
+                other, self._r
+            )
+            return self._create_exact_array(total, self._n, self._r)
         return NotImplemented
 
     def __radd__(self, other: Any) -> Any:
@@ -561,14 +565,14 @@ class FixedPointArray:
         """
         if isinstance(other, FixedPointArray):
             product = self._mantissas * other._mantissas
-            return self._exact(
+            return self._create_exact_array(
                 product, self._n + other._n, self._r + other._r
             )
         if _is_integral_operand(other):
-            integers = _integer_array(other)
+            integers = _convert_to_integer_array(other)
             product = self._mantissas * integers
-            grown = self._n + _signed_width(integers)
-            return self._exact(product, grown, self._r)
+            grown = self._n + _calculate_signed_width(integers)
+            return self._create_exact_array(product, grown, self._r)
         return NotImplemented
 
     def __rmul__(self, other: Any) -> Any:
@@ -592,11 +596,10 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Negated mantissas. ``r`` is unchanged. ``n`` grows when a
-            code is the most negative signed value and its negation does
-            not fit.
+            Negated mantissas. ``r`` is unchanged. ``n`` grows when
+            the most negative signed integer does not fit when negated.
         """
-        return self._exact(-self._mantissas, self._n, self._r)
+        return self._create_exact_array(-self._mantissas, self._n, self._r)
 
     def __sub__(self, other: Any) -> Any:
         """Return ``self - other`` at full precision.
@@ -615,7 +618,7 @@ class FixedPointArray:
         if isinstance(other, FixedPointArray):
             return self + (-other)
         if _is_integral_operand(other):
-            return self + (-_integer_array(other))
+            return self + (-_convert_to_integer_array(other))
         return NotImplemented
 
     def __rsub__(self, other: Any) -> Any:
@@ -650,7 +653,7 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Shifted codes with the same ``r``.
+            Shifted integers with the same ``r``.
 
         Raises
         ------
@@ -659,7 +662,7 @@ class FixedPointArray:
         TypeError
             If ``shift`` is not an integer or an integer array.
         """
-        shifts = _integer_array(shift)
+        shifts = _convert_to_integer_array(shift)
         if np.any(shifts < 0):
             raise ValueError("shift counts must be non-negative")
         operation = np.left_shift if to_the_left else np.right_shift
@@ -674,7 +677,7 @@ class FixedPointArray:
             width = self._n + extra
         else:
             width = self._n
-        return self._exact(shifted, width, self._r)
+        return self._create_exact_array(shifted, width, self._r)
 
     def __lshift__(self, shift: Any) -> FixedPointArray:
         """Shift mantissas left by ``shift`` bits.
@@ -687,7 +690,7 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Shifted codes. ``r`` is unchanged and ``n`` grows by the
+            Shifted integers. ``r`` is unchanged and ``n`` grows by the
             largest shift count.
 
         Raises
@@ -710,7 +713,7 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Shifted codes. Negative mantissas move toward ``-inf``.
+            Shifted integers. Negative mantissas move toward ``-inf``.
             ``(n, r)`` is unchanged.
 
         Raises
@@ -722,7 +725,7 @@ class FixedPointArray:
         """
         return self._shift(shift, False)
 
-    def _aligned_operands(self, other: Any) -> tuple[np.ndarray, np.ndarray]:
+    def _align_operands(self, other: Any) -> tuple[np.ndarray, np.ndarray]:
         """Return mantissas of ``self`` and ``other`` at a common fraction.
 
         Parameters
@@ -741,7 +744,7 @@ class FixedPointArray:
             left = self._mantissas * (1 << (common_r - self._r))
             right = other._mantissas * (1 << (common_r - other._r))
             return left, right
-        return self._mantissas, _scaled_integers(other, self._r)
+        return self._mantissas, _calculate_scaled_integers(other, self._r)
 
     def _compare(self, other: Any, operation: Any, unsupported: Any) -> Any:
         """Compare mantissas after aligning fractional widths.
@@ -766,7 +769,7 @@ class FixedPointArray:
             and not _is_integral_operand(other)
         ):
             return unsupported
-        left, right = self._aligned_operands(other)
+        left, right = self._align_operands(other)
         return operation(left, right)
 
     def __lt__(self, other: Any) -> Any:
@@ -877,11 +880,11 @@ class FixedPointArray:
         Returns
         -------
         FixedPointArray
-            Selected codes. A scalar index becomes a length-1 array.
+            Selected integers. A scalar index becomes a length-1 array.
             ``(n, r)`` is unchanged.
         """
         selected = np.array(self._mantissas[key], dtype=object, copy=True)
-        return self._exact(selected, self._n, self._r)
+        return self._create_exact_array(selected, self._n, self._r)
 
     def __setitem__(self, key: Any, value: Any) -> None:
         """Assign into the selected entries and saturate.
@@ -892,7 +895,7 @@ class FixedPointArray:
             Index passed through to the mantissa array.
         value : FixedPointArray or int or array-like of int
             Fixed-point array with the same ``r``, or real integers that
-            are quantized to this ``r``. Assigned codes saturate to ``n``.
+            are quantized to this ``r``. Assigned integers saturate to ``n``.
 
         Raises
         ------
@@ -908,7 +911,7 @@ class FixedPointArray:
                 )
             incoming = value._mantissas
         else:
-            incoming = _scaled_integers(value, self._r)
+            incoming = _calculate_scaled_integers(value, self._r)
         updated = self._mantissas.copy()
         incoming = np.asarray(incoming, dtype=object)
         destination = np.ndim(updated[key])
@@ -934,7 +937,7 @@ class FixedPointArray:
         """
         for row in self._mantissas:
             copied = np.array(row, dtype=object, copy=True)
-            yield self._exact(copied, self._n, self._r)
+            yield self._create_exact_array(copied, self._n, self._r)
 
     def __array__(
         self, dtype: Any = None, copy: bool | None = None
@@ -985,7 +988,7 @@ class FixedPointArrayTests(unittest.TestCase):
         """Tests floor quantization and signed saturation."""
         value = FixedPointArray([-100, -1.25, 0.5, 100], n=8, r=4)
         np.testing.assert_array_equal(value.values, [-128, -20, 8, 127])
-        self.assertEqual(value.quantization, (8, 4))
+        self.assertEqual(value.get_quantization(), (8, 4))
 
     def test_addition_preserves_fractional_precision_and_grows_width(
         self,
@@ -1005,7 +1008,7 @@ class FixedPointArrayTests(unittest.TestCase):
         right = FixedPointArray([-0.75], n=8, r=3)
         result = left * right
         np.testing.assert_allclose(result.to_float(), [-0.9375])
-        self.assertEqual(result.quantization, (16, 5))
+        self.assertEqual(result.get_quantization(), (16, 5))
         np.testing.assert_array_equal((left * np.array([2])).values, [10])
         self.assertEqual((left * 2).r, left.r)
 
@@ -1021,15 +1024,15 @@ class FixedPointArrayTests(unittest.TestCase):
         value = FixedPointArray([1.375, -1.375], n=16, r=3)
         value.re_quantize(4, 1)
         np.testing.assert_array_equal(value.values, [2, -2])
-        self.assertEqual(value.quantization, (4, 1))
+        self.assertEqual(value.get_quantization(), (4, 1))
 
     def test_requantize_truncates_negative_toward_zero(self) -> None:
-        """Tests that dropped fraction bits move negative codes toward zero."""
+        """Tests that dropped fraction bits move negatives toward zero."""
         value = FixedPointArray(-5 / 16, n=8, r=4)
         self.assertEqual(int(value.values[0]), -5)
         value.re_quantize(8, 2)
         self.assertEqual(int(value.values[0]), -1)
-        self.assertEqual(value.quantization, (8, 2))
+        self.assertEqual(value.get_quantization(), (8, 2))
 
     def test_shifts_operate_on_mantissas(self) -> None:
         """Tests left and right shifts of mantissas."""
@@ -1040,7 +1043,7 @@ class FixedPointArrayTests(unittest.TestCase):
         self.assertEqual(left.r, value.r)
         self.assertGreaterEqual(left.n, value.n + 3)
         np.testing.assert_array_equal(right.values, [3, -3])
-        self.assertEqual(right.quantization, value.quantization)
+        self.assertEqual(right.get_quantization(), value.get_quantization())
         np.testing.assert_array_equal(value << np.array([1, 2]), [12, -24])
 
     def test_right_shift_of_negative_is_arithmetic(self) -> None:
@@ -1048,7 +1051,7 @@ class FixedPointArrayTests(unittest.TestCase):
         value = FixedPointArray(-5 / 16, n=8, r=4)
         shifted = value >> 2
         self.assertEqual(int(shifted.values[0]), -2)
-        self.assertEqual(shifted.quantization, value.quantization)
+        self.assertEqual(shifted.get_quantization(), value.get_quantization())
 
     def test_comparisons_align_quantization_and_return_masks(self) -> None:
         """Tests comparison masks across different fractional widths."""
@@ -1062,7 +1065,7 @@ class FixedPointArrayTests(unittest.TestCase):
     def test_indexing_and_mask_assignment(self) -> None:
         """Tests indexing and masked assignment."""
         value = FixedPointArray([0.5, 1, 1.5], n=8, r=2)
-        self.assertEqual(value[1].quantization, value.quantization)
+        self.assertEqual(value[1].get_quantization(), value.get_quantization())
         value[value > 1] = FixedPointArray([2], n=8, r=2)
         np.testing.assert_allclose(value.to_float(), [0.5, 1, 2])
         value[0] = FixedPointArray([2], n=8, r=2)
@@ -1076,11 +1079,11 @@ class FixedPointArrayTests(unittest.TestCase):
         np.testing.assert_array_equal(difference.values, [2, -2, 9])
         self.assertEqual(difference.r, value.r)
 
-    def test_from_mantissas_keeps_codes_and_saturates(self) -> None:
-        """Tests construction from already-quantized integer codes."""
+    def test_from_mantissas_keeps_integers_and_saturates(self) -> None:
+        """Tests construction from integers that are already quantized."""
         saturated = FixedPointArray.from_mantissas([8, -3], n=4, r=1)
         np.testing.assert_array_equal(saturated.values, [7, -3])
-        self.assertEqual(saturated.quantization, (4, 1))
+        self.assertEqual(saturated.get_quantization(), (4, 1))
         exact = FixedPointArray.from_mantissas([3], n=8, r=1)
         self.assertEqual(float(exact.to_float()[0]), 1.5)
         wide = FixedPointArray.from_mantissas([2**80], n=100, r=0)
@@ -1091,7 +1094,7 @@ class FixedPointArrayTests(unittest.TestCase):
         value = FixedPointArray([1], n=8, r=0) << 40
         product = value * value
         self.assertEqual(int(product.values[0]), 2**80)
-        self.assertGreaterEqual(product.n, _bit_width(2**80))
+        self.assertGreaterEqual(product.n, _calculate_bit_width(2**80))
 
     def test_arithmetic_does_not_modify_operands(self) -> None:
         """Tests that arithmetic copies rather than updating inputs."""
