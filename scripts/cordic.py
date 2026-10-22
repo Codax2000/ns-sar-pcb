@@ -79,62 +79,87 @@ def cordic_rotate(
     Raises
     ------
     TypeError
-        If ``magnitudes`` is not an int or an unsigned integer array,
-        or ``angles`` is not a FixedPointArray.
+        If ``magnitudes`` is not an int or a NumPy array, if that
+        array is not an unsigned integer dtype, or if ``angles`` is
+        not a FixedPointArray. The message names the type or dtype.
     ValueError
-        If a scale is outside 0 to 15, the scale does not broadcast to
-        ``angles``, or ``angles`` is not quantization ``(16, 16)``.
+        If a scale is outside 0 to 15, the shapes cannot broadcast,
+        broadcasting would change the angle shape, or the angle
+        quantization is not ``(16, 16)``. The message names the values
+        or shapes.
     """
-    scale_is_int = isinstance(magnitudes, int) and not isinstance(
-        magnitudes, bool
-    )
-    scale_is_array = isinstance(magnitudes, np.ndarray) and np.issubdtype(
-        magnitudes.dtype, np.unsignedinteger
-    )
-    if not scale_is_int and not scale_is_array:
+    if isinstance(magnitudes, bool) or not (
+        isinstance(magnitudes, int) or isinstance(magnitudes, np.ndarray)
+    ):
+        received = type(magnitudes).__name__
         raise TypeError(
-            "magnitudes must be an int or an unsigned integer array"
+            "magnitudes must be an int or a numpy array, "
+            f"got {received}"
+        )
+    if isinstance(magnitudes, np.ndarray) and not np.issubdtype(
+        magnitudes.dtype, np.unsignedinteger
+    ):
+        raise TypeError(
+            "magnitudes must have an unsigned integer dtype, "
+            f"got {magnitudes.dtype}"
+        )
+    if isinstance(magnitudes, np.ndarray):
+        if magnitudes.size:
+            found_min = int(np.min(magnitudes))
+            found_max = int(np.max(magnitudes))
+            if found_min < 0 or found_max > _SCALE_MAX:
+                raise ValueError(
+                    "magnitudes must be between 0 and 15, "
+                    f"got min {found_min} and max {found_max}"
+                )
+    elif magnitudes < 0 or magnitudes > _SCALE_MAX:
+        raise ValueError(
+            "magnitudes must be between 0 and 15, "
+            f"got min {magnitudes} and max {magnitudes}"
         )
     if not isinstance(angles, FixedPointArray):
-        raise TypeError("angles must be a FixedPointArray")
-    if angles.get_quantization() != _ANGLE_QUANTIZATION:
-        raise ValueError("angles must use quantization (16, 16)")
-    if scale_is_array:
-        if magnitudes.size and int(np.max(magnitudes)) > _SCALE_MAX:
-            raise ValueError("magnitudes must be between 0 and 15")
-    elif magnitudes < 0 or magnitudes > _SCALE_MAX:
-        raise ValueError("magnitudes must be between 0 and 15")
+        raise TypeError(
+            "angles must be a FixedPointArray, "
+            f"got {type(angles).__name__}"
+        )
+    quantization = angles.get_quantization()
+    if quantization != _ANGLE_QUANTIZATION:
+        raise ValueError(
+            "angles quantization must be (16, 16), "
+            f"got {quantization}"
+        )
     angle_shape = angles.get_mantissas().shape
+    magnitude_shape = np.shape(magnitudes)
     try:
         broadcast_shape = np.broadcast_shapes(
-            np.shape(magnitudes), angle_shape
+            magnitude_shape, angle_shape
         )
     except ValueError as error:
         raise ValueError(
-            "magnitudes must broadcast to the angles' shape "
-            "without changing it"
+            f"magnitudes shape {magnitude_shape} cannot broadcast "
+            f"to angles shape {angle_shape}"
         ) from error
     if broadcast_shape != angle_shape:
         raise ValueError(
-            "magnitudes must broadcast to the angles' shape "
-            "without changing it"
+            f"magnitudes shape {magnitude_shape} broadcasts to "
+            f"{broadcast_shape}, which changes angles shape "
+            f"{angle_shape}"
         )
     scales = np.broadcast_to(
         np.asarray(magnitudes, dtype=np.int64), angle_shape
     )
-    x_integers = _get_initial_vector(scales)
-    y_integers = np.zeros(angle_shape, dtype=np.int64)
-    remaining_angles, x_vector, y_vector = _pre_rotate(
-        angles, x_integers, y_integers
-    )
+    magnitude = _get_initial_vector(scales)
+    remaining_angles, x_vector, y_vector = _pre_rotate(angles, magnitude)
     for index in range(_ITERATIONS):
         directions = _calculate_directions(remaining_angles)
         shifted_x = x_vector >> index
         shifted_y = y_vector >> index
         x_vector = x_vector - shifted_y * directions
         y_vector = y_vector + shifted_x * directions
-        remaining_angles = _step_cordic(
-            remaining_angles, _ARCTANGENT_TABLE[index]
+        # +1 when the remaining angle is >= 0, so the arctangent
+        # is subtracted.
+        remaining_angles = (
+            remaining_angles - _ARCTANGENT_TABLE[index] * directions
         )
     return x_vector
 
@@ -165,30 +190,25 @@ def _get_initial_vector(scales: np.ndarray) -> np.ndarray:
 
 
 def _pre_rotate(
-    angles: FixedPointArray,
-    x_integers: np.ndarray,
-    y_integers: np.ndarray,
+    angles: FixedPointArray, magnitude: np.ndarray
 ) -> tuple[FixedPointArray, FixedPointArray, FixedPointArray]:
-    """Apply the quadrant and return the remaining angle.
+    """Place the magnitude on an axis and return the remaining angle.
 
-    Quadrant 0 keeps ``(x, y)``, 1 returns ``(-y, x)``, 2 returns
-    ``(-x, -y)``, and 3 returns ``(y, -x)``. With ``y`` at 0 that is
-    ``(magnitude, 0)``, ``(0, magnitude)``, ``(-magnitude, 0)``, and
+    ``y`` starts at 0. Quadrant 0 returns ``(magnitude, 0)``, 1 returns
+    ``(0, magnitude)``, 2 returns ``(-magnitude, 0)``, and 3 returns
     ``(0, -magnitude)``.
 
     Parameters
     ----------
     angles : FixedPointArray
         Phase in quantization ``(16, 16)``.
-    x_integers : numpy.ndarray
+    magnitude : numpy.ndarray
         Starting x integers.
-    y_integers : numpy.ndarray
-        Starting y integers.
 
     Returns
     -------
     tuple of FixedPointArray
-        Remaining angle, then quadrant-adjusted ``x`` and ``y``.
+        Remaining angle, then ``x`` and ``y`` on the quadrant axis.
     """
     phase = np.asarray(angles.get_mantissas(), dtype=np.int64)
     # Quadrant is the top two bits of the 16-bit pattern. Mask first
@@ -201,16 +221,21 @@ def _pre_rotate(
     remaining_angles = FixedPointArray.from_mantissas(
         offset, _ANGLE_QUANTIZATION[0], _ANGLE_QUANTIZATION[1]
     )
-    x_choices = (x_integers, -y_integers, -x_integers, y_integers)
-    y_choices = (y_integers, x_integers, -y_integers, -x_integers)
-    rotated_x = x_choices[0]
-    rotated_y = y_choices[0]
+    zeros = np.zeros(magnitude.shape, dtype=np.int64)
+    x_for_quadrant = (magnitude, zeros, -magnitude, zeros)
+    y_for_quadrant = (zeros, magnitude, zeros, -magnitude)
+    rotated_x = x_for_quadrant[0]
+    rotated_y = y_for_quadrant[0]
     for quadrant_index in range(1, 4):
         rotated_x = np.where(
-            quadrant == quadrant_index, x_choices[quadrant_index], rotated_x
+            quadrant == quadrant_index,
+            x_for_quadrant[quadrant_index],
+            rotated_x,
         )
         rotated_y = np.where(
-            quadrant == quadrant_index, y_choices[quadrant_index], rotated_y
+            quadrant == quadrant_index,
+            y_for_quadrant[quadrant_index],
+            rotated_y,
         )
     return (
         remaining_angles,
@@ -237,27 +262,6 @@ def _calculate_directions(remaining_angles: FixedPointArray) -> np.ndarray:
         +1 when the remaining angle is non-negative, otherwise -1.
     """
     return np.where(remaining_angles < 0, -1, 1)
-
-
-def _step_cordic(
-    remaining_angles: FixedPointArray, arctangent: FixedPointArray
-) -> FixedPointArray:
-    """Subtract this iteration's arctangent from the remaining angle.
-
-    Parameters
-    ----------
-    remaining_angles : FixedPointArray
-        Angle still to rotate.
-    arctangent : FixedPointArray
-        Arctangent of this iteration, in the same angle format.
-
-    Returns
-    -------
-    FixedPointArray
-        Updated remaining angle.
-    """
-    directions = _calculate_directions(remaining_angles)
-    return remaining_angles - arctangent * directions
 
 
 class CORDICTests(unittest.TestCase):
@@ -331,11 +335,6 @@ class CORDICTests(unittest.TestCase):
         self.assertEqual(shifted, 19894)
         # Each shift drops bits that one shift of the product would keep.
         self.assertNotEqual(shifted, (FULL_SCALE_CONSTANT * 15) >> 4)
-        angles = self._angles(np.array([0]))
-        with self.assertRaises(ValueError):
-            cordic_rotate(-1, angles)
-        with self.assertRaises(ValueError):
-            cordic_rotate(16, angles)
 
     def test_remaining_angle_keeps_the_low_phase_bits(self) -> None:
         """Tests that the remaining angle keeps the low 14 phase bits."""
@@ -344,11 +343,8 @@ class CORDICTests(unittest.TestCase):
         )
         angles = self._angles(phase)
         scales = np.full(phase.shape, 1, dtype=np.int64)
-        x_integers = _get_initial_vector(scales)
-        y_integers = np.zeros(phase.shape, dtype=np.int64)
-        remaining, _x_vector, _y_vector = _pre_rotate(
-            angles, x_integers, y_integers
-        )
+        magnitude = _get_initial_vector(scales)
+        remaining, _x_vector, _y_vector = _pre_rotate(angles, magnitude)
         low_bits = (1 << _QUADRANT_SHIFT) - 1
         np.testing.assert_array_equal(
             remaining.get_mantissas(),
@@ -403,32 +399,81 @@ class CORDICTests(unittest.TestCase):
             scalar.get_mantissas(), array.get_mantissas()
         )
 
-    def test_rejects_a_bad_magnitude(self) -> None:
-        """Tests rejection of a magnitude that is not a 4-bit scale."""
-        angles = self._angles(np.array([0, 1, 2, 3]))
-        with self.assertRaises(TypeError):
-            cordic_rotate(np.array([1]), angles)
-        with self.assertRaises(TypeError):
-            cordic_rotate(np.uint8(1), angles)
-        with self.assertRaises(TypeError):
+    def test_rejects_a_magnitude_that_is_not_an_array(self) -> None:
+        """Tests that a non-int, non-array magnitude names its type."""
+        angles = self._angles(np.array([0]))
+        with self.assertRaises(TypeError) as caught:
+            cordic_rotate([15], angles)
+        self.assertIn("list", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
             cordic_rotate(True, angles)
-        with self.assertRaises(ValueError):
-            cordic_rotate(np.array([16], dtype=np.uint8), angles)
-        with self.assertRaises(ValueError):
-            cordic_rotate(np.zeros((4, 1), dtype=np.uint8), angles)
-        with self.assertRaises(ValueError):
-            cordic_rotate(np.zeros(3, dtype=np.uint8), angles)
+        self.assertIn("bool", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            cordic_rotate(np.uint8(1), angles)
+        self.assertIn("uint8", str(caught.exception))
 
-    def test_rejects_a_bad_angle(self) -> None:
-        """Tests rejection of a non-fixed-point or wrong-format phase."""
-        with self.assertRaises(TypeError):
+    def test_rejects_a_signed_magnitude_array(self) -> None:
+        """Tests that a signed magnitude array names its dtype."""
+        angles = self._angles(np.array([0]))
+        scales = np.array([1], dtype=np.int64)
+        with self.assertRaises(TypeError) as caught:
+            cordic_rotate(scales, angles)
+        self.assertIn("int64", str(caught.exception))
+
+    def test_rejects_a_magnitude_outside_0_to_15(self) -> None:
+        """Tests that an out-of-range scale names the min and max."""
+        angles = self._angles(np.array([0, 1]))
+        with self.assertRaises(ValueError) as caught:
+            cordic_rotate(16, angles)
+        self.assertIn("min 16", str(caught.exception))
+        self.assertIn("max 16", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            cordic_rotate(-1, angles)
+        self.assertIn("min -1", str(caught.exception))
+        self.assertIn("max -1", str(caught.exception))
+        scales = np.array([0, 20], dtype=np.uint8)
+        with self.assertRaises(ValueError) as caught:
+            cordic_rotate(scales, angles)
+        self.assertIn("min 0", str(caught.exception))
+        self.assertIn("max 20", str(caught.exception))
+
+    def test_rejects_a_magnitude_that_cannot_broadcast(self) -> None:
+        """Tests that incompatible shapes are both named."""
+        angles = self._angles(np.zeros(4, dtype=np.uint16))
+        scales = np.zeros(3, dtype=np.uint8)
+        with self.assertRaises(ValueError) as caught:
+            cordic_rotate(scales, angles)
+        message = str(caught.exception)
+        self.assertIn("(3,)", message)
+        self.assertIn("(4,)", message)
+
+    def test_rejects_a_magnitude_that_changes_the_angle_shape(self) -> None:
+        """Tests that a shape-changing broadcast names all three shapes."""
+        angles = self._angles(np.zeros(4, dtype=np.uint16))
+        scales = np.zeros((4, 1), dtype=np.uint8)
+        with self.assertRaises(ValueError) as caught:
+            cordic_rotate(scales, angles)
+        message = str(caught.exception)
+        self.assertIn("(4, 1)", message)
+        self.assertIn("(4,)", message)
+        self.assertIn("(4, 4)", message)
+
+    def test_rejects_an_angle_that_is_not_fixed_point(self) -> None:
+        """Tests that a non-fixed-point phase names its type."""
+        with self.assertRaises(TypeError) as caught:
             cordic_rotate(1, np.array([0]))
+        self.assertIn("ndarray", str(caught.exception))
+
+    def test_rejects_an_angle_with_the_wrong_quantization(self) -> None:
+        """Tests that a wrong angle format names the quantization."""
         wider = FixedPointArray.from_mantissas([0], 17, 16)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as caught:
             cordic_rotate(1, wider)
+        self.assertIn("(17, 16)", str(caught.exception))
         shorter = FixedPointArray.from_mantissas([0], 16, 15)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as caught:
             cordic_rotate(1, shorter)
+        self.assertIn("(16, 15)", str(caught.exception))
 
 
 def main() -> None:
