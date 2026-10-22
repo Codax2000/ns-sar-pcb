@@ -24,9 +24,9 @@ OFFSET_BITS = 14
 # Wide enough for the remaining angle and one arctangent step past zero.
 ANGLE_WIDTH = 16
 SCALE_BITS = 4
-# Starting magnitude for scale 15, so the output reaches full scale.
-# About 2**15 / K * 16/15. The next integer does not fit in 16 bits.
-PRELOAD_C = 21223
+# Starting magnitude that makes scale 15 a full-scale output
+# (about 2**15 / K * 16/15).
+FULL_SCALE_CONSTANT = 21223
 
 
 def calculate_cordic_gain(n_rotations: int) -> float:
@@ -234,9 +234,9 @@ class CORDIC:
         """
         if self._n_rotations != 16 or self._n_x != 16:
             raise ValueError(
-                "PRELOAD_C is for 16 iterations and a 16-bit vector"
+                "FULL_SCALE_CONSTANT is for 16 iterations and a 16-bit vector"
             )
-        return calculate_initial_magnitude(PRELOAD_C, scale)
+        return calculate_initial_magnitude(FULL_SCALE_CONSTANT, scale)
 
     def get_vector_format(self) -> tuple[int, int]:
         """Return the ``(n, r)`` format of ``x`` and ``y``.
@@ -610,23 +610,27 @@ class CORDICTests(unittest.TestCase):
         """Tests that ``K`` matches :func:`calculate_cordic_gain`."""
         cordic = CORDIC()
         self.assertEqual(cordic.get_gain(), calculate_cordic_gain(16))
-        self.assertGreater(PRELOAD_C, 0)
+        self.assertGreater(FULL_SCALE_CONSTANT, 0)
 
     def test_initial_magnitude_is_a_sum_of_shifts(self) -> None:
         """Tests the sum of shifted copies of the magnitude constant."""
         cordic = CORDIC()
         self.assertEqual(cordic.get_initial_magnitude(0), 0)
-        self.assertEqual(cordic.get_initial_magnitude(1), PRELOAD_C >> 4)
-        self.assertEqual(cordic.get_initial_magnitude(8), PRELOAD_C >> 1)
+        self.assertEqual(
+            cordic.get_initial_magnitude(1), FULL_SCALE_CONSTANT >> 4
+        )
+        self.assertEqual(
+            cordic.get_initial_magnitude(8), FULL_SCALE_CONSTANT >> 1
+        )
         shifted = (
-            (PRELOAD_C >> 1)
-            + (PRELOAD_C >> 2)
-            + (PRELOAD_C >> 3)
-            + (PRELOAD_C >> 4)
+            (FULL_SCALE_CONSTANT >> 1)
+            + (FULL_SCALE_CONSTANT >> 2)
+            + (FULL_SCALE_CONSTANT >> 3)
+            + (FULL_SCALE_CONSTANT >> 4)
         )
         self.assertEqual(cordic.get_initial_magnitude(15), shifted)
         # Each shift drops bits that one shift of the product would keep.
-        self.assertNotEqual(shifted, (PRELOAD_C * 15) >> 4)
+        self.assertNotEqual(shifted, (FULL_SCALE_CONSTANT * 15) >> 4)
         with self.assertRaises(ValueError):
             cordic.get_initial_magnitude(-1)
         with self.assertRaises(ValueError):
@@ -689,9 +693,9 @@ class CORDICTests(unittest.TestCase):
         self.assertAlmostEqual(worst, 12.20, delta=0.05)
 
     def test_next_constant_leaves_signed_16_bits(self) -> None:
-        """Tests that one more than :data:`PRELOAD_C` needs 17 bits."""
+        """Tests that one more than ``FULL_SCALE_CONSTANT`` needs 17 bits."""
         cordic = CORDIC(r_x=15)
-        initial = calculate_initial_magnitude(PRELOAD_C + 1, 15)
+        initial = calculate_initial_magnitude(FULL_SCALE_CONSTANT + 1, 15)
         phases = np.arange(1 << PHASE_BITS, dtype=np.uint16)
         x_integers = np.full(phases.shape, initial, dtype=np.int64)
         y_integers = np.zeros(phases.shape, dtype=np.int64)
