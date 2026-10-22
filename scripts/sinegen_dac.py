@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
-from cordic import PHASE_BITS, cordic_rotate
+from cordic import cordic_rotate
 from fp_array import FixedPointArray
 
 
@@ -325,7 +325,7 @@ class SineGenDAC:
             Number of clocks, including warmup.
         """
         step = np.uint64(self._get_phase_step())
-        modulus = np.uint64(1 << PHASE_BITS)
+        modulus = np.uint64(1 << 16)
         sample_index = np.arange(n_samples, dtype=np.uint64)
         # phase[k] = (k * step) mod 2**16, starting from 0.
         self._phase = ((sample_index * step) % modulus).astype(np.uint16)
@@ -339,7 +339,7 @@ class SineGenDAC:
         """
         signed_phase = self._phase.astype(np.int16).astype(np.int64)
         angles = FixedPointArray.from_mantissas(
-            signed_phase, PHASE_BITS, PHASE_BITS
+            signed_phase, 16, 16
         )
         cosine = cordic_rotate(self._reg["amplitude_scale"], angles)
         shift = self._get_output_shift()
@@ -662,7 +662,7 @@ class SineGenDACTests(unittest.TestCase):
         )
         dac.set_frequency(32768)
         fast = dac.convert(4)
-        half_turn = 1 << (PHASE_BITS - 1)
+        half_turn = 1 << 15
         np.testing.assert_array_equal(
             fast["phase"],
             np.array([0, half_turn, 0, half_turn], dtype=np.uint16),
@@ -693,7 +693,7 @@ class SineGenDACTests(unittest.TestCase):
         frame = dac.convert(4)
         signed_phase = frame["phase"].to_numpy().astype(np.int16)
         angles = FixedPointArray.from_mantissas(
-            signed_phase.astype(np.int64), PHASE_BITS, PHASE_BITS
+            signed_phase.astype(np.int64), 16, 16
         )
         cosine = cordic_rotate(np.array(8, dtype=np.uint8), angles)
         cos_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
@@ -722,7 +722,7 @@ class SineGenDACTests(unittest.TestCase):
         self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
         self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
         angles = FixedPointArray.from_mantissas(
-            np.array([8192], dtype=np.int64), PHASE_BITS, PHASE_BITS
+            np.array([8192], dtype=np.int64), 16, 16
         )
         direct_cos = cordic_rotate(15, angles)
         self.assertEqual(
