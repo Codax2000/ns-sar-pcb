@@ -85,27 +85,6 @@ def _check_dc_value(value: int, channel: str) -> None:
         )
 
 
-def _check_registers(
-    n_samples: int,
-    frequency: int,
-    amplitude_scale: int,
-    amplitude: int,
-    dacp_mode: str,
-    dacn_mode: str,
-    dacp_dc_value: int,
-    dacn_dc_value: int,
-) -> None:
-    """Raise unless the sample count and DAC settings are valid."""
-    _check_n_samples(n_samples)
-    _check_frequency(frequency)
-    _check_amplitude_scale(amplitude_scale)
-    _check_amplitude(amplitude)
-    _check_dac_mode(dacp_mode, "dacp")
-    _check_dac_mode(dacn_mode, "dacn")
-    _check_dc_value(dacp_dc_value, "dacp")
-    _check_dc_value(dacn_dc_value, "dacn")
-
-
 def _saturate(values: np.ndarray) -> np.ndarray:
     """Clamp integers to signed 8 bits."""
     return np.clip(values, -128, 127).astype(np.int64)
@@ -220,16 +199,14 @@ def generate_dac_values(
     ValueError
         If a count, scale, mode, or code is out of range.
     """
-    _check_registers(
-        n_samples,
-        frequency,
-        amplitude_scale,
-        amplitude,
-        dacp_mode,
-        dacn_mode,
-        dacp_dc_value,
-        dacn_dc_value,
-    )
+    _check_n_samples(n_samples)
+    _check_frequency(frequency)
+    _check_amplitude_scale(amplitude_scale)
+    _check_amplitude(amplitude)
+    _check_dac_mode(dacp_mode, "dacp")
+    _check_dac_mode(dacn_mode, "dacn")
+    _check_dc_value(dacp_dc_value, "dacp")
+    _check_dc_value(dacn_dc_value, "dacn")
     # Unsigned 16-bit accumulator, then the signed reading of those bits.
     phase = (
         np.arange(n_samples, dtype=np.uint64) * np.uint64(frequency)
@@ -241,10 +218,10 @@ def generate_dac_values(
     cosine = np.asarray(
         cordic_rotate(amplitude_scale, angles).get_mantissas(),
         dtype=np.int64,
-    ).reshape(-1)
+    )
     cosine = cosine >> (15 - amplitude)
     if dsm_enable:
-        dac_signed, error = _modulate_dsm(np.ascontiguousarray(cosine))
+        dac_signed, error = _modulate_dsm(cosine)
     else:
         dac_signed, error = _truncate(cosine)
     dacp_values = _select_mode(
@@ -314,7 +291,7 @@ def _check_sample_rate(fs: float) -> None:
         raise ValueError(f"fs must be positive, got {fs}")
 
 
-def _windowed_dacp_spectrum(
+def _calculate_dacp_spectrum(
     results: pd.DataFrame, warmup_samples: int
 ) -> np.ndarray:
     """Return the Blackman FFT of DACP after skipping warmup clocks."""
@@ -390,7 +367,7 @@ def calculate_sqnr_db(
     ValueError
         If the band, warmup, or table is unusable.
     """
-    spectrum = _windowed_dacp_spectrum(results, warmup_samples)
+    spectrum = _calculate_dacp_spectrum(results, warmup_samples)
     return _calculate_sqnr(spectrum, osr)
 
 
@@ -491,7 +468,7 @@ def plot_spectrum(
     _check_sample_rate(fs)
     if osr is not None:
         _check_osr(osr)
-    spectrum = _windowed_dacp_spectrum(results, warmup_samples)
+    spectrum = _calculate_dacp_spectrum(results, warmup_samples)
     n_fft = len(spectrum)
     full_scale = 128
     freq_bins = np.fft.fftfreq(n_fft, d=1 / fs)
