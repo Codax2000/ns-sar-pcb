@@ -117,13 +117,26 @@ def _check_shapes(
         )
 
 
+def _wrap_to_quantization(
+    vector: FixedPointArray, n: int, r: int
+) -> FixedPointArray:
+    """Wrap ``vector`` into a signed ``(n, r)`` word."""
+    mantissas = np.asarray(vector.get_mantissas(), dtype=np.int64)
+    if vector.r > r:
+        mantissas = mantissas >> (vector.r - r)
+    elif vector.r < r:
+        mantissas = mantissas << (r - vector.r)
+    span = np.int64(1) << np.int64(n)
+    half = np.int64(1) << np.int64(n - 1)
+    # Two's-complement wrap: the low n bits, read as signed.
+    wrapped = np.mod(mantissas + half, span).astype(np.int64) - half
+    return FixedPointArray.from_mantissas(wrapped, n, r)
+
+
 def cordic_rotate(
     magnitudes: int | np.ndarray, angles: FixedPointArray
 ) -> FixedPointArray:
     """Return ``magnitudes / 15 * cos(angles)`` as a FixedPointArray.
-
-    The cosine has 15 fractional bits. Its width is wider than 16
-    bits and depends on the inputs.
 
     Parameters
     ----------
@@ -136,7 +149,7 @@ def cordic_rotate(
     Returns
     -------
     FixedPointArray
-        Cosine with 15 fractional bits.
+        Cosine in signed Q1.15, quantization ``(16, 15)``.
 
     Raises
     ------
@@ -160,14 +173,20 @@ def cordic_rotate(
         directions = _calculate_directions(remaining_angles)
         shifted_x = x_vector >> index
         shifted_y = y_vector >> index
-        x_vector = x_vector - shifted_y * directions
-        y_vector = y_vector + shifted_x * directions
+        x_vector = _wrap_to_quantization(
+            x_vector - shifted_y * directions, 16, 15
+        )
+        y_vector = _wrap_to_quantization(
+            y_vector + shifted_x * directions, 16, 15
+        )
         # +1 when the remaining angle is >= 0, so the arctangent
         # is subtracted.
         arctangent = FixedPointArray.from_mantissas(
             int(ARCTANGENT_TABLE[index]), 16, 16
         )
-        remaining_angles = remaining_angles - arctangent * directions
+        remaining_angles = _wrap_to_quantization(
+            remaining_angles - arctangent * directions, 16, 16
+        )
     return x_vector
 
 
@@ -295,6 +314,14 @@ class CORDICTests(unittest.TestCase):
             expected,
             atol=self._cosine_tolerance(initial),
         )
+
+    def test_output_quantization_is_q1_15(self) -> None:
+        """Tests that the cosine uses quantization (16, 15)."""
+        phases = np.array(
+            [0, 1, 16384, 32768, 49152, 65535], dtype=np.uint16
+        )
+        cosine = cordic_rotate(15, self._angles(phases))
+        self.assertEqual(cosine.get_quantization(), (16, 15))
 
     def test_scale_15_stays_inside_signed_16_bits(self) -> None:
         """Tests that amplitude scale 15 fits in a signed 16-bit word."""
