@@ -1,14 +1,14 @@
 """Differential sine-wave DAC model with an optional delta-sigma modulator.
 
-The phase accumulator is unsigned 16-bit. The CORDIC vector format is
-signed ``(16, 15)``. The DAC quantizer is signed 8-bit, then stored as
-an unsigned integer. ``convert`` returns integers. ``get_sqnr_db``
-defaults to the signal band at OSR 32.
+The phase accumulator is unsigned 16-bit. It is passed to the CORDIC
+as signed ``(16, 16)`` with the same bits. Cosine is signed ``(16, 15)``.
+The DAC quantizer is signed 8-bit, then stored as an unsigned integer.
+``convert`` returns integers. ``get_sqnr_db`` defaults to the signal
+band at OSR 32.
 """
 
 from __future__ import annotations
 
-import math
 import unittest
 from typing import Any
 
@@ -17,7 +17,8 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
-from cordic import CORDIC, PHASE_BITS
+from cordic import PHASE_BITS, cordic_rotate
+from fp_array import FixedPointArray
 
 
 # Reset value of AC_CONFIG.amplitude. 15 means no right shift.
@@ -140,8 +141,9 @@ class SineGenDAC:
             Signed DAC width before the unsigned offset. Default is 8.
             Must be at least 1 and no wider than the CORDIC.
         n_cordic_bits : int, optional
-            CORDIC width and iteration count. Default is 16. Fractional
-            bits are ``n_cordic_bits - 1``.
+            Width of the cosine word before the DAC quantizer. Default
+            is 16, matching the CORDIC. The quantizer drops
+            ``n_cordic_bits - n_dac_bits`` bits.
         fs : float, optional
             Sample rate in hertz. Default is 100 MHz.
         vdd : float, optional
@@ -171,17 +173,10 @@ class SineGenDAC:
         }
         self._n_dac_bits: int = n_dac_bits
         self._n_cordic_bits: int = n_cordic_bits
-        self._vector_fraction: int = n_cordic_bits - 1
         self._fs: float = fs
         self._vdd: float = vdd
-        self._cordic: CORDIC = CORDIC(
-            n_rotations=n_cordic_bits,
-            n_x=n_cordic_bits,
-            r_x=self._vector_fraction,
-        )
         self._time_seconds: np.ndarray = np.zeros(0, dtype=float)
         self._phase: np.ndarray = np.zeros(0, dtype=np.uint16)
-        self._sin: np.ndarray = np.zeros(0, dtype=np.int64)
         self._cos: np.ndarray = np.zeros(0, dtype=np.int64)
         self._quant: np.ndarray = np.zeros(0, dtype=np.int64)
         self._quant_bar: np.ndarray = np.zeros(0, dtype=np.int64)
@@ -336,18 +331,21 @@ class SineGenDAC:
         self._phase = ((sample_index * step) % modulus).astype(np.uint16)
 
     def _calculate_cordic(self) -> None:
-        """Fill sine and cosine integers for the current phase.
+        """Fill cosine integers for the current phase.
 
-        The vector format is ``(n_cordic_bits, n_cordic_bits - 1)``.
-        The initial magnitude comes from ``amplitude_scale``.
+        The amplitude scale is the 4-bit register value. The phase
+        accumulator is wrapped as signed ``(16, 16)`` with the same
+        16 bits. The cosine is then shifted right by ``15 - amplitude``.
         """
-        cosine, sine = self._cordic.rotate_initial_vector(
-            self._reg["amplitude_scale"], self._phase
+        signed_phase = self._phase.astype(np.int16).astype(np.int64)
+        angles = FixedPointArray.from_mantissas(
+            signed_phase, PHASE_BITS, PHASE_BITS
         )
+        cosine = cordic_rotate(self._reg["amplitude_scale"], angles)
         shift = self._get_output_shift()
         # Arithmetic right shift. Truncates toward negative infinity.
-        self._cos = np.asarray(cosine.get_mantissas(), dtype=np.int64) >> shift
-        self._sin = np.asarray(sine.get_mantissas(), dtype=np.int64) >> shift
+        cosine_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
+        self._cos = cosine_integers >> shift
 
     def _quantize(self) -> None:
         """Quantize cosine to the signed DAC width and record the error.
@@ -386,9 +384,9 @@ class SineGenDAC:
         Returns
         -------
         pandas.DataFrame
-            Columns ``time_seconds``, ``phase``, ``cordic_sin``,
-            ``cordic_cos``, ``dacp_output``, ``dacn_output``, and
-            ``error``. A copy is returned.
+            Columns ``time_seconds``, ``phase``, ``cordic_cos``,
+            ``dacp_output``, ``dacn_output``, and ``error``. A copy
+            is returned.
         """
         total = n_samples + self._reg["warmup_cycles"]
         self._time_seconds = np.arange(total) / self._fs
@@ -412,7 +410,6 @@ class SineGenDAC:
         self._results = pd.DataFrame({
             "time_seconds": self._time_seconds,
             "phase": self._phase if has_ac_mode else 0,
-            "cordic_sin": self._sin if has_ac_mode else 0,
             "cordic_cos": self._cos if has_ac_mode else 0,
             "dacp_output": dacp_output,
             "dacn_output": dacn_output,
@@ -694,21 +691,18 @@ class SineGenDACTests(unittest.TestCase):
         dac.set_amplitude(FULL_SCALE_EXPONENT)
         dac.set_frequency(16384)
         frame = dac.convert(4)
-        cosine, sine = dac._cordic.rotate_initial_vector(
-            8, frame["phase"].to_numpy()
+        signed_phase = frame["phase"].to_numpy().astype(np.int16)
+        angles = FixedPointArray.from_mantissas(
+            signed_phase.astype(np.int64), PHASE_BITS, PHASE_BITS
         )
+        cosine = cordic_rotate(np.array(8, dtype=np.uint8), angles)
         cos_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
-        sin_integers = np.asarray(sine.get_mantissas(), dtype=np.int64)
         np.testing.assert_array_equal(frame["cordic_cos"], cos_integers)
-        np.testing.assert_array_equal(frame["cordic_sin"], sin_integers)
         self.assertLess(int(cos_integers.min()), 0)
         dac.set_amplitude(14)
         shifted = dac.convert(4)
         np.testing.assert_array_equal(
             shifted["cordic_cos"], cos_integers >> 1
-        )
-        np.testing.assert_array_equal(
-            shifted["cordic_sin"], sin_integers >> 1
         )
         with self.assertRaises(ValueError):
             dac.set_amplitude_scale(16)
@@ -724,26 +718,15 @@ class SineGenDACTests(unittest.TestCase):
         # Phase equals the sample index, so index 8192 is pi/4.
         frame = dac.convert(8193)
         quarter = frame.iloc[8192]
-        initial = dac._cordic.get_initial_magnitude(15)
-        radius = initial * dac._cordic.get_gain()
-        expected = radius * math.sqrt(2.0) / 2.0
-        self.assertAlmostEqual(
-            float(quarter["cordic_cos"]), expected, delta=20
-        )
-        self.assertAlmostEqual(
-            float(quarter["cordic_sin"]), expected, delta=20
-        )
         limit = (1 << (dac._n_cordic_bits - 1)) - 1
         self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
         self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
-        direct_cos, direct_sin = dac._cordic.rotate_initial_vector(
-            15, np.array([8192])
+        angles = FixedPointArray.from_mantissas(
+            np.array([8192], dtype=np.int64), PHASE_BITS, PHASE_BITS
         )
+        direct_cos = cordic_rotate(15, angles)
         self.assertEqual(
             int(quarter["cordic_cos"]), int(direct_cos.get_mantissas()[0])
-        )
-        self.assertEqual(
-            int(quarter["cordic_sin"]), int(direct_sin.get_mantissas()[0])
         )
 
     def _calculate_quantized_sine_spectrum(self) -> np.ndarray:
