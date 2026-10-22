@@ -340,7 +340,7 @@ class SineGenDAC:
         The vector format is ``(n_cordic_bits, n_cordic_bits - 1)``.
         The initial magnitude comes from ``amplitude_scale``.
         """
-        cosine, sine = self._cordic.rotate_preload(
+        cosine, sine = self._cordic.rotate_initial_vector(
             self._reg["amplitude_scale"], self._phase
         )
         shift = self._exponent_shift()
@@ -692,7 +692,7 @@ class SineGenDACTests(unittest.TestCase):
         dac.set_amplitude(FULL_SCALE_EXPONENT)
         dac.set_frequency(16384)
         frame = dac.convert(4)
-        cosine, sine = dac._cordic.rotate_preload(
+        cosine, sine = dac._cordic.rotate_initial_vector(
             8, frame["phase"].to_numpy()
         )
         cos_codes = np.asarray(cosine.values, dtype=np.int64)
@@ -718,8 +718,8 @@ class SineGenDACTests(unittest.TestCase):
         # Phase equals the sample index, so index 8192 is pi/4.
         frame = dac.convert(8193)
         quarter = frame.iloc[8192]
-        preload = dac._cordic.preload(15)
-        radius = preload * dac._cordic.gain
+        initial = dac._cordic.get_initial_magnitude(15)
+        radius = initial * dac._cordic.get_gain()
         expected = radius * math.sqrt(2.0) / 2.0
         self.assertAlmostEqual(
             float(quarter["cordic_cos"]), expected, delta=20
@@ -730,7 +730,7 @@ class SineGenDACTests(unittest.TestCase):
         limit = (1 << (dac._n_cordic_bits - 1)) - 1
         self.assertLessEqual(int(frame["cordic_cos"].max()), limit)
         self.assertGreaterEqual(int(frame["cordic_cos"].min()), -limit - 1)
-        direct_cos, direct_sin = dac._cordic.rotate_preload(
+        direct_cos, direct_sin = dac._cordic.rotate_initial_vector(
             15, np.array([8192])
         )
         self.assertEqual(
