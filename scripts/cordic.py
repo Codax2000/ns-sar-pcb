@@ -117,22 +117,6 @@ def _check_shapes(
         )
 
 
-def _wrap_to_quantization(
-    vector: FixedPointArray, n: int, r: int
-) -> FixedPointArray:
-    """Wrap ``vector`` into a signed ``(n, r)`` word."""
-    mantissas = np.asarray(vector.get_mantissas(), dtype=np.int64)
-    if vector.r > r:
-        mantissas = mantissas >> (vector.r - r)
-    elif vector.r < r:
-        mantissas = mantissas << (r - vector.r)
-    span = np.int64(1) << np.int64(n)
-    half = np.int64(1) << np.int64(n - 1)
-    # Two's-complement wrap: the low n bits, read as signed.
-    wrapped = np.mod(mantissas + half, span).astype(np.int64) - half
-    return FixedPointArray.from_mantissas(wrapped, n, r)
-
-
 def cordic_rotate(
     magnitudes: int | np.ndarray, angles: FixedPointArray
 ) -> FixedPointArray:
@@ -173,20 +157,20 @@ def cordic_rotate(
         directions = _calculate_directions(remaining_angles)
         shifted_x = x_vector >> index
         shifted_y = y_vector >> index
-        x_vector = _wrap_to_quantization(
-            x_vector - shifted_y * directions, 16, 15
+        x_vector = (x_vector - shifted_y * directions).re_quantize(
+            16, 15
         )
-        y_vector = _wrap_to_quantization(
-            y_vector + shifted_x * directions, 16, 15
+        y_vector = (y_vector + shifted_x * directions).re_quantize(
+            16, 15
         )
         # +1 when the remaining angle is >= 0, so the arctangent
         # is subtracted.
         arctangent = FixedPointArray.from_mantissas(
             int(ARCTANGENT_TABLE[index]), 16, 16
         )
-        remaining_angles = _wrap_to_quantization(
-            remaining_angles - arctangent * directions, 16, 16
-        )
+        remaining_angles = (
+            remaining_angles - arctangent * directions
+        ).re_quantize(16, 16)
     return x_vector
 
 
@@ -322,6 +306,49 @@ class CORDICTests(unittest.TestCase):
         )
         cosine = cordic_rotate(15, self._angles(phases))
         self.assertEqual(cosine.get_quantization(), (16, 15))
+
+    def test_all_scales_fit_in_signed_16_bits(self) -> None:
+        """Tests that a 16-bit reset leaves x, y, and the angle unchanged."""
+        phases = np.arange(1 << 16, dtype=np.uint16)
+        scale_count = SCALE_MAX + 1
+        phase_grid = np.broadcast_to(phases, (scale_count, phases.size))
+        angles = self._angles(np.array(phase_grid, copy=True))
+        scales = np.arange(scale_count, dtype=np.int64).reshape(
+            scale_count, 1
+        )
+        magnitude = _get_initial_vector(
+            np.broadcast_to(scales, angles.get_mantissas().shape)
+        )
+        remaining, x_vector, y_vector = _pre_rotate(angles, magnitude)
+
+        def hold(
+            vector: FixedPointArray, n: int, r: int
+        ) -> FixedPointArray:
+            before = vector.get_mantissas()
+            low = -(1 << 15)
+            high = (1 << 15) - 1
+            self.assertGreaterEqual(int(np.min(before)), low)
+            self.assertLessEqual(int(np.max(before)), high)
+            held = vector.re_quantize(n, r)
+            np.testing.assert_array_equal(held.get_mantissas(), before)
+            self.assertEqual(held.get_quantization(), (n, r))
+            return held
+
+        x_vector = hold(x_vector, 16, 15)
+        y_vector = hold(y_vector, 16, 15)
+        remaining = hold(remaining, 16, 16)
+        for index in range(ITERATIONS):
+            directions = _calculate_directions(remaining)
+            shifted_x = x_vector >> index
+            shifted_y = y_vector >> index
+            x_vector = hold(x_vector - shifted_y * directions, 16, 15)
+            y_vector = hold(y_vector + shifted_x * directions, 16, 15)
+            arctangent = FixedPointArray.from_mantissas(
+                int(ARCTANGENT_TABLE[index]), 16, 16
+            )
+            remaining = hold(
+                remaining - arctangent * directions, 16, 16
+            )
 
     def test_scale_15_stays_inside_signed_16_bits(self) -> None:
         """Tests that amplitude scale 15 fits in a signed 16-bit word."""
