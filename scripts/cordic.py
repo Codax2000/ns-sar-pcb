@@ -301,8 +301,8 @@ class CORDIC:
             Quadrant 0 keeps ``(x, y)``, 1 returns ``(-y, x)``, 2 returns
             ``(-x, -y)``, and 3 returns ``(y, -x)``.
         """
-        x_integers = x_vector.values
-        y_integers = y_vector.values
+        x_integers = x_vector.get_mantissas()
+        y_integers = y_vector.get_mantissas()
         rotated_x = _select_vector_for_quadrant(
             quadrant,
             (x_integers, -y_integers, -x_integers, y_integers),
@@ -492,7 +492,7 @@ class CORDIC:
         x_vector = FixedPointArray(x_real, self._n_x, self._r_x)
         y_vector = FixedPointArray(y_real, self._n_x, self._r_x)
         return self._rotate_integers(
-            x_vector.values, y_vector.values, phase_integers
+            x_vector.get_mantissas(), y_vector.get_mantissas(), phase_integers
         )
 
 
@@ -590,20 +590,20 @@ class CORDICTests(unittest.TestCase):
         """Tests that table integers round ``atan(2**-i)`` to U0.16."""
         cordic = CORDIC()
         one_turn = 1 << PHASE_BITS
-        for index, entry in enumerate(cordic._angle_lut.values):
+        for index, entry in enumerate(cordic._angle_lut.get_mantissas()):
             turns = math.atan(2.0 ** (-index)) / (2.0 * math.pi)
             expected = math.floor(turns * one_turn + 0.5)
             self.assertEqual(int(entry), expected)
-        self.assertEqual(int(cordic._angle_lut.values[0]), 1 << 13)
-        self.assertEqual(int(cordic._angle_lut.values[14]), 1)
-        self.assertEqual(int(cordic._angle_lut.values[15]), 0)
+        self.assertEqual(int(cordic._angle_lut.get_mantissas()[0]), 1 << 13)
+        self.assertEqual(int(cordic._angle_lut.get_mantissas()[14]), 1)
+        self.assertEqual(int(cordic._angle_lut.get_mantissas()[15]), 0)
 
     def test_remaining_angle_keeps_the_phase_integer(self) -> None:
         """Tests that the remaining angle keeps the low 14 phase bits."""
         cordic = CORDIC()
         offset = np.array([0, 1, (1 << OFFSET_BITS) - 1])
         remaining = cordic._calculate_remaining_angle(offset)
-        np.testing.assert_array_equal(remaining.values, offset)
+        np.testing.assert_array_equal(remaining.get_mantissas(), offset)
         self.assertEqual(remaining.r, PHASE_BITS)
 
     def test_gain_is_the_iteration_product(self) -> None:
@@ -650,10 +650,10 @@ class CORDICTests(unittest.TestCase):
             [0.0, 1.0, 0.0, -1.0]
         )
         np.testing.assert_allclose(
-            cosine.values.astype(float), expected_cos, atol=tolerance
+            cosine.get_mantissas().astype(float), expected_cos, atol=tolerance
         )
         np.testing.assert_allclose(
-            sine.values.astype(float), expected_sin, atol=tolerance
+            sine.get_mantissas().astype(float), expected_sin, atol=tolerance
         )
 
     def test_scale_15_stays_inside_signed_16_bits(self) -> None:
@@ -663,12 +663,12 @@ class CORDICTests(unittest.TestCase):
         cosine, sine = cordic.rotate_initial_vector(15, phases)
         low = -(1 << 15)
         high = (1 << 15) - 1
-        for values in (cosine.values, sine.values):
+        for values in (cosine.get_mantissas(), sine.get_mantissas()):
             self.assertGreaterEqual(int(np.min(values)), low)
             self.assertLessEqual(int(np.max(values)), high)
         peak = max(
-            int(np.max(np.abs(cosine.values))),
-            int(np.max(np.abs(sine.values))),
+            int(np.max(np.abs(cosine.get_mantissas()))),
+            int(np.max(np.abs(sine.get_mantissas()))),
         )
         self.assertEqual(peak, 32766)
 
@@ -682,8 +682,8 @@ class CORDICTests(unittest.TestCase):
         tolerance = _calculate_error_tolerance_lsb(cordic, initial)
         ideal_cos = initial * cordic.get_gain() * np.cos(angles)
         ideal_sin = initial * cordic.get_gain() * np.sin(angles)
-        cos_values = np.reshape(cosine.values, -1).astype(float)
-        sin_values = np.reshape(sine.values, -1).astype(float)
+        cos_values = np.reshape(cosine.get_mantissas(), -1).astype(float)
+        sin_values = np.reshape(sine.get_mantissas(), -1).astype(float)
         np.testing.assert_allclose(cos_values, ideal_cos, atol=tolerance)
         np.testing.assert_allclose(sin_values, ideal_sin, atol=tolerance)
         worst = max(
@@ -703,8 +703,8 @@ class CORDICTests(unittest.TestCase):
             x_integers, y_integers, phases
         )
         peak = max(
-            int(np.max(np.abs(cosine.values))),
-            int(np.max(np.abs(sine.values))),
+            int(np.max(np.abs(cosine.get_mantissas()))),
+            int(np.max(np.abs(sine.get_mantissas()))),
         )
         self.assertGreater(peak, (1 << 15) - 1)
 

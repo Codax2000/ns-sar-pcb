@@ -373,15 +373,19 @@ class FixedPointArray:
         if not isinstance(r, numbers.Integral) or r < 0:
             raise ValueError("r must be a non-negative integer")
 
-    @property
-    def values(self) -> np.ndarray:
-        """Return a copy of the integer mantissas.
+    def get_mantissas(self) -> np.ndarray:
+        """Return a copy of the stored integer mantissas.
+
+        Integer ``m`` is the real value ``m / 2**r``. ``n`` is the
+        total number of bits and ``r`` is the number of fractional
+        bits.
 
         Returns
         -------
         numpy.ndarray
-            ``int64`` when every integer fits in a signed 64-bit word, and an
-            object array of Python integers otherwise. Mutating the copy
+            Integer mantissas, not the real values. ``int64`` when
+            every integer fits in a signed 64-bit word, and an object
+            array of Python integers otherwise. Mutating the copy
             does not change this array.
         """
         if _calculate_signed_width(self._mantissas) <= 64:
@@ -390,23 +394,25 @@ class FixedPointArray:
 
     @property
     def n(self) -> int:
-        """Return the signed mantissa width, including the sign bit.
+        """Return the total number of bits.
 
         Returns
         -------
         int
-            Width ``n``.
+            Total bits ``n`` in the signed format ``(n, r)``,
+            including the sign bit.
         """
         return self._n
 
     @property
     def r(self) -> int:
-        """Return the fractional bit count.
+        """Return the number of fractional bits.
 
         Returns
         -------
         int
-            Fraction bits ``r``.
+            Fractional bits ``r``. Integer ``m`` from
+            :meth:`get_mantissas` is the real value ``m / 2**r``.
         """
         return self._r
 
@@ -421,10 +427,12 @@ class FixedPointArray:
         return self._n, self._r
 
     def set_values(self, values: Any) -> None:
-        """Replace the stored integers by quantizing real ``values``.
+        """Quantize real ``values`` into the stored integer mantissas.
 
-        The current ``(n, r)`` format is kept. Inputs are floored toward
-        ``-inf`` and saturated.
+        Replaces the integers :meth:`get_mantissas` returns. The
+        current ``(n, r)`` format is kept. Inputs are floored toward
+        ``-inf`` and saturated. ``values`` are real numbers, not
+        mantissas.
 
         Parameters
         ----------
@@ -947,7 +955,7 @@ class FixedPointArray:
         Parameters
         ----------
         dtype : data-type, optional
-            Requested dtype. The default matches :attr:`values`.
+            Requested dtype. The default matches :meth:`get_mantissas`.
         copy : bool or None, optional
             ``False`` is rejected because the stored buffer is not a
             numeric NumPy view. Any other value returns a new array.
@@ -967,8 +975,8 @@ class FixedPointArray:
                 "a FixedPointArray mantissa buffer cannot be viewed in place"
             )
         if dtype is None:
-            return self.values
-        return np.array(self.values, dtype=dtype, copy=True)
+            return self.get_mantissas()
+        return np.array(self.get_mantissas(), dtype=dtype, copy=True)
 
     def __repr__(self) -> str:
         """Return a constructor-style description of the real values.
@@ -987,7 +995,9 @@ class FixedPointArrayTests(unittest.TestCase):
     def test_constructor_and_saturation(self) -> None:
         """Tests floor quantization and signed saturation."""
         value = FixedPointArray([-100, -1.25, 0.5, 100], n=8, r=4)
-        np.testing.assert_array_equal(value.values, [-128, -20, 8, 127])
+        np.testing.assert_array_equal(
+            value.get_mantissas(), [-128, -20, 8, 127]
+        )
         self.assertEqual(value.get_quantization(), (8, 4))
 
     def test_addition_preserves_fractional_precision_and_grows_width(
@@ -1000,7 +1010,7 @@ class FixedPointArrayTests(unittest.TestCase):
         np.testing.assert_allclose(result.to_float(), [1.375])
         self.assertEqual(result.r, 3)
         self.assertGreaterEqual(result.n, 10)
-        np.testing.assert_array_equal((left + 2).values, [13])
+        np.testing.assert_array_equal((left + 2).get_mantissas(), [13])
 
     def test_multiplication_preserves_all_product_bits(self) -> None:
         """Tests full-precision multiplication by arrays and integers."""
@@ -1009,7 +1019,9 @@ class FixedPointArrayTests(unittest.TestCase):
         result = left * right
         np.testing.assert_allclose(result.to_float(), [-0.9375])
         self.assertEqual(result.get_quantization(), (16, 5))
-        np.testing.assert_array_equal((left * np.array([2])).values, [10])
+        np.testing.assert_array_equal(
+            (left * np.array([2])).get_mantissas(), [10]
+        )
         self.assertEqual((left * 2).r, left.r)
 
     def test_reverse_arithmetic_and_subtraction(self) -> None:
@@ -1023,15 +1035,15 @@ class FixedPointArrayTests(unittest.TestCase):
         """Tests narrowing the fraction and the width."""
         value = FixedPointArray([1.375, -1.375], n=16, r=3)
         value.re_quantize(4, 1)
-        np.testing.assert_array_equal(value.values, [2, -2])
+        np.testing.assert_array_equal(value.get_mantissas(), [2, -2])
         self.assertEqual(value.get_quantization(), (4, 1))
 
     def test_requantize_truncates_negative_toward_zero(self) -> None:
         """Tests that dropped fraction bits move negatives toward zero."""
         value = FixedPointArray(-5 / 16, n=8, r=4)
-        self.assertEqual(int(value.values[0]), -5)
+        self.assertEqual(int(value.get_mantissas()[0]), -5)
         value.re_quantize(8, 2)
-        self.assertEqual(int(value.values[0]), -1)
+        self.assertEqual(int(value.get_mantissas()[0]), -1)
         self.assertEqual(value.get_quantization(), (8, 2))
 
     def test_shifts_operate_on_mantissas(self) -> None:
@@ -1039,10 +1051,10 @@ class FixedPointArrayTests(unittest.TestCase):
         value = FixedPointArray([1.5, -1.5], n=8, r=2)
         left = value << 3
         right = value >> 1
-        np.testing.assert_array_equal(left.values, [48, -48])
+        np.testing.assert_array_equal(left.get_mantissas(), [48, -48])
         self.assertEqual(left.r, value.r)
         self.assertGreaterEqual(left.n, value.n + 3)
-        np.testing.assert_array_equal(right.values, [3, -3])
+        np.testing.assert_array_equal(right.get_mantissas(), [3, -3])
         self.assertEqual(right.get_quantization(), value.get_quantization())
         np.testing.assert_array_equal(value << np.array([1, 2]), [12, -24])
 
@@ -1050,7 +1062,7 @@ class FixedPointArrayTests(unittest.TestCase):
         """Tests that a right shift rounds negative mantissas toward -inf."""
         value = FixedPointArray(-5 / 16, n=8, r=4)
         shifted = value >> 2
-        self.assertEqual(int(shifted.values[0]), -2)
+        self.assertEqual(int(shifted.get_mantissas()[0]), -2)
         self.assertEqual(shifted.get_quantization(), value.get_quantization())
 
     def test_comparisons_align_quantization_and_return_masks(self) -> None:
@@ -1069,44 +1081,44 @@ class FixedPointArrayTests(unittest.TestCase):
         value[value > 1] = FixedPointArray([2], n=8, r=2)
         np.testing.assert_allclose(value.to_float(), [0.5, 1, 2])
         value[0] = FixedPointArray([2], n=8, r=2)
-        self.assertEqual(int(value.values[0]), 8)
+        self.assertEqual(int(value.get_mantissas()[0]), 8)
         self.assertEqual(float(value.to_float()[0]), 2.0)
 
     def test_subtracts_integer_arrays(self) -> None:
         """Tests subtraction of integer lists and arrays."""
         value = FixedPointArray([1.5, -0.5, 0.25], n=8, r=2)
         difference = value - np.array([1, 0, -2])
-        np.testing.assert_array_equal(difference.values, [2, -2, 9])
+        np.testing.assert_array_equal(difference.get_mantissas(), [2, -2, 9])
         self.assertEqual(difference.r, value.r)
 
     def test_from_mantissas_keeps_integers_and_saturates(self) -> None:
         """Tests construction from integers that are already quantized."""
         saturated = FixedPointArray.from_mantissas([8, -3], n=4, r=1)
-        np.testing.assert_array_equal(saturated.values, [7, -3])
+        np.testing.assert_array_equal(saturated.get_mantissas(), [7, -3])
         self.assertEqual(saturated.get_quantization(), (4, 1))
         exact = FixedPointArray.from_mantissas([3], n=8, r=1)
         self.assertEqual(float(exact.to_float()[0]), 1.5)
         wide = FixedPointArray.from_mantissas([2**80], n=100, r=0)
-        self.assertEqual(int(wide.values[0]), 2**80)
+        self.assertEqual(int(wide.get_mantissas()[0]), 2**80)
 
     def test_wide_product_does_not_wrap(self) -> None:
         """Tests that products wider than 64 bits stay exact."""
         value = FixedPointArray([1], n=8, r=0) << 40
         product = value * value
-        self.assertEqual(int(product.values[0]), 2**80)
+        self.assertEqual(int(product.get_mantissas()[0]), 2**80)
         self.assertGreaterEqual(product.n, _calculate_bit_width(2**80))
 
     def test_arithmetic_does_not_modify_operands(self) -> None:
         """Tests that arithmetic copies rather than updating inputs."""
         left = FixedPointArray([1.5, -0.5], n=8, r=2)
         right = FixedPointArray([0.25], n=8, r=3)
-        before_left = left.values.copy()
-        before_right = right.values.copy()
+        before_left = left.get_mantissas().copy()
+        before_right = right.get_mantissas().copy()
         _ = left + right
         _ = left * right
         _ = left << 1
-        np.testing.assert_array_equal(left.values, before_left)
-        np.testing.assert_array_equal(right.values, before_right)
+        np.testing.assert_array_equal(left.get_mantissas(), before_left)
+        np.testing.assert_array_equal(right.get_mantissas(), before_right)
 
     def test_rejects_non_integer_shifts_and_operands(self) -> None:
         """Tests rejection of fractional scales and negative shifts."""

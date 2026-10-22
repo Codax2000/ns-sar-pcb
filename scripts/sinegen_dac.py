@@ -346,8 +346,8 @@ class SineGenDAC:
         )
         shift = self._get_output_shift()
         # Arithmetic right shift. Truncates toward negative infinity.
-        self._cos = np.asarray(cosine.values, dtype=np.int64) >> shift
-        self._sin = np.asarray(sine.values, dtype=np.int64) >> shift
+        self._cos = np.asarray(cosine.get_mantissas(), dtype=np.int64) >> shift
+        self._sin = np.asarray(sine.get_mantissas(), dtype=np.int64) >> shift
 
     def _quantize(self) -> None:
         """Quantize cosine to the signed DAC width and record the error.
@@ -697,8 +697,8 @@ class SineGenDACTests(unittest.TestCase):
         cosine, sine = dac._cordic.rotate_initial_vector(
             8, frame["phase"].to_numpy()
         )
-        cos_integers = np.asarray(cosine.values, dtype=np.int64)
-        sin_integers = np.asarray(sine.values, dtype=np.int64)
+        cos_integers = np.asarray(cosine.get_mantissas(), dtype=np.int64)
+        sin_integers = np.asarray(sine.get_mantissas(), dtype=np.int64)
         np.testing.assert_array_equal(frame["cordic_cos"], cos_integers)
         np.testing.assert_array_equal(frame["cordic_sin"], sin_integers)
         self.assertLess(int(cos_integers.min()), 0)
@@ -740,9 +740,11 @@ class SineGenDACTests(unittest.TestCase):
             15, np.array([8192])
         )
         self.assertEqual(
-            int(quarter["cordic_cos"]), int(direct_cos.values[0])
+            int(quarter["cordic_cos"]), int(direct_cos.get_mantissas()[0])
         )
-        self.assertEqual(int(quarter["cordic_sin"]), int(direct_sin.values[0]))
+        self.assertEqual(
+            int(quarter["cordic_sin"]), int(direct_sin.get_mantissas()[0])
+        )
 
     def _calculate_quantized_sine_spectrum(self) -> np.ndarray:
         """Return the Blackman FFT of a coherent 8-bit sine.
