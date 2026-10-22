@@ -14,11 +14,11 @@ addrmap dac_regs {
 
     reg {
         field {
-            desc = "Unsigned amplitude scale, U0.4. Code a has weight a/16. With the amplitude exponent b, the output amplitude is (a/16) * 2^(b-15) of full scale, approximately.";
+            desc = "Amplitude scaling factor. The output is about a/15 of full scale.";
             reset=8;
         } amplitude_scale [3:0];
         field {
-            desc = "Amplitude exponent b. Describes a power of 2, so an increase of 1 doubles the amplitude. 4'hF is the full-scale exponent. With amplitude_scale code a, the output amplitude is (a/16) * 2^(b-15) of full scale, approximately.";
+            desc = "Amplitude divider. The output is divided by 2^(15-b).";
             reset=0xF;
         } amplitude [7:4];
         // bits [15:8] reserved
@@ -81,7 +81,7 @@ addrmap dac_regs {
 
     reg {
         field {
-            desc = "DDS frequency tuning word (FTW). The phase accumulator updates as phase <= (phase + FTW) mod 2^16. The output frequency is f_out = FTW * fs / 2^16.";
+            desc = "DDS frequency tuning word (FTW). The output frequency is f_out = FTW * fs / 2^16.";
         } frequency [15:0];
     } FREQUENCY;
 };
