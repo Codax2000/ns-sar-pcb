@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import unittest
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -873,6 +875,463 @@ def plot_quantizer_spectrum(
     axis.legend()
     axis.grid(True, which="both", ls="-")
     return figure
+
+
+class NSSARTests(unittest.TestCase):
+    """Tests conversion, register kwargs, and output measurements."""
+
+    _COLUMNS = [
+        "input",
+        "sample_input",
+        "integrator_input",
+        "vin_p",
+        "vin_n",
+        "vint_p",
+        "vint_n",
+        "quantizer_decision",
+        "dac_feedback",
+        "error",
+        "integrator_1",
+        "integrator_2",
+        "incremental_1",
+        "incremental_2",
+        "reset",
+        "sample_output",
+        "dwa_pointer",
+    ]
+
+    def _assert_rejects(
+        self,
+        error_type: type[BaseException],
+        text: str,
+        *args: object,
+        **kwargs: object,
+    ) -> None:
+        """Assert that convert_nssar raises and names the input."""
+        with self.assertRaises(error_type) as caught:
+            convert_nssar(*args, **kwargs)
+        self.assertIn(text, str(caught.exception))
+
+    def _constant_input(self, n_samples: int = 16) -> tuple[
+        np.ndarray, np.ndarray
+    ]:
+        """Return a constant differential pair."""
+        vin_p = np.full(n_samples, 0.7)
+        vin_n = np.full(n_samples, 0.3)
+        return vin_p, vin_n
+
+    def test_defaults_match_explicit_arguments(self) -> None:
+        """Tests the default registers, column order, and length."""
+        vin_p, vin_n = self._constant_input(8)
+        plain = convert_nssar(vin_p, vin_n)
+        explicit = convert_nssar(
+            vin_p,
+            vin_n,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=False,
+            n_quantizer_bits=3,
+            cap_mismatch_sigma=0.0,
+            vrefp=1.0,
+            vrefn=0.0,
+            osr=DEFAULT_OSR,
+        )
+        pd.testing.assert_frame_equal(plain, explicit)
+        self.assertEqual(list(plain.columns), self._COLUMNS)
+        self.assertEqual(len(plain), 8)
+
+    def test_register_kwargs_change_the_control_signals(self) -> None:
+        """Tests reset, averaging, and the register dictionary."""
+        vin_p, vin_n = self._constant_input(16)
+        osr = 4
+        registers = {
+            "do_dwa": True,
+            "incremental_mode": True,
+            "reset_dwa": True,
+        }
+        unpacked = convert_nssar(vin_p, vin_n, osr=osr, **registers)
+        named = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=True,
+        )
+        pd.testing.assert_frame_equal(unpacked, named)
+        running = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=False,
+        )
+        continuous = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=False,
+            reset_dwa=False,
+        )
+        no_dwa = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=False,
+            incremental_mode=True,
+            reset_dwa=True,
+        )
+        expected_reset = np.arange(16) % osr == 0
+        np.testing.assert_array_equal(unpacked["reset"], expected_reset)
+        continuous_reset = np.zeros(16, dtype=bool)
+        continuous_reset[0] = True
+        np.testing.assert_array_equal(
+            continuous["reset"], continuous_reset
+        )
+        expected_output = np.arange(16) % osr == (osr - 1)
+        np.testing.assert_array_equal(
+            unpacked["sample_output"], expected_output
+        )
+        n_capacitors = 2 ** 3
+        reset_rows = unpacked["reset"].to_numpy()
+        np.testing.assert_array_equal(
+            unpacked.loc[reset_rows, "dwa_pointer"],
+            unpacked.loc[reset_rows, "quantizer_decision"] % n_capacitors,
+        )
+        self.assertFalse(
+            np.array_equal(
+                unpacked["dwa_pointer"], running["dwa_pointer"]
+            )
+        )
+        np.testing.assert_array_equal(
+            no_dwa["dwa_pointer"],
+            no_dwa["quantizer_decision"] % n_capacitors,
+        )
+        np.testing.assert_array_equal(
+            unpacked["quantizer_decision"],
+            no_dwa["quantizer_decision"],
+        )
+        self.assertTrue(
+            np.all(unpacked.loc[reset_rows, "integrator_2"] == 0.0)
+        )
+        self.assertGreater(
+            float(np.max(np.abs(
+                continuous["integrator_2"] - unpacked["integrator_2"]
+            ))),
+            0.0,
+        )
+
+    def test_one_bit_decision_follows_the_input_sign(self) -> None:
+        """Tests that a 1-bit quantizer follows the sign of the input."""
+        differential = np.array([-0.4, -0.1, 0.0, 0.2, 0.5])
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            n_quantizer_bits=1,
+            osr=1,
+            incremental_mode=True,
+            do_dwa=False,
+        )
+        np.testing.assert_array_equal(
+            frame["quantizer_decision"],
+            np.array([0, 0, 1, 1, 1]),
+        )
+        np.testing.assert_array_equal(
+            frame["incremental_2"], frame["quantizer_decision"]
+        )
+
+    def test_decisions_rise_with_the_input(self) -> None:
+        """Tests that a reset each clock makes the decision follow input."""
+        differential = np.linspace(-0.95, 0.95, 21)
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=1,
+            incremental_mode=True,
+            do_dwa=False,
+        )
+        decisions = frame["quantizer_decision"].to_numpy()
+        self.assertTrue(np.all(np.diff(decisions) >= 0))
+        self.assertEqual(int(decisions[0]), 0)
+        self.assertEqual(int(decisions[-1]), 7)
+        np.testing.assert_allclose(frame["input"], differential)
+        np.testing.assert_allclose(frame["vin_p"], vin_p)
+        np.testing.assert_allclose(frame["vin_n"], vin_n)
+        np.testing.assert_allclose(frame["error"], frame["dac_feedback"])
+
+    def test_incremental_counters_restart_on_reset(self) -> None:
+        """Tests the integer up-counters against the reset recurrence."""
+        vin_p, vin_n = self._constant_input(12)
+        frame = convert_nssar(vin_p, vin_n, osr=4, incremental_mode=True)
+        decisions = frame["quantizer_decision"].to_numpy()
+        reset = frame["reset"].to_numpy()
+        expected_1: list[int] = []
+        expected_2: list[int] = []
+        previous_1 = 0
+        previous_2 = 0
+        for decision, is_reset in zip(decisions, reset):
+            if is_reset:
+                current_1 = int(decision)
+                current_2 = int(decision)
+            else:
+                current_1 = int(decision) + previous_1
+                current_2 = current_1 + previous_2
+            expected_1.append(current_1)
+            expected_2.append(current_2)
+            previous_1 = current_1
+            previous_2 = current_2
+        np.testing.assert_array_equal(
+            frame["incremental_1"], expected_1
+        )
+        np.testing.assert_array_equal(
+            frame["incremental_2"], expected_2
+        )
+        self.assertTrue(
+            np.issubdtype(frame["integrator_1"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["dac_feedback"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["vin_p"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["vint_p"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["incremental_1"].dtype, np.integer)
+        )
+        self.assertGreaterEqual(int(decisions.min()), 0)
+        self.assertLessEqual(int(decisions.max()), 7)
+
+    def test_accepts_integer_voltages_and_reference_kwargs(self) -> None:
+        """Tests integer inputs and a non-default reference pair."""
+        vin_p = np.array([1, 1, 0, 0])
+        vin_n = np.array([0, 0, 1, 1])
+        frame = convert_nssar(vin_p, vin_n, osr=2)
+        self.assertEqual(len(frame), 4)
+        scaled = convert_nssar(
+            vin_p.astype(float),
+            vin_n.astype(float),
+            osr=2,
+            vrefp=2,
+            vrefn=-1,
+        )
+        self.assertEqual(len(scaled), 4)
+        self.assertFalse(
+            np.allclose(frame["dac_feedback"], scaled["dac_feedback"])
+        )
+
+    def test_zero_mismatch_is_repeatable(self) -> None:
+        """Tests that ideal capacitors do not depend on the random state."""
+        vin_p, vin_n = self._constant_input(8)
+        first = convert_nssar(vin_p, vin_n, cap_mismatch_sigma=0)
+        state = np.random.get_state()
+        np.random.seed(0)
+        second = convert_nssar(vin_p, vin_n, cap_mismatch_sigma=0.0)
+        np.random.set_state(state)
+        pd.testing.assert_frame_equal(first, second)
+        np.random.seed(3)
+        try:
+            noisy = convert_nssar(
+                vin_p, vin_n, cap_mismatch_sigma=0.05, osr=4
+            )
+        finally:
+            np.random.set_state(state)
+        self.assertEqual(len(noisy), 8)
+
+    def test_rejects_a_bad_input_array(self) -> None:
+        """Tests that voltage arrays name the type, shape, or length."""
+        good = np.zeros(4)
+        self._assert_rejects(TypeError, "list", [0.0, 0.1], good)
+        self._assert_rejects(TypeError, "vin_n", good, (0.0, 0.1))
+        self._assert_rejects(
+            ValueError, "(2, 4)", np.zeros((2, 4)), np.zeros((2, 4))
+        )
+        self._assert_rejects(ValueError, "got 4 and 3", good, np.zeros(3))
+        self._assert_rejects(
+            ValueError, "got 0", np.zeros(0), np.zeros(0)
+        )
+        self._assert_rejects(
+            TypeError,
+            "complex128",
+            np.zeros(4, dtype=np.complex128),
+            good,
+        )
+        self._assert_rejects(
+            TypeError,
+            "bool",
+            np.zeros(4, dtype=bool),
+            good,
+        )
+        bad = np.array([0.0, np.nan, 1.0])
+        self._assert_rejects(ValueError, "non-finite", bad, np.zeros(3))
+
+    def test_rejects_bad_registers_and_settings(self) -> None:
+        """Tests that each register names the value it received."""
+        vin_p, vin_n = self._constant_input(4)
+        self._assert_rejects(TypeError, "do_dwa", vin_p, vin_n, do_dwa=1)
+        self._assert_rejects(
+            TypeError, "incremental_mode", vin_p, vin_n,
+            incremental_mode="yes",
+        )
+        self._assert_rejects(
+            TypeError, "reset_dwa", vin_p, vin_n, reset_dwa=None
+        )
+        self._assert_rejects(
+            TypeError, "bool", vin_p, vin_n, n_quantizer_bits=True
+        )
+        self._assert_rejects(
+            ValueError, "got 0", vin_p, vin_n, n_quantizer_bits=0
+        )
+        self._assert_rejects(
+            ValueError, "got 17", vin_p, vin_n, n_quantizer_bits=17
+        )
+        self._assert_rejects(
+            TypeError, "str", vin_p, vin_n, cap_mismatch_sigma="0"
+        )
+        self._assert_rejects(
+            ValueError, "got -0.1", vin_p, vin_n, cap_mismatch_sigma=-0.1
+        )
+        self._assert_rejects(
+            ValueError,
+            "got nan",
+            vin_p,
+            vin_n,
+            cap_mismatch_sigma=float("nan"),
+        )
+        self._assert_rejects(TypeError, "vrefp", vin_p, vin_n, vrefp="1")
+        self._assert_rejects(
+            ValueError, "got inf", vin_p, vin_n, vrefn=float("inf")
+        )
+        self._assert_rejects(
+            ValueError, "got 1 and 1", vin_p, vin_n, vrefp=1, vrefn=1
+        )
+        self._assert_rejects(TypeError, "bool", vin_p, vin_n, osr=True)
+        self._assert_rejects(ValueError, "got 0", vin_p, vin_n, osr=0)
+
+    def _quantized_output_frame(self) -> pd.DataFrame:
+        """Return a coherent 8-bit sine in the decimated output.
+
+        The tone is bin 64 of 16384 samples. Every row is an output
+        sample, so the measurement uses the whole table.
+        """
+        n_samples = 2 ** 14
+        tone_bin = 64
+        amplitude = (1 << 7) - 1
+        index = np.arange(n_samples)
+        sine = amplitude * np.sin(
+            2.0 * np.pi * tone_bin * index / n_samples
+        )
+        quantized = np.round(sine).astype(np.int64)
+        return pd.DataFrame({
+            "incremental_2": quantized,
+            "sample_output": np.ones(n_samples, dtype=bool),
+            "quantizer_decision": quantized,
+        })
+
+    def test_full_band_sndr_matches_quantizer_formula(self) -> None:
+        """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
+        frame = self._quantized_output_frame()
+        measured = calculate_sndr_db(frame, warmup_samples=0)
+        expected = 6.02 * 8 + 1.76
+        self.assertAlmostEqual(measured, expected, delta=1.0)
+        sfdr = calculate_sfdr_db(frame, warmup_samples=0)
+        self.assertGreater(sfdr, measured)
+
+    def test_dc_offset_does_not_change_sndr(self) -> None:
+        """Tests that adding DC does not change the measured ratio."""
+        frame = self._quantized_output_frame()
+        baseline = calculate_sndr_db(frame)
+        shifted = frame.copy()
+        shifted["incremental_2"] = shifted["incremental_2"] + 1000
+        measured = calculate_sndr_db(shifted)
+        self.assertAlmostEqual(measured, baseline, delta=0.5)
+
+    def test_warmup_skips_leading_clocks(self) -> None:
+        """Tests that warmup drops leading output samples."""
+        frame = self._quantized_output_frame()
+        prefix = 128
+        index = np.arange(prefix)
+        interferer = np.round(
+            200.0 * np.sin(2.0 * np.pi * 5 * index / prefix)
+        ).astype(np.int64)
+        garbage = pd.DataFrame({
+            "incremental_2": interferer,
+            "sample_output": np.ones(prefix, dtype=bool),
+            "quantizer_decision": np.zeros(prefix, dtype=np.int64),
+        })
+        both = pd.concat([garbage, frame], ignore_index=True)
+        skipped = calculate_sndr_db(both, warmup_samples=prefix)
+        clean = calculate_sndr_db(frame)
+        self.assertAlmostEqual(skipped, clean, delta=0.01)
+        self.assertLess(
+            calculate_sndr_db(both, warmup_samples=0), clean - 0.5
+        )
+
+    def test_rejects_a_bad_measurement(self) -> None:
+        """Tests that measurement helpers name the bad argument."""
+        frame = self._quantized_output_frame()
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(frame, warmup_samples=len(frame))
+        self.assertIn(str(len(frame)), str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            calculate_sfdr_db(frame, warmup_samples=True)
+        self.assertIn("bool", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(frame.iloc[:6])
+        self.assertIn("got 6", str(caught.exception))
+        missing = frame.drop(columns=["incremental_2"])
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(missing)
+        self.assertIn("incremental_2", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            calculate_sfdr_db("nope")
+        self.assertIn("str", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            plot_output(frame, True, 4)
+        self.assertIn("bool", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_output(frame, 1.0e6, len(frame) + 1)
+        self.assertIn(str(len(frame)), str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_spectrum(frame, 1.0e6, osr=0)
+        self.assertIn("got 0", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_quantizer_spectrum(frame, -1.0)
+        self.assertIn("got -1", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_spectrum(frame, float("nan"))
+        self.assertIn("nan", str(caught.exception))
+
+    def test_plot_functions_return_figures(self) -> None:
+        """Tests that the plot helpers draw a short conversion."""
+        n_samples = 64
+        index = np.arange(n_samples)
+        differential = 0.2 * np.sin(2.0 * np.pi * index / n_samples)
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(vin_p, vin_n, osr=8)
+        output = plot_output(frame, 100e6, 4)
+        spectrum = plot_spectrum(
+            frame, 100e6, osr=8, warmup_samples=0
+        )
+        quantizer = plot_quantizer_spectrum(
+            frame, 100e6, osr=8, warmup_samples=0
+        )
+        _figure, axis = plt.subplots()
+        shared = plot_output(frame, 100e6, 2, ax=axis)
+        self.assertIs(shared, axis.figure)
+        self.assertIsInstance(output, plt.Figure)
+        self.assertIsInstance(spectrum, plt.Figure)
+        self.assertIsInstance(quantizer, plt.Figure)
+        plt.close("all")
 
 
 def main() -> None:
