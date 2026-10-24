@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -10,6 +11,7 @@ from fp_array import FixedPointArray
 
 
 DEFAULT_OSR = 32
+BLACKMAN_HALF_WIDTH = 3
 _COUNTER_FRACTIONAL_BITS = 0
 
 _RESULT_COLUMNS = (
@@ -468,3 +470,479 @@ def convert_nssar(
         float(vrefn),
         osr,
     )
+
+
+def _check_results(results: pd.DataFrame) -> None:
+    """Raise unless results is a DataFrame."""
+    if not isinstance(results, pd.DataFrame):
+        received = type(results).__name__
+        raise TypeError(f"results must be a DataFrame, got {received}")
+
+
+def _check_column(results: pd.DataFrame, column: str) -> None:
+    """Raise unless results contains column."""
+    _check_results(results)
+    if column not in results.columns:
+        raise ValueError(f"results must include {column}")
+
+
+def _check_warmup_samples(warmup_samples: int, n_rows: int) -> None:
+    """Raise unless warmup_samples leaves at least one row."""
+    if isinstance(warmup_samples, bool) or not isinstance(
+        warmup_samples, int
+    ):
+        received = type(warmup_samples).__name__
+        raise TypeError(
+            f"warmup_samples must be an int, got {received}"
+        )
+    if n_rows < 1:
+        raise ValueError(
+            f"results must contain at least 1 row, got {n_rows}"
+        )
+    if warmup_samples < 0 or warmup_samples >= n_rows:
+        raise ValueError(
+            "warmup_samples must be between 0 and "
+            f"{n_rows - 1}, got {warmup_samples}"
+        )
+
+
+def _check_sample_rate(fs: float) -> None:
+    """Raise unless fs is a positive real sample rate."""
+    if isinstance(fs, bool) or not isinstance(fs, (int, float)):
+        received = type(fs).__name__
+        raise TypeError(f"fs must be a real number, got {received}")
+    if not np.isfinite(fs):
+        raise ValueError(f"fs must be finite, got {fs}")
+    if fs <= 0:
+        raise ValueError(f"fs must be positive, got {fs}")
+
+
+def _check_n_samples(n_samples: int) -> None:
+    """Raise unless n_samples is a positive int."""
+    if isinstance(n_samples, bool) or not isinstance(n_samples, int):
+        received = type(n_samples).__name__
+        raise TypeError(f"n_samples must be an int, got {received}")
+    if n_samples < 1:
+        raise ValueError(f"n_samples must be positive, got {n_samples}")
+
+
+def _decimated_output(
+    results: pd.DataFrame, warmup_samples: int
+) -> np.ndarray:
+    """Return incremental_2 at each sample_output after warmup."""
+    _check_column(results, "incremental_2")
+    _check_column(results, "sample_output")
+    _check_warmup_samples(warmup_samples, len(results))
+    kept = results.iloc[warmup_samples:]
+    flags = np.asarray(kept["sample_output"], dtype=bool)
+    if not flags.any():
+        raise ValueError(
+            "results must include a sample_output after warmup, got none"
+        )
+    values = kept["incremental_2"].to_numpy()[flags]
+    return np.asarray(values, dtype=np.float64)
+
+
+def _quantizer_samples(
+    results: pd.DataFrame, warmup_samples: int
+) -> np.ndarray:
+    """Return quantizer decisions after warmup."""
+    _check_column(results, "quantizer_decision")
+    _check_warmup_samples(warmup_samples, len(results))
+    return np.asarray(
+        results["quantizer_decision"].iloc[warmup_samples:],
+        dtype=np.float64,
+    )
+
+
+def _windowed_spectrum(samples: np.ndarray) -> np.ndarray:
+    """Return the Blackman FFT of samples."""
+    window = np.blackman(samples.shape[0])
+    return np.fft.fft(samples * window)
+
+
+def _band_powers(
+    spectrum: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
+    """Return power, signal bins, noise bins, and the peak bin."""
+    count = spectrum.shape[0]
+    nyquist = count // 2
+    guard = BLACKMAN_HALF_WIDTH
+    if nyquist <= guard:
+        raise ValueError(
+            "spectrum does not clear the DC leakage bins, "
+            f"got {count} samples"
+        )
+    power = np.abs(spectrum) ** 2
+    search = np.arange(guard + 1, nyquist + 1)
+    peak = int(search[np.argmax(power[search])])
+    signal_bins = np.arange(peak - guard, peak + guard + 1)
+    signal_bins = signal_bins[
+        (signal_bins >= 0) & (signal_bins <= nyquist)
+    ]
+    noise_bins = search[~np.isin(search, signal_bins)]
+    return power, signal_bins, noise_bins, peak
+
+
+def _plot_normalized_spectrum(
+    axis: plt.Axes,
+    frequencies: np.ndarray,
+    spectrum: np.ndarray,
+    label: str,
+) -> None:
+    """Plot one-sided power in dB, normalized to the peak past DC."""
+    power = np.abs(spectrum) ** 2
+    nyquist = spectrum.shape[0] // 2
+    search = np.arange(BLACKMAN_HALF_WIDTH + 1, nyquist + 1)
+    if search.size:
+        peak = float(np.max(power[search]))
+    else:
+        peak = float(np.max(power))
+    if peak == 0.0:
+        power_db = np.zeros(power.shape)
+    else:
+        with np.errstate(divide="ignore"):
+            power_db = 10.0 * np.log10(power / peak)
+    positive = frequencies >= 0
+    axis.plot(frequencies[positive], power_db[positive], label=label)
+
+
+def calculate_sndr_db(
+    results: pd.DataFrame, warmup_samples: int = 0
+) -> float:
+    """Return the signal-to-noise-and-distortion ratio in dB.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the measurement.
+        Default is 0.
+
+    Returns
+    -------
+    float
+        Ratio in dB of the output tone to the rest of the
+        decimated band. Infinity when the noise power is zero.
+        The output samples are ``incremental_2`` where
+        ``sample_output`` is true.
+
+    Raises
+    ------
+    TypeError
+        If ``warmup_samples`` has the wrong type.
+    ValueError
+        If the warmup or the table is unusable.
+    """
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    power, signal_bins, noise_bins, _peak = _band_powers(spectrum)
+    signal_power = float(np.sum(power[signal_bins]))
+    if noise_bins.size == 0:
+        return float("inf")
+    noise_power = float(np.sum(power[noise_bins]))
+    if noise_power == 0.0:
+        return float("inf")
+    return float(10.0 * np.log10(signal_power / noise_power))
+
+
+def calculate_sfdr_db(
+    results: pd.DataFrame, warmup_samples: int = 0
+) -> float:
+    """Return the spurious-free dynamic range in dB.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the measurement.
+        Default is 0.
+
+    Returns
+    -------
+    float
+        Ratio in dB of the output tone to the largest other bin
+        in the decimated band. Infinity when that bin is zero.
+        The output samples are ``incremental_2`` where
+        ``sample_output`` is true.
+
+    Raises
+    ------
+    TypeError
+        If ``warmup_samples`` has the wrong type.
+    ValueError
+        If the warmup or the table is unusable.
+    """
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    power, _signal_bins, noise_bins, peak = _band_powers(spectrum)
+    if noise_bins.size == 0:
+        return float("inf")
+    noise_power = float(np.max(power[noise_bins]))
+    if noise_power == 0.0:
+        return float("inf")
+    signal_power = float(power[peak])
+    return float(10.0 * np.log10(signal_power / noise_power))
+
+
+def plot_output(
+    results: pd.DataFrame,
+    fs: float,
+    n_samples: int,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the decimated incremental output against time.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    n_samples : int
+        Number of output samples to plot, taken where
+        ``sample_output`` is true.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure is created when omitted.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the plot.
+
+    Raises
+    ------
+    TypeError
+        If ``results``, ``fs``, or ``n_samples`` has the wrong type.
+    ValueError
+        If ``n_samples`` or ``fs`` is out of range, or a column is
+        missing.
+    """
+    _check_results(results)
+    _check_n_samples(n_samples)
+    _check_sample_rate(fs)
+    _check_column(results, "sample_output")
+    _check_column(results, "incremental_2")
+    clocks = np.flatnonzero(
+        np.asarray(results["sample_output"], dtype=bool)
+    )
+    if n_samples > clocks.size:
+        raise ValueError(
+            f"n_samples must be at most {int(clocks.size)}, "
+            f"got {n_samples}"
+        )
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+    else:
+        figure = ax.figure
+        axis = ax
+    chosen = clocks[:n_samples]
+    axis.plot(
+        chosen / fs,
+        results["incremental_2"].iloc[list(chosen)],
+        label="Output",
+    )
+    axis.set_xlabel("Time (s)")
+    axis.set_ylabel("Incremental output")
+    axis.set_title("ADC output")
+    axis.legend()
+    axis.grid()
+    return figure
+
+
+def plot_spectrum(
+    results: pd.DataFrame,
+    fs: float,
+    osr: int = DEFAULT_OSR,
+    warmup_samples: int = 0,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the decimated output spectrum after skipping warmup.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    osr : int, optional
+        Clocks per output sample. The frequency axis uses
+        ``fs / osr``. Default is 32.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the spectrum. Default is 0.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure uses a logarithmic frequency
+        axis.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the spectrum.
+
+    Raises
+    ------
+    TypeError
+        If an argument has the wrong type.
+    ValueError
+        If ``fs``, ``osr``, or ``warmup_samples`` is out of range.
+    """
+    _check_sample_rate(fs)
+    _check_osr(osr)
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    frequencies = np.fft.fftfreq(samples.shape[0], d=osr / fs)
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+        axis.set_xscale("log")
+    else:
+        figure = ax.figure
+        axis = ax
+    _plot_normalized_spectrum(axis, frequencies, spectrum, "Output")
+    axis.set_xlabel("Frequency [Hz]")
+    axis.set_ylabel("Magnitude [dB]")
+    axis.set_title("ADC output spectrum")
+    axis.legend()
+    axis.grid(True, which="both", ls="-")
+    return figure
+
+
+def plot_quantizer_spectrum(
+    results: pd.DataFrame,
+    fs: float,
+    osr: int | None = None,
+    warmup_samples: int = 0,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the quantizer spectrum after skipping warmup clocks.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    osr : int or None, optional
+        Draw the band edge at half the sample rate divided by this
+        value. ``None`` draws no edge. Default is ``None``.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the spectrum. Default is 0.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure uses a logarithmic frequency
+        axis.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the spectrum.
+
+    Raises
+    ------
+    TypeError
+        If an argument has the wrong type.
+    ValueError
+        If ``fs``, ``osr``, or ``warmup_samples`` is out of range.
+    """
+    _check_sample_rate(fs)
+    if osr is not None:
+        _check_osr(osr)
+    samples = _quantizer_samples(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    frequencies = np.fft.fftfreq(samples.shape[0], d=1.0 / fs)
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+        axis.set_xscale("log")
+    else:
+        figure = ax.figure
+        axis = ax
+    _plot_normalized_spectrum(axis, frequencies, spectrum, "Quantizer")
+    if osr is not None:
+        cutoff_hz = (fs / 2.0) / osr
+        cutoff_mhz = np.round(cutoff_hz / 1e6, 3)
+        axis.axvline(
+            x=cutoff_hz,
+            color="r",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"$OSR={osr}$, $f_{{max}}={cutoff_mhz}$ MHz",
+        )
+    axis.set_xlabel("Frequency [Hz]")
+    axis.set_ylabel("Magnitude [dB]")
+    axis.set_title("Quantizer spectrum")
+    axis.legend()
+    axis.grid(True, which="both", ls="-")
+    return figure
+
+
+def main() -> None:
+    """Plot one conversion and compare data-weighted averaging.
+
+    The tone sits on a bin of the decimated output. The sample rate
+    is 100 MHz and the oversampling ratio is 32. Mismatched
+    capacitors are redrawn from the same seed for each averaging mode.
+    """
+    fs = 100e6
+    osr = DEFAULT_OSR
+    n_output = 1024
+    n_samples = n_output * osr
+    prime = 97
+    frequency = fs * prime / (16 * n_output)
+    amplitude = 0.4
+    clocks = np.arange(n_samples)
+    differential = amplitude * np.cos(2.0 * np.pi * frequency * clocks / fs)
+    vin_p = 0.5 + differential / 2.0
+    vin_n = 0.5 - differential / 2.0
+    print("Running conversion...")
+    results = convert_nssar(
+        vin_p,
+        vin_n,
+        do_dwa=True,
+        incremental_mode=True,
+        reset_dwa=True,
+        osr=osr,
+    )
+    figure, (time_axis, spectrum_axis) = plt.subplots(1, 2, figsize=(15, 6))
+    plot_output(results, fs, 64, ax=time_axis)
+    plot_spectrum(results, fs, osr=osr, ax=spectrum_axis)
+    sndr = calculate_sndr_db(results)
+    sfdr = calculate_sfdr_db(results)
+    print(f"SNDR {sndr:.2f} dB")
+    print(f"SFDR {sfdr:.2f} dB")
+    quantizer = plot_quantizer_spectrum(results, fs, osr=osr)
+    figure.tight_layout()
+    figure.savefig("./adc_output.png")
+    quantizer.savefig("./adc_quantizer_spectrum.png")
+
+    print("Comparing data-weighted averaging...")
+    figure, axis = plt.subplots(figsize=(10, 6))
+    cases = (
+        ("DWA with reset", True, True, "k"),
+        ("DWA without reset", True, False, "b"),
+        ("No DWA", False, False, "r"),
+    )
+    for label, do_dwa, reset_dwa, color in cases:
+        np.random.seed(1)
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=do_dwa,
+            incremental_mode=True,
+            reset_dwa=reset_dwa,
+            cap_mismatch_sigma=0.02,
+        )
+        plot_spectrum(frame, fs, osr=osr, ax=axis)
+        reading = calculate_sndr_db(frame)
+        print(f"{label} SNDR {reading:.2f} dB")
+        axis.lines[-1].set_label(f"{label}, SNDR={np.round(reading, 1)} dB")
+        axis.lines[-1].set_color(color)
+    axis.legend()
+    axis.set_xscale("log")
+    figure.tight_layout()
+    figure.savefig("./adc_dwa_compare.png")
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
