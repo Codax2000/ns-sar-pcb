@@ -2,17 +2,28 @@
 Verification
 ============
 
-This device must, of course, be verified. One of the main goals of this project is to gain experience with UVM, and so there will be two separate testbenches, depending on whether I can get the PetaLinux build running on my SoC to the point where Jupyter can be run from it.
+This device must, of course, be verified. One of the main goals of this project is to gain experience with UVM,
+and so there will be three levels of verification.
 
-Architecture
-------------
+1. Block-level testbench with ``cocotb`` and Verilator. This is to compare against the fixed-point math and Python modeling.
+2. System-level testbench with UVM. This ensures that the SPI interface can control the device as intended. It will also be used
+for randomized DAC outputs and ADC sampling. This will not check that SNR is correct, but should be able to check that
+the ADC sampling is a sine wave in the waveform viewer.
+3. Validation testbench with ``pyserial``, Arduino, and Jupyter Notebook. Using PeakRDL, it should be possible to have an easy way of
+running ``set`` and ``write`` and ``read``, similar to UVM syntax.
 
-Verification for this device will be done with UVM, using a combination of AXI and SPI. The goal is to drive stimulus using an AXI agent to gain confidence that the RTL will work, and repurpose a SPI agent to check the buses for shift registers and DACs.
+System-Level Architecture
+-------------------------
+
+System-level verification for this device will be done with UVM, using a combination of AXI and SPI.
+The goal is to drive stimulus using an agent to gain confidence that the RTL will work, and repurpose a
+SPI agent to check the buses for shift registers and DACs.
 
 ADC Testbench
 ~~~~~~~~~~~~~
 
-The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL. Unlike a real tapeout, we can recompile, but I'd rather not.
+The ADC testbench is meant as a learning opportunity for UVM and also for a thorough testbench for the ADC RTL.
+Unlike a real tapeout, we can recompile, but I'd rather not.
 
 .. image:: ./_static/img/uvm_tb.png
    :alt: Digital Testbench
@@ -21,9 +32,11 @@ The ADC testbench is meant as a learning opportunity for UVM and also for a thor
 AXI Integration Testbench
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ. In that case, an AXI to SPI adapter will be necessary, and will be run like so:
+If possible, I will integrate this with the Zynq PS such that this can be run similar to PYNQ.
+In that case, an AXI to SPI adapter will be necessary, and will be run like so:
 
-The first thing to do will be to add an AXI adapter so that it can be used to communicate with both the DAC and the ADC.
+The first thing to do will be to add an AXI adapter so that it can be used to communicate with
+both the DAC and the ADC.
 
 .. image:: ./_static/img/axi_integration_tb.png
    :alt: AXI to SPI
@@ -32,9 +45,11 @@ The first thing to do will be to add an AXI adapter so that it can be used to co
 Writing Tests
 -------------
 
-The ADC and DAC are connected to the toplevel ``regmodel`` instance. With that scheme, the tests are portable to the single-AXI-bus scheme. If a single AXI interface is eventually possible, then the same scheme would be used.
+The ADC and DAC are connected to the toplevel ``regmodel`` instance. With that scheme, the tests are portable
+to the single-AXI-bus scheme. If a single AXI interface is eventually possible, then the same scheme would be used.
 
-The reset and clock agents can be set using each one's ``set`` method. Registers can be written using the toplevel ``regmodel`` instance.
+The reset and clock agents can be set using each one's ``set`` method. Registers can be written using the toplevel
+``regmodel`` instance.
 
 .. code-block:: systemverilog
 
@@ -71,4 +86,26 @@ These register transactions are executed on two different agents, on two differe
 Test List and Status
 --------------------
 
-Here is the latest live status from the regression pipeline.
++--------+--------------+--------------------------------------------------+
+| Test                  | Description                                      |
++========+==============+==================================================+
+| DAC    | ``test_dc``  | Test that DC values are set, once                |
++--------+--------------+--------------------------------------------------+
+| DAC    | ``test_ac``  | Test that AC values run CORDIC, no DSM           |
++--------+--------------+--------------------------------------------------+
+| DAC    | ``test_dsm`` | Test that noise is shaped correctly              |
++--------+--------------+--------------------------------------------------+
+| ``test_reg_rd``       | Test that registers can be read with reset       |
++--------+--------------+--------------------------------------------------+
+| ``test_reg_wr``       | Test that registers can be written if necessary  |
++--------+--------------+--------------------------------------------------+
+| ``test_reg_buff``     | Test that double-buffered registers are updated  |
+|                       | only when necessary                              |
++--------+--------------+--------------------------------------------------+
+| ``test_dac_outputs``  | Randomize DAC registers, observe output          |
++--------+--------------+--------------------------------------------------+
+| ``test_adc_nfft``     | Randomize ADC registers, check number of outputs |
++--------+--------------+--------------------------------------------------+
+| ``test_adc_settling`` | Randomize ADC registers, check delay for each    |
+|                       | stage of SAR state machine.                      |
++--------+--------------+--------------------------------------------------+
