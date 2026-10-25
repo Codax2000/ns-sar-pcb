@@ -89,13 +89,17 @@
 <p>This device must, of course, be verified. One of the main goals of this project is to gain experience with UVM,
 and so there will be three levels of verification.</p>
 <ol class="arabic simple">
-<li><p>Block-level testbench with <code class="docutils literal notranslate"><span class="pre">cocotb</span></code> and Verilator. This is to compare against the fixed-point math and Python modeling.</p></li>
+<li><p>Block-level testbench with <code class="docutils literal notranslate"><span class="pre">cocotb</span></code> and Verilator. This is to compare against the fixed-point math and Python modeling.
+From the repository root, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest.&lt;name&gt;</span></code> runs <code class="docutils literal notranslate"><span class="pre">scripts/hdl_sim/test_&lt;name&gt;.py</span></code>
+(<code class="docutils literal notranslate"><span class="pre">MODULE=test_&lt;name&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">SIM=verilator</span></code>). <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest</span></code> runs every <code class="docutils literal notranslate"><span class="pre">test_*.py</span></code> there, and
+exits without starting a simulator when none have been added yet.</p></li>
+<li><p>System-level testbench with UVM. This ensures that the SPI interface can control the device as intended.
+It will also be used for randomized DAC outputs and ADC sampling. This will not check that SNR is correct,
+but should be able to check that the ADC sampling is a sine wave in the waveform viewer.
+UVM system tests are not part of <code class="docutils literal notranslate"><span class="pre">hdltest</span></code>.</p></li>
+<li><p>Validation testbench with <code class="docutils literal notranslate"><span class="pre">pyserial</span></code>, Arduino, and Jupyter Notebook. Using PeakRDL, it should be possible
+to have an easy way of running <code class="docutils literal notranslate"><span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">write</span></code> and <code class="docutils literal notranslate"><span class="pre">read</span></code>, similar to UVM syntax.</p></li>
 </ol>
-<p>2. System-level testbench with UVM. This ensures that the SPI interface can control the device as intended. It will also be used
-for randomized DAC outputs and ADC sampling. This will not check that SNR is correct, but should be able to check that
-the ADC sampling is a sine wave in the waveform viewer.
-3. Validation testbench with <code class="docutils literal notranslate"><span class="pre">pyserial</span></code>, Arduino, and Jupyter Notebook. Using PeakRDL, it should be possible to have an easy way of
-running <code class="docutils literal notranslate"><span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">write</span></code> and <code class="docutils literal notranslate"><span class="pre">read</span></code>, similar to UVM syntax.</p>
 <section id="system-level-architecture">
 <h2>System-Level Architecture<a class="headerlink" href="#system-level-architecture" title="Link to this heading"></a></h2>
 <p>System-level verification for this device will be done with UVM, using a combination of AXI and SPI.

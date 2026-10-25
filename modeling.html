@@ -48,64 +48,64 @@
 <li class="toctree-l1"><a class="reference internal" href="pcb.html">Mixed-Signal PCB Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Modeling</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-fp_array">Fixed-point arrays</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#fp_array.FixedPointArray"><code class="docutils literal notranslate"><span class="pre">FixedPointArray</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.from_mantissas"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.from_mantissas()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.get_mantissas"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.get_mantissas()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.n"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.n</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.r"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.r</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.get_quantization"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.get_quantization()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.set_values"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.set_values()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.to_float"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.to_float()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.re_quantize"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.re_quantize()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__add__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__add__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__radd__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__radd__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__mul__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__mul__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__rmul__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rmul__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__neg__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__neg__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__sub__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__sub__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__rsub__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rsub__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__lshift__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__lshift__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__rshift__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rshift__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__lt__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__lt__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__le__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__le__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__gt__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__gt__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__ge__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__ge__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__eq__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__eq__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__ne__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__ne__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__getitem__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__getitem__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__setitem__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__setitem__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__iter__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__iter__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__array__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__array__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fp_array.FixedPointArray.__repr__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__repr__()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-models.fp_array">Fixed-point arrays</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#models.fp_array.FixedPointArray"><code class="docutils literal notranslate"><span class="pre">FixedPointArray</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.from_mantissas"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.from_mantissas()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.get_mantissas"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.get_mantissas()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.n"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.n</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.r"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.r</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.get_quantization"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.get_quantization()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.set_values"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.set_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.to_float"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.to_float()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.re_quantize"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.re_quantize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__add__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__add__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__radd__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__radd__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__mul__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__mul__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__rmul__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rmul__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__neg__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__neg__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__sub__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__sub__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__rsub__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rsub__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__lshift__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__lshift__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__rshift__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__rshift__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__lt__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__lt__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__le__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__le__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__gt__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__gt__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__ge__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__ge__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__eq__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__eq__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__ne__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__ne__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__getitem__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__getitem__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__setitem__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__setitem__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__iter__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__iter__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__array__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__array__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#models.fp_array.FixedPointArray.__repr__"><code class="docutils literal notranslate"><span class="pre">FixedPointArray.__repr__()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#fp_array.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.fp_array.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-cordic">CORDIC</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#cordic.calculate_arctangent_table"><code class="docutils literal notranslate"><span class="pre">calculate_arctangent_table()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cordic.calculate_cordic_gain"><code class="docutils literal notranslate"><span class="pre">calculate_cordic_gain()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cordic.cordic_rotate"><code class="docutils literal notranslate"><span class="pre">cordic_rotate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cordic.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-models.cordic">CORDIC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#models.cordic.calculate_arctangent_table"><code class="docutils literal notranslate"><span class="pre">calculate_arctangent_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.cordic.calculate_cordic_gain"><code class="docutils literal notranslate"><span class="pre">calculate_cordic_gain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.cordic.cordic_rotate"><code class="docutils literal notranslate"><span class="pre">cordic_rotate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.cordic.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-sinegen_dac">Sine-generator DAC</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#sinegen_dac.generate_dac_values"><code class="docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sinegen_dac.calculate_sqnr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sqnr_db()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sinegen_dac.plot_output"><code class="docutils literal notranslate"><span class="pre">plot_output()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sinegen_dac.plot_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_spectrum()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sinegen_dac.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-models.sinegen_dac">Sine-generator DAC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#models.sinegen_dac.generate_dac_values"><code class="docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.sinegen_dac.calculate_sqnr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sqnr_db()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.sinegen_dac.plot_output"><code class="docutils literal notranslate"><span class="pre">plot_output()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.sinegen_dac.plot_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_spectrum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.sinegen_dac.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-nssar">Noise-shaping SAR</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.convert_nssar"><code class="docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.calculate_sndr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sndr_db()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.calculate_sfdr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sfdr_db()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.plot_output"><code class="docutils literal notranslate"><span class="pre">plot_output()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.plot_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_spectrum()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.plot_quantizer_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_quantizer_spectrum()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nssar.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-models.nssar">Noise-shaping SAR</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.convert_nssar"><code class="docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.calculate_sndr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sndr_db()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.calculate_sfdr_db"><code class="docutils literal notranslate"><span class="pre">calculate_sfdr_db()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.plot_output"><code class="docutils literal notranslate"><span class="pre">plot_output()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.plot_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_spectrum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.plot_quantizer_spectrum"><code class="docutils literal notranslate"><span class="pre">plot_quantizer_spectrum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#models.nssar.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -138,20 +138,20 @@
              
   <section id="modeling">
 <h1>Modeling<a class="headerlink" href="#modeling" title="Link to this heading"></a></h1>
-<p>Python models of the fixed-point datapath, the CORDIC rotator, the sine-generator DAC, and the noise-shaping SAR. These pages are generated from the docstrings in <code class="docutils literal notranslate"><span class="pre">scripts/</span></code>.</p>
-<section id="module-fp_array">
-<span id="fixed-point-arrays"></span><h2>Fixed-point arrays<a class="headerlink" href="#module-fp_array" title="Link to this heading"></a></h2>
+<p>Python models of the fixed-point datapath, the CORDIC rotator, the sine-generator DAC, and the noise-shaping SAR. These pages are generated from the docstrings in <code class="docutils literal notranslate"><span class="pre">scripts/models/</span></code>.</p>
+<section id="module-models.fp_array">
+<span id="fixed-point-arrays"></span><h2>Fixed-point arrays<a class="headerlink" href="#module-models.fp_array" title="Link to this heading"></a></h2>
 <p>Signed fixed-point arrays.</p>
 <p>Each value has format <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code>: <code class="docutils literal notranslate"><span class="pre">n</span></code> is the two’s-complement width
 and <code class="docutils literal notranslate"><span class="pre">r</span></code> is the number of fractional bits.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">fp_array.</span></span><span class="sig-name descname"><span class="pre">FixedPointArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fp_array.FixedPointArray" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">models.fp_array.</span></span><span class="sig-name descname"><span class="pre">FixedPointArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.fp_array.FixedPointArray" title="Link to this definition"></a></dt>
 <dd><p>An array of signed fixed-point values in format <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code>.</p>
 <p>Integer <code class="docutils literal notranslate"><span class="pre">m</span></code> is the real value <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">/</span> <span class="pre">2**r</span></code>. Real inputs are floored
 toward negative infinity, then saturated to the signed <code class="docutils literal notranslate"><span class="pre">n</span></code>-bit
 range. Addition and multiplication keep every result bit.
-<a class="reference internal" href="#fp_array.FixedPointArray.re_quantize" title="fp_array.FixedPointArray.re_quantize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">re_quantize()</span></code></a> drops fractional bits toward zero and
+<a class="reference internal" href="#models.fp_array.FixedPointArray.re_quantize" title="models.fp_array.FixedPointArray.re_quantize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">re_quantize()</span></code></a> drops fractional bits toward zero and
 saturates. A right shift is arithmetic and does not change
 <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code>.</p>
 <p>Quantize real <code class="docutils literal notranslate"><span class="pre">values</span></code> into signed format <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code>.</p>
@@ -168,8 +168,8 @@ saturates. A right shift is arithmetic and does not change
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.from_mantissas">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_mantissas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mantissas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.from_mantissas" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.from_mantissas">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_mantissas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mantissas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.from_mantissas" title="Link to this definition"></a></dt>
 <dd><p>Build an array from integers that are already quantized.</p>
 <p><code class="docutils literal notranslate"><span class="pre">mantissas</span></code> are numerators, not real values. Integer <code class="docutils literal notranslate"><span class="pre">m</span></code>
 represents <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">/</span> <span class="pre">2**r</span></code>. Integers outside the signed <code class="docutils literal notranslate"><span class="pre">n</span></code>-bit
@@ -189,7 +189,7 @@ reals.</p>
 becomes a length-1 array.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -201,8 +201,8 @@ becomes a length-1 array.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.get_mantissas">
-<span class="sig-name descname"><span class="pre">get_mantissas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.get_mantissas" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.get_mantissas">
+<span class="sig-name descname"><span class="pre">get_mantissas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.get_mantissas" title="Link to this definition"></a></dt>
 <dd><p>Return a copy of the stored integer mantissas.</p>
 <p>Integer <code class="docutils literal notranslate"><span class="pre">m</span></code> is the real value <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">/</span> <span class="pre">2**r</span></code>. <code class="docutils literal notranslate"><span class="pre">n</span></code> is the
 total number of bits and <code class="docutils literal notranslate"><span class="pre">r</span></code> is the number of fractional
@@ -221,8 +221,8 @@ does not change this array.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.n">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">n</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#fp_array.FixedPointArray.n" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.n">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">n</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.n" title="Link to this definition"></a></dt>
 <dd><p>Return the total number of bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -236,13 +236,13 @@ including the sign bit.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.r">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">r</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#fp_array.FixedPointArray.r" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.r">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">r</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.r" title="Link to this definition"></a></dt>
 <dd><p>Return the number of fractional bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Fractional bits <code class="docutils literal notranslate"><span class="pre">r</span></code>. Integer <code class="docutils literal notranslate"><span class="pre">m</span></code> from
-<a class="reference internal" href="#fp_array.FixedPointArray.get_mantissas" title="fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a> is the real value <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">/</span> <span class="pre">2**r</span></code>.</p>
+<a class="reference internal" href="#models.fp_array.FixedPointArray.get_mantissas" title="models.fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a> is the real value <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">/</span> <span class="pre">2**r</span></code>.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>int</p>
@@ -251,8 +251,8 @@ including the sign bit.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.get_quantization">
-<span class="sig-name descname"><span class="pre">get_quantization</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.get_quantization" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.get_quantization">
+<span class="sig-name descname"><span class="pre">get_quantization</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.get_quantization" title="Link to this definition"></a></dt>
 <dd><p>Return the <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code> format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -265,10 +265,10 @@ including the sign bit.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.set_values">
-<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.set_values" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.set_values">
+<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.set_values" title="Link to this definition"></a></dt>
 <dd><p>Quantize real <code class="docutils literal notranslate"><span class="pre">values</span></code> into the stored integer mantissas.</p>
-<p>Replaces the integers <a class="reference internal" href="#fp_array.FixedPointArray.get_mantissas" title="fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a> returns. The
+<p>Replaces the integers <a class="reference internal" href="#models.fp_array.FixedPointArray.get_mantissas" title="models.fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a> returns. The
 current <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code> format is kept. Inputs are floored toward
 <code class="docutils literal notranslate"><span class="pre">-inf</span></code> and saturated. <code class="docutils literal notranslate"><span class="pre">values</span></code> are real numbers, not
 mantissas.</p>
@@ -280,8 +280,8 @@ mantissas.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.to_float">
-<span class="sig-name descname"><span class="pre">to_float</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.to_float" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.to_float">
+<span class="sig-name descname"><span class="pre">to_float</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.to_float" title="Link to this definition"></a></dt>
 <dd><p>Return the represented real values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -295,8 +295,8 @@ above <code class="docutils literal notranslate"><span class="pre">2**53</span><
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.re_quantize">
-<span class="sig-name descname"><span class="pre">re_quantize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.re_quantize" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.re_quantize">
+<span class="sig-name descname"><span class="pre">re_quantize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.re_quantize" title="Link to this definition"></a></dt>
 <dd><p>Change this array’s format in place and return it.</p>
 <p>Dropped fractional bits are truncated toward zero. Growing the
 fraction shifts mantissas left. Integers that do not fit in the new
@@ -313,7 +313,7 @@ are not affected because this updates only this array.</p>
 <dd class="field-even"><p>This array, now in format <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">n</span></code> or <code class="docutils literal notranslate"><span class="pre">r</span></code> is not a valid format.</p>
@@ -322,12 +322,12 @@ are not affected because this updates only this array.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__add__">
-<span class="sig-name descname"><span class="pre">__add__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__add__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__add__">
+<span class="sig-name descname"><span class="pre">__add__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__add__" title="Link to this definition"></a></dt>
 <dd><p>Return the sum at full precision.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array, real integer, or array of real integers.
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array, real integer, or array of real integers.
 Integers use this array’s fractional width.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -336,35 +336,35 @@ Integers use this array’s fractional width.</p>
 <code class="docutils literal notranslate"><span class="pre">other</span></code> is an integer.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__radd__">
-<span class="sig-name descname"><span class="pre">__radd__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__radd__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__radd__">
+<span class="sig-name descname"><span class="pre">__radd__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__radd__" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">other</span> <span class="pre">+</span> <span class="pre">self</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>other</strong> (<em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Real integer on the left of the sum.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Same result as <a class="reference internal" href="#fp_array.FixedPointArray.__add__" title="fp_array.FixedPointArray.__add__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__add__()</span></code></a>.</p>
+<dd class="field-even"><p>Same result as <a class="reference internal" href="#models.fp_array.FixedPointArray.__add__" title="models.fp_array.FixedPointArray.__add__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__add__()</span></code></a>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__mul__">
-<span class="sig-name descname"><span class="pre">__mul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__mul__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__mul__">
+<span class="sig-name descname"><span class="pre">__mul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__mul__" title="Link to this definition"></a></dt>
 <dd><p>Return the product at full precision.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array, or a dimensionless integer scale.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array, or a dimensionless integer scale.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Product. Two fixed-point arrays use <code class="docutils literal notranslate"><span class="pre">r</span></code> equal to the sum of
@@ -373,31 +373,31 @@ An integer scale keeps <code class="docutils literal notranslate"><span class="p
 signed width. <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> when <code class="docutils literal notranslate"><span class="pre">other</span></code> is unsupported.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__rmul__">
-<span class="sig-name descname"><span class="pre">__rmul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__rmul__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__rmul__">
+<span class="sig-name descname"><span class="pre">__rmul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__rmul__" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">other</span> <span class="pre">*</span> <span class="pre">self</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>other</strong> (<em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Dimensionless integer scale on the left.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Same result as <a class="reference internal" href="#fp_array.FixedPointArray.__mul__" title="fp_array.FixedPointArray.__mul__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__mul__()</span></code></a>.</p>
+<dd class="field-even"><p>Same result as <a class="reference internal" href="#models.fp_array.FixedPointArray.__mul__" title="models.fp_array.FixedPointArray.__mul__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__mul__()</span></code></a>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__neg__">
-<span class="sig-name descname"><span class="pre">__neg__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__neg__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__neg__">
+<span class="sig-name descname"><span class="pre">__neg__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__neg__" title="Link to this definition"></a></dt>
 <dd><p>Return the negation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -405,32 +405,32 @@ signed width. <code class="docutils literal notranslate"><span class="pre">NotIm
 the most negative signed integer does not fit when negated.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-even"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__sub__">
-<span class="sig-name descname"><span class="pre">__sub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__sub__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__sub__">
+<span class="sig-name descname"><span class="pre">__sub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__sub__" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">-</span> <span class="pre">other</span></code> at full precision.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Value to subtract. Integers are real values.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Value to subtract. Integers are real values.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Difference, or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> when <code class="docutils literal notranslate"><span class="pre">other</span></code> is not
 supported.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__rsub__">
-<span class="sig-name descname"><span class="pre">__rsub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__rsub__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__rsub__">
+<span class="sig-name descname"><span class="pre">__rsub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__rsub__" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">other</span> <span class="pre">-</span> <span class="pre">self</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -441,14 +441,14 @@ supported.</p>
 integer operand.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a> or NotImplemented</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__lshift__">
-<span class="sig-name descname"><span class="pre">__lshift__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__lshift__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__lshift__">
+<span class="sig-name descname"><span class="pre">__lshift__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__lshift__" title="Link to this definition"></a></dt>
 <dd><p>Shift mantissas left by <code class="docutils literal notranslate"><span class="pre">shift</span></code> bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -459,7 +459,7 @@ integer operand.</p>
 largest shift count.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -471,8 +471,8 @@ largest shift count.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__rshift__">
-<span class="sig-name descname"><span class="pre">__rshift__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__rshift__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__rshift__">
+<span class="sig-name descname"><span class="pre">__rshift__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__rshift__" title="Link to this definition"></a></dt>
 <dd><p>Arithmetic-shift mantissas right by <code class="docutils literal notranslate"><span class="pre">shift</span></code> bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -483,7 +483,7 @@ largest shift count.</p>
 <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code> is unchanged.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -495,12 +495,12 @@ largest shift count.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__lt__">
-<span class="sig-name descname"><span class="pre">__lt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__lt__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__lt__">
+<span class="sig-name descname"><span class="pre">__lt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__lt__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">&lt;</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value. Fixed-point values are aligned to the larger
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value. Fixed-point values are aligned to the larger
 fraction. Integers are real values.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -514,12 +514,12 @@ supported.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__le__">
-<span class="sig-name descname"><span class="pre">__le__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__le__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__le__">
+<span class="sig-name descname"><span class="pre">__le__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__le__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">&lt;=</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Elementwise mask, or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> if <code class="docutils literal notranslate"><span class="pre">other</span></code> is not
@@ -532,12 +532,12 @@ supported.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__gt__">
-<span class="sig-name descname"><span class="pre">__gt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__gt__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__gt__">
+<span class="sig-name descname"><span class="pre">__gt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__gt__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">&gt;</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Elementwise mask, or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> if <code class="docutils literal notranslate"><span class="pre">other</span></code> is not
@@ -550,12 +550,12 @@ supported.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__ge__">
-<span class="sig-name descname"><span class="pre">__ge__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__ge__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__ge__">
+<span class="sig-name descname"><span class="pre">__ge__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__ge__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">&gt;=</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Elementwise mask, or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> if <code class="docutils literal notranslate"><span class="pre">other</span></code> is not
@@ -568,12 +568,12 @@ supported.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__eq__">
-<span class="sig-name descname"><span class="pre">__eq__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__eq__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__eq__">
+<span class="sig-name descname"><span class="pre">__eq__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__eq__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">==</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Elementwise mask. <code class="docutils literal notranslate"><span class="pre">False</span></code> when <code class="docutils literal notranslate"><span class="pre">other</span></code> is not a supported
@@ -586,12 +586,12 @@ operand.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__ne__">
-<span class="sig-name descname"><span class="pre">__ne__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__ne__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__ne__">
+<span class="sig-name descname"><span class="pre">__ne__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__ne__" title="Link to this definition"></a></dt>
 <dd><p>Return a mask of where <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">!=</span> <span class="pre">other</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Compared value.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Elementwise mask. <code class="docutils literal notranslate"><span class="pre">True</span></code> when <code class="docutils literal notranslate"><span class="pre">other</span></code> is not a supported
@@ -604,8 +604,8 @@ operand.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__getitem__">
-<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__getitem__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__getitem__" title="Link to this definition"></a></dt>
 <dd><p>Return the selected entries in the same format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -616,20 +616,20 @@ operand.</p>
 <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">r)</span></code> is unchanged.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__setitem__">
-<span class="sig-name descname"><span class="pre">__setitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__setitem__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__setitem__">
+<span class="sig-name descname"><span class="pre">__setitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__setitem__" title="Link to this definition"></a></dt>
 <dd><p>Assign into the selected entries and saturate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> (<em>int</em><em> or </em><em>slice</em><em> or </em><em>array-like</em>) – Index passed through to the mantissa array.</p></li>
-<li><p><strong>value</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array with the same <code class="docutils literal notranslate"><span class="pre">r</span></code>, or real integers that
+<li><p><strong>value</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a><em> or </em><em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Fixed-point array with the same <code class="docutils literal notranslate"><span class="pre">r</span></code>, or real integers that
 are quantized to this <code class="docutils literal notranslate"><span class="pre">r</span></code>. Assigned integers saturate to <code class="docutils literal notranslate"><span class="pre">n</span></code>.</p></li>
 </ul>
 </dd>
@@ -643,8 +643,8 @@ are quantized to this <code class="docutils literal notranslate"><span class="pr
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__iter__">
-<span class="sig-name descname"><span class="pre">__iter__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__iter__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__iter__">
+<span class="sig-name descname"><span class="pre">__iter__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__iter__" title="Link to this definition"></a></dt>
 <dd><p>Yield one array per index along the first axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Yields<span class="colon">:</span></dt>
@@ -655,13 +655,13 @@ yield length-1 arrays.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__array__">
-<span class="sig-name descname"><span class="pre">__array__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__array__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__array__">
+<span class="sig-name descname"><span class="pre">__array__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__array__" title="Link to this definition"></a></dt>
 <dd><p>Return integer mantissas for the NumPy array protocol.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dtype</strong> (<em>data-type</em><em>, </em><em>optional</em>) – Requested dtype. The default matches <a class="reference internal" href="#fp_array.FixedPointArray.get_mantissas" title="fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a>.</p></li>
+<li><p><strong>dtype</strong> (<em>data-type</em><em>, </em><em>optional</em>) – Requested dtype. The default matches <a class="reference internal" href="#models.fp_array.FixedPointArray.get_mantissas" title="models.fp_array.FixedPointArray.get_mantissas"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mantissas()</span></code></a>.</p></li>
 <li><p><strong>copy</strong> (<em>bool</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">False</span></code> is rejected because the stored buffer is not a
 numeric NumPy view. Any other value returns a new array.</p></li>
 </ul>
@@ -679,8 +679,8 @@ numeric NumPy view. Any other value returns a new array.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="fp_array.FixedPointArray.__repr__">
-<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#fp_array.FixedPointArray.__repr__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.FixedPointArray.__repr__">
+<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#models.fp_array.FixedPointArray.__repr__" title="Link to this definition"></a></dt>
 <dd><p>Return a constructor-style description of the real values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -695,44 +695,44 @@ numeric NumPy view. Any other value returns a new array.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="fp_array.main">
-<span class="sig-prename descclassname"><span class="pre">fp_array.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fp_array.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.fp_array.main">
+<span class="sig-prename descclassname"><span class="pre">models.fp_array.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.fp_array.main" title="Link to this definition"></a></dt>
 <dd><p>Run the fixed-point unit tests.</p>
 </dd></dl>
 
 </section>
-<section id="module-cordic">
-<span id="cordic"></span><h2>CORDIC<a class="headerlink" href="#module-cordic" title="Link to this heading"></a></h2>
+<section id="module-models.cordic">
+<span id="cordic"></span><h2>CORDIC<a class="headerlink" href="#module-models.cordic" title="Link to this heading"></a></h2>
 <p>Rotation-mode CORDIC that returns a scaled cosine.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="cordic.calculate_arctangent_table">
-<span class="sig-prename descclassname"><span class="pre">cordic.</span></span><span class="sig-name descname"><span class="pre">calculate_arctangent_table</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#cordic.calculate_arctangent_table" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.cordic.calculate_arctangent_table">
+<span class="sig-prename descclassname"><span class="pre">models.cordic.</span></span><span class="sig-name descname"><span class="pre">calculate_arctangent_table</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#models.cordic.calculate_arctangent_table" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">atan(2**(-i))</span> <span class="pre">/</span> <span class="pre">(2*pi)</span></code> rounded half up, per step.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="cordic.calculate_cordic_gain">
-<span class="sig-prename descclassname"><span class="pre">cordic.</span></span><span class="sig-name descname"><span class="pre">calculate_cordic_gain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#cordic.calculate_cordic_gain" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.cordic.calculate_cordic_gain">
+<span class="sig-prename descclassname"><span class="pre">models.cordic.</span></span><span class="sig-name descname"><span class="pre">calculate_cordic_gain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#models.cordic.calculate_cordic_gain" title="Link to this definition"></a></dt>
 <dd><p>Return the product of <code class="docutils literal notranslate"><span class="pre">sqrt(1</span> <span class="pre">+</span> <span class="pre">2**(-2*i))</span></code> over each step.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="cordic.cordic_rotate">
-<span class="sig-prename descclassname"><span class="pre">cordic.</span></span><span class="sig-name descname"><span class="pre">cordic_rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#cordic.cordic_rotate" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.cordic.cordic_rotate">
+<span class="sig-prename descclassname"><span class="pre">models.cordic.</span></span><span class="sig-name descname"><span class="pre">cordic_rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><span class="pre">FixedPointArray</span></a></span></span><a class="headerlink" href="#models.cordic.cordic_rotate" title="Link to this definition"></a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">magnitudes</span> <span class="pre">/</span> <span class="pre">15</span> <span class="pre">*</span> <span class="pre">cos(angles)</span></code> as a FixedPointArray.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>magnitudes</strong> (<em>int</em><em> or </em><em>numpy.ndarray</em>) – Scaling factor from 0 to 15. An int, or an unsigned-integer
 array that broadcasts to <code class="docutils literal notranslate"><span class="pre">angles</span></code> without changing its shape.</p></li>
-<li><p><strong>angles</strong> (<a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray"><em>FixedPointArray</em></a>) – Angle in turns, quantization <code class="docutils literal notranslate"><span class="pre">(16,</span> <span class="pre">16)</span></code>.</p></li>
+<li><p><strong>angles</strong> (<a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray"><em>FixedPointArray</em></a>) – Angle in turns, quantization <code class="docutils literal notranslate"><span class="pre">(16,</span> <span class="pre">16)</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Cosine in signed Q1.15, quantization <code class="docutils literal notranslate"><span class="pre">(16,</span> <span class="pre">15)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#fp_array.FixedPointArray" title="fp_array.FixedPointArray">FixedPointArray</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#models.fp_array.FixedPointArray" title="models.fp_array.FixedPointArray">FixedPointArray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -744,18 +744,18 @@ array that broadcasts to <code class="docutils literal notranslate"><span class=
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="cordic.main">
-<span class="sig-prename descclassname"><span class="pre">cordic.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#cordic.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.cordic.main">
+<span class="sig-prename descclassname"><span class="pre">models.cordic.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.cordic.main" title="Link to this definition"></a></dt>
 <dd><p>Plot cosine for scale 15 against the ideal value.</p>
 </dd></dl>
 
 </section>
-<section id="module-sinegen_dac">
-<span id="sine-generator-dac"></span><h2>Sine-generator DAC<a class="headerlink" href="#module-sinegen_dac" title="Link to this heading"></a></h2>
+<section id="module-models.sinegen_dac">
+<span id="sine-generator-dac"></span><h2>Sine-generator DAC<a class="headerlink" href="#module-models.sinegen_dac" title="Link to this heading"></a></h2>
 <p>Differential DAC values and voltages from a scaled cosine.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="sinegen_dac.generate_dac_values">
-<span class="sig-prename descclassname"><span class="pre">sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">generate_dac_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsm_enable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacn_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacp_dc_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacn_dc_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vdd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3.3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#sinegen_dac.generate_dac_values" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.sinegen_dac.generate_dac_values">
+<span class="sig-prename descclassname"><span class="pre">models.sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">generate_dac_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsm_enable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacn_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DC'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacp_dc_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dacn_dc_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vdd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3.3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#models.sinegen_dac.generate_dac_values" title="Link to this definition"></a></dt>
 <dd><p>Return the DACP and DACN values and voltages for each clock.</p>
 <p>Call it with a register dictionary, for example
 <code class="docutils literal notranslate"><span class="pre">generate_dac_values(4096,</span> <span class="pre">**registers)</span></code>.</p>
@@ -796,13 +796,13 @@ by 256. Default is 3.3.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="sinegen_dac.calculate_sqnr_db">
-<span class="sig-prename descclassname"><span class="pre">sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">calculate_sqnr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#sinegen_dac.calculate_sqnr_db" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.sinegen_dac.calculate_sqnr_db">
+<span class="sig-prename descclassname"><span class="pre">models.sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">calculate_sqnr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#models.sinegen_dac.calculate_sqnr_db" title="Link to this definition"></a></dt>
 <dd><p>Return the in-band signal-to-quantization-noise ratio in dB.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#sinegen_dac.generate_dac_values" title="sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.sinegen_dac.generate_dac_values" title="models.sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
 <li><p><strong>osr</strong> (<em>int</em><em>, </em><em>optional</em>) – Band edge is half the sample rate divided by this value.
 Default is 32. 1 keeps the band through Nyquist.</p></li>
 <li><p><strong>warmup_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Leading clocks skipped so the modulator can settle. Default
@@ -825,13 +825,13 @@ is 1000.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="sinegen_dac.plot_output">
-<span class="sig-prename descclassname"><span class="pre">sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">plot_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#sinegen_dac.plot_output" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.sinegen_dac.plot_output">
+<span class="sig-prename descclassname"><span class="pre">models.sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">plot_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#models.sinegen_dac.plot_output" title="Link to this definition"></a></dt>
 <dd><p>Plot DACP and DACN values against time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#sinegen_dac.generate_dac_values" title="sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.sinegen_dac.generate_dac_values" title="models.sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
 <li><p><strong>fs</strong> (<em>float</em>) – Sample rate in hertz.</p></li>
 <li><p><strong>n_samples</strong> (<em>int</em>) – Number of clocks to plot from the start of <code class="docutils literal notranslate"><span class="pre">results</span></code>.</p></li>
 <li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Axis to draw on. A new figure is created when omitted.</p></li>
@@ -854,13 +854,13 @@ is 1000.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="sinegen_dac.plot_spectrum">
-<span class="sig-prename descclassname"><span class="pre">sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">plot_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#sinegen_dac.plot_spectrum" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.sinegen_dac.plot_spectrum">
+<span class="sig-prename descclassname"><span class="pre">models.sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">plot_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#models.sinegen_dac.plot_spectrum" title="Link to this definition"></a></dt>
 <dd><p>Plot the DACP spectrum after skipping warmup clocks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#sinegen_dac.generate_dac_values" title="sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.sinegen_dac.generate_dac_values" title="models.sinegen_dac.generate_dac_values"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_dac_values()</span></code></a>.</p></li>
 <li><p><strong>fs</strong> (<em>float</em>) – Sample rate in hertz.</p></li>
 <li><p><strong>osr</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Draw the band edge at half the sample rate divided by this
 value. <code class="docutils literal notranslate"><span class="pre">None</span></code> draws no edge. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
@@ -885,8 +885,8 @@ axis.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="sinegen_dac.main">
-<span class="sig-prename descclassname"><span class="pre">sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#sinegen_dac.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.sinegen_dac.main">
+<span class="sig-prename descclassname"><span class="pre">models.sinegen_dac.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.sinegen_dac.main" title="Link to this definition"></a></dt>
 <dd><p>Plot one DAC waveform with and without the delta-sigma modulator.</p>
 <p>Uses amplitude scale 8, amplitude 15, and tuning word 257.
 <code class="docutils literal notranslate"><span class="pre">2**16</span></code> samples after 1000 warmup clocks put the tone at FFT
@@ -894,12 +894,12 @@ bin 257, inside the default OSR-32 band. The sample rate is 100 MHz.</p>
 </dd></dl>
 
 </section>
-<section id="module-nssar">
-<span id="noise-shaping-sar"></span><h2>Noise-shaping SAR<a class="headerlink" href="#module-nssar" title="Link to this heading"></a></h2>
+<section id="module-models.nssar">
+<span id="noise-shaping-sar"></span><h2>Noise-shaping SAR<a class="headerlink" href="#module-models.nssar" title="Link to this heading"></a></h2>
 <p>Noise-shaping SAR conversion of a differential input.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.convert_nssar">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">convert_nssar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vin_p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vin_n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_dwa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_dwa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_quantizer_bits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap_mismatch_sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vrefp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vrefn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#nssar.convert_nssar" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.convert_nssar">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">convert_nssar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vin_p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vin_n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_dwa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_dwa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_quantizer_bits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap_mismatch_sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vrefp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vrefn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#models.nssar.convert_nssar" title="Link to this definition"></a></dt>
 <dd><p>Return one row per sample clock for the noise-shaping SAR.</p>
 <p>Call it with a register dictionary, for example
 <code class="docutils literal notranslate"><span class="pre">convert_nssar(vin_p,</span> <span class="pre">vin_n,</span> <span class="pre">**registers)</span></code>.</p>
@@ -947,13 +947,13 @@ the count.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.calculate_sndr_db">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">calculate_sndr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#nssar.calculate_sndr_db" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.calculate_sndr_db">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">calculate_sndr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#models.nssar.calculate_sndr_db" title="Link to this definition"></a></dt>
 <dd><p>Return the signal-to-noise-and-distortion ratio in dB.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#nssar.convert_nssar" title="nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.nssar.convert_nssar" title="models.nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
 <li><p><strong>warmup_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Leading sample clocks left out of the measurement.
 Default is 0.</p></li>
 </ul>
@@ -977,13 +977,13 @@ The output samples are <code class="docutils literal notranslate"><span class="p
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.calculate_sfdr_db">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">calculate_sfdr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#nssar.calculate_sfdr_db" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.calculate_sfdr_db">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">calculate_sfdr_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#models.nssar.calculate_sfdr_db" title="Link to this definition"></a></dt>
 <dd><p>Return the spurious-free dynamic range in dB.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#nssar.convert_nssar" title="nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.nssar.convert_nssar" title="models.nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
 <li><p><strong>warmup_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Leading sample clocks left out of the measurement.
 Default is 0.</p></li>
 </ul>
@@ -1007,13 +1007,13 @@ The output samples are <code class="docutils literal notranslate"><span class="p
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.plot_output">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">plot_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#nssar.plot_output" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.plot_output">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">plot_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#models.nssar.plot_output" title="Link to this definition"></a></dt>
 <dd><p>Plot the decimated incremental output against time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#nssar.convert_nssar" title="nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.nssar.convert_nssar" title="models.nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
 <li><p><strong>fs</strong> (<em>float</em>) – Sample rate of the input clocks, in hertz.</p></li>
 <li><p><strong>n_samples</strong> (<em>int</em>) – Number of output samples to plot, taken where
 <code class="docutils literal notranslate"><span class="pre">sample_output</span></code> is true.</p></li>
@@ -1037,13 +1037,13 @@ The output samples are <code class="docutils literal notranslate"><span class="p
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.plot_spectrum">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">plot_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#nssar.plot_spectrum" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.plot_spectrum">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">plot_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#models.nssar.plot_spectrum" title="Link to this definition"></a></dt>
 <dd><p>Plot the decimated output spectrum after skipping warmup.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#nssar.convert_nssar" title="nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.nssar.convert_nssar" title="models.nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
 <li><p><strong>fs</strong> (<em>float</em>) – Sample rate of the input clocks, in hertz.</p></li>
 <li><p><strong>osr</strong> (<em>int</em><em>, </em><em>optional</em>) – Clocks per output sample. The frequency axis uses
 <code class="docutils literal notranslate"><span class="pre">fs</span> <span class="pre">/</span> <span class="pre">osr</span></code>. Default is 32.</p></li>
@@ -1068,13 +1068,13 @@ axis.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.plot_quantizer_spectrum">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">plot_quantizer_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#nssar.plot_quantizer_spectrum" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.plot_quantizer_spectrum">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">plot_quantizer_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Figure</span></span></span><a class="headerlink" href="#models.nssar.plot_quantizer_spectrum" title="Link to this definition"></a></dt>
 <dd><p>Plot the quantizer spectrum after skipping warmup clocks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#nssar.convert_nssar" title="nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
+<li><p><strong>results</strong> (<em>pandas.DataFrame</em>) – Table from <a class="reference internal" href="#models.nssar.convert_nssar" title="models.nssar.convert_nssar"><code class="xref py py-func docutils literal notranslate"><span class="pre">convert_nssar()</span></code></a>.</p></li>
 <li><p><strong>fs</strong> (<em>float</em>) – Sample rate of the input clocks, in hertz.</p></li>
 <li><p><strong>osr</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Draw the band edge at half the sample rate divided by this
 value. <code class="docutils literal notranslate"><span class="pre">None</span></code> draws no edge. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
@@ -1099,8 +1099,8 @@ axis.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="nssar.main">
-<span class="sig-prename descclassname"><span class="pre">nssar.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nssar.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="models.nssar.main">
+<span class="sig-prename descclassname"><span class="pre">models.nssar.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#models.nssar.main" title="Link to this definition"></a></dt>
 <dd><p>Plot one conversion and compare data-weighted averaging.</p>
 <p>The tone sits on a bin of the decimated output. The sample rate
 is 100 MHz and the oversampling ratio is 32. Mismatched
