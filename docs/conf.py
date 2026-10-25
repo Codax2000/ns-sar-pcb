@@ -11,7 +11,8 @@ from pathlib import Path
 # Headless builds import the plotting helpers while collecting docstrings.
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-# Tests import these modules as top-level names (fp_array, cordic, ...).
+# Package imports (models.fp_array, models.cordic, ...). scripts/ is the
+# parent of the models package; unit tests use the same path.
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(_SCRIPTS))
 

@@ -22,7 +22,7 @@ UVM_PKG      := ./hdl_design/hdl_design.srcs/dv/chip_top_regs/chip_regs_dv_pkg.s
 ADC_SYNC     := ./hdl_design/hdl_design.srcs/rtl/registers/adc/adc_reg_sync.sv
 C_HEADER     := ./software/firmware/src/registers/chip_top_registers.h
 
-.PHONY: gen clean diagrams doc serve deploy
+.PHONY: gen clean diagrams doc serve deploy hdltest
 
 gen: clean
 	@mkdir -p $(DAC_RTL_DIR) $(ADC_RTL_DIR) $(TOP_HTML_DIR) \
@@ -53,6 +53,8 @@ clean:
 	@rm -rf ./docs/site
 	@rm -rf ./scripts/img
 	@rm -rf ./scripts/__pycache__
+	@rm -rf ./scripts/models/__pycache__
+	@$(MAKE) -C scripts/hdl_sim clean
 	@rm -rf .aider*
 	@echo "[Makefile] Done."
 
@@ -67,6 +69,14 @@ doc: diagrams
 
 serve:
 	python -m http.server --directory docs/_build/html
+
+# Cocotb + Verilator block tests. See scripts/hdl_sim/README.md.
+# `make hdltest.dac_snr` -> MODULE=test_dac_snr. UVM system tests are separate.
+hdltest.%:
+	$(MAKE) -C scripts/hdl_sim MODULE=test_$* SIM=verilator
+
+hdltest:
+	$(MAKE) -C scripts/hdl_sim SIM=verilator
 
 # Local publish of docs/_build/html to the gh-pages branch.
 deploy:

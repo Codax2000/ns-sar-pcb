@@ -6,11 +6,15 @@ This device must, of course, be verified. One of the main goals of this project 
 and so there will be three levels of verification.
 
 1. Block-level testbench with ``cocotb`` and Verilator. This is to compare against the fixed-point math and Python modeling.
-2. System-level testbench with UVM. This ensures that the SPI interface can control the device as intended. It will also be used
-for randomized DAC outputs and ADC sampling. This will not check that SNR is correct, but should be able to check that
-the ADC sampling is a sine wave in the waveform viewer.
-3. Validation testbench with ``pyserial``, Arduino, and Jupyter Notebook. Using PeakRDL, it should be possible to have an easy way of
-running ``set`` and ``write`` and ``read``, similar to UVM syntax.
+   From the repository root, ``make hdltest.<name>`` runs ``scripts/hdl_sim/test_<name>.py``
+   (``MODULE=test_<name>``, ``SIM=verilator``). ``make hdltest`` runs every ``test_*.py`` there, and
+   exits without starting a simulator when none have been added yet.
+2. System-level testbench with UVM. This ensures that the SPI interface can control the device as intended.
+   It will also be used for randomized DAC outputs and ADC sampling. This will not check that SNR is correct,
+   but should be able to check that the ADC sampling is a sine wave in the waveform viewer.
+   UVM system tests are not part of ``hdltest``.
+3. Validation testbench with ``pyserial``, Arduino, and Jupyter Notebook. Using PeakRDL, it should be possible
+   to have an easy way of running ``set`` and ``write`` and ``read``, similar to UVM syntax.
 
 System-Level Architecture
 -------------------------
