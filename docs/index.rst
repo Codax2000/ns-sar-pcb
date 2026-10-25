@@ -99,7 +99,7 @@ Here is a summary of the technology used:
    * - System Design
      - Python ``numpy``, ``scipy``, ``matplotlib``
    * - Documentation
-     - Python ``mkdocs``, ``schemdraw``
+     - Python ``sphinx``, ``schemdraw``
    * - Digital Logic Design
      - Xilinx Vivado
    * - Analog Circuit Design
