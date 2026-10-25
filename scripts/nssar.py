@@ -1,512 +1,1407 @@
-'''
-Alex Knowlton
-4/1/2025
+"""Noise-shaping SAR conversion of a differential input.
+"""
 
-Class definition for modeling a noise-shaping SAR ADC
-using the Silva-Steensgard architecture, with an
-optional reset
-'''
+from __future__ import annotations
 
-from multiprocessing import Value
-from scipy.signal import windows
+import unittest
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import pdb
 
-class NSSAR:
+from fp_array import FixedPointArray
 
-    def __init__(self, n_quantizer_bits=3, cap_mismatch_sigma=0.05, \
-                 vdd=1.0, vss=0, max_nfft=2**20, max_osr=256):
-        '''
-        set class with hardware constraints and initialize register fields
-        with default functions
-        '''
-        self._reg = {
-            'nfft': 2**12,
-            'osr': 32,
-            'fs': 125e6,
-            'vdd': 3.3,
-            'warmup_samples': 1000,
-            'do_dwa': True,
-            'incremental_mode': True
+
+DEFAULT_OSR = 32
+BLACKMAN_HALF_WIDTH = 3
+_COUNTER_FRACTIONAL_BITS = 0
+
+_RESULT_COLUMNS = (
+    "input",
+    "sample_input",
+    "integrator_input",
+    "vin_p",
+    "vin_n",
+    "vint_p",
+    "vint_n",
+    "quantizer_decision",
+    "dac_feedback",
+    "error",
+    "integrator_1",
+    "integrator_2",
+    "incremental_1",
+    "incremental_2",
+    "reset",
+    "sample_output",
+    "dwa_pointer",
+)
+
+
+def _check_voltage_array(values: np.ndarray, name: str) -> None:
+    """Raise unless values is a non-empty 1-D real array."""
+    if not isinstance(values, np.ndarray):
+        received = type(values).__name__
+        raise TypeError(f"{name} must be a numpy array, got {received}")
+    if values.ndim != 1:
+        raise ValueError(f"{name} must be 1-D, got shape {values.shape}")
+    is_real = np.issubdtype(values.dtype, np.floating) or np.issubdtype(
+        values.dtype, np.integer
+    )
+    if not is_real:
+        raise TypeError(
+            f"{name} must have a real numeric dtype, got {values.dtype}"
+        )
+    if values.size < 1:
+        raise ValueError(
+            f"{name} must contain at least 1 sample, got {values.size}"
+        )
+    n_bad = int(np.size(values) - np.isfinite(values).sum())
+    if n_bad:
+        raise ValueError(
+            f"{name} must contain only finite values, got {n_bad} "
+            "non-finite"
+        )
+
+
+def _check_same_length(vin_p: np.ndarray, vin_n: np.ndarray) -> None:
+    """Raise unless vin_p and vin_n have the same length."""
+    if vin_p.shape[0] != vin_n.shape[0]:
+        raise ValueError(
+            "vin_p and vin_n must have the same length, "
+            f"got {vin_p.shape[0]} and {vin_n.shape[0]}"
+        )
+
+
+def _check_flag(flag: bool, name: str) -> None:
+    """Raise unless flag is a bool."""
+    if not isinstance(flag, bool):
+        received = type(flag).__name__
+        raise TypeError(f"{name} must be a bool, got {received}")
+
+
+def _check_quantizer_bits(n_quantizer_bits: int) -> None:
+    """Raise unless n_quantizer_bits is an int from 1 to 16."""
+    if isinstance(n_quantizer_bits, bool) or not isinstance(
+        n_quantizer_bits, int
+    ):
+        received = type(n_quantizer_bits).__name__
+        raise TypeError(
+            f"n_quantizer_bits must be an int, got {received}"
+        )
+    if n_quantizer_bits < 1 or n_quantizer_bits > 16:
+        raise ValueError(
+            "n_quantizer_bits must be from 1 to 16, "
+            f"got {n_quantizer_bits}"
+        )
+
+
+def _check_mismatch_sigma(cap_mismatch_sigma: float) -> None:
+    """Raise unless cap_mismatch_sigma is a non-negative finite real."""
+    if isinstance(cap_mismatch_sigma, bool) or not isinstance(
+        cap_mismatch_sigma, (int, float)
+    ):
+        received = type(cap_mismatch_sigma).__name__
+        raise TypeError(
+            "cap_mismatch_sigma must be a real number, "
+            f"got {received}"
+        )
+    if not np.isfinite(cap_mismatch_sigma):
+        raise ValueError(
+            "cap_mismatch_sigma must be finite, "
+            f"got {cap_mismatch_sigma}"
+        )
+    if cap_mismatch_sigma < 0:
+        raise ValueError(
+            "cap_mismatch_sigma must be non-negative, "
+            f"got {cap_mismatch_sigma}"
+        )
+
+
+def _check_reference(voltage: float, name: str) -> None:
+    """Raise unless voltage is a finite real number."""
+    if isinstance(voltage, bool) or not isinstance(voltage, (int, float)):
+        received = type(voltage).__name__
+        raise TypeError(f"{name} must be a real number, got {received}")
+    if not np.isfinite(voltage):
+        raise ValueError(f"{name} must be finite, got {voltage}")
+
+
+def _check_distinct_references(vrefp: float, vrefn: float) -> None:
+    """Raise unless the two references are different."""
+    if vrefp == vrefn:
+        raise ValueError(
+            f"vrefp and vrefn must differ, got {vrefp} and {vrefn}"
+        )
+
+
+def _check_osr(osr: int) -> None:
+    """Raise unless osr is a positive int."""
+    if isinstance(osr, bool) or not isinstance(osr, int):
+        received = type(osr).__name__
+        raise TypeError(f"osr must be an int, got {received}")
+    if osr < 1:
+        raise ValueError(f"osr must be a positive int, got {osr}")
+
+
+def _make_capacitors(
+    n_quantizer_bits: int, cap_mismatch_sigma: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the positive and negative capacitor arrays."""
+    count = 2 ** n_quantizer_bits
+    if cap_mismatch_sigma == 0:
+        ones = np.ones(count)
+        return ones, ones.copy()
+    positive = np.random.normal(1.0, cap_mismatch_sigma, count)
+    negative = np.random.normal(1.0, cap_mismatch_sigma, count)
+    return positive, negative
+
+
+def _make_control_signals(
+    n_samples: int, osr: int, incremental_mode: bool
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return reset and sample_output for each sample clock."""
+    clocks = np.arange(n_samples)
+    reset = np.zeros(n_samples, dtype=bool)
+    reset[0] = True
+    if incremental_mode:
+        reset[clocks % osr == 0] = True
+    sample_output = (clocks % osr) == (osr - 1)
+    return reset, sample_output
+
+
+def _update_capacitor_voltages(
+    cap_voltages: np.ndarray,
+    bit_index: int,
+    bit: bool,
+    vrefp: float,
+    vrefn: float,
+    vcm: float,
+) -> np.ndarray:
+    """Connect the next group of capacitors to a reference."""
+    n_bits = int(np.log2(cap_voltages.shape[0]))
+    n_update = 2 ** (n_bits - (bit_index + 1))
+    unset = np.flatnonzero(cap_voltages == vcm)
+    if bit:
+        cap_voltages[unset[:n_update]] = vrefp
+    else:
+        cap_voltages[unset[-(n_update + 1):-1]] = vrefn
+    return cap_voltages
+
+
+def _decision_from_bits(bits: np.ndarray) -> int:
+    """Return the integer weight of the quantizer comparisons."""
+    weight = bits.shape[0] - 1
+    decision = 0
+    for index in range(bits.shape[0]):
+        if bits[index]:
+            decision += 1 << (weight - index)
+    return decision
+
+
+def _run_sar(
+    vin_p: float,
+    vin_n: float,
+    vint_p: float,
+    vint_n: float,
+    cap_p: np.ndarray,
+    cap_n: np.ndarray,
+    pointer: int,
+    vrefp: float,
+    vrefn: float,
+) -> tuple[int, float]:
+    """Return one quantizer decision and the capacitor-array feedback."""
+    n_bits = int(np.log2(len(cap_p)))
+    rolled_p = np.roll(cap_p, -pointer)
+    rolled_n = np.roll(cap_n, -pointer)
+    vcm = (vrefp + vrefn) / 2.0
+    positive_voltage = np.zeros(n_bits + 1)
+    negative_voltage = np.zeros(n_bits + 1)
+    bits = np.zeros(n_bits, dtype=int)
+    cap_voltages = np.full(2 ** n_bits, vcm)
+    positive_voltage[0] = vrefp - vin_p
+    negative_voltage[0] = vrefp - vin_n
+    for index in range(n_bits):
+        bit = bool(
+            vint_p + negative_voltage[index]
+            >= vint_n + positive_voltage[index]
+        )
+        bits[index] = int(bit)
+        cap_voltages = _update_capacitor_voltages(
+            cap_voltages, index, bit, vrefp, vrefn, vcm
+        )
+        inverted = (vrefp + vrefn) - cap_voltages
+        charge_p = np.sum(rolled_p * cap_voltages) + np.sum(rolled_p) * (
+            positive_voltage[0] - vcm
+        )
+        charge_n = np.sum(rolled_n * inverted) + np.sum(rolled_n) * (
+            negative_voltage[0] - vcm
+        )
+        positive_voltage[index + 1] = charge_p / np.sum(rolled_p)
+        negative_voltage[index + 1] = charge_n / np.sum(rolled_n)
+    decision = _decision_from_bits(bits)
+    feedback = float(negative_voltage[n_bits] - positive_voltage[n_bits])
+    return decision, feedback
+
+
+def _integrate_decisions(
+    decisions: np.ndarray, reset: np.ndarray, n_quantizer_bits: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the two incremental counts in signed integer format (n, 0)."""
+    decision_width = n_quantizer_bits + 1
+    count = decisions.shape[0]
+    first: list[int] = []
+    second: list[int] = []
+    previous_1: FixedPointArray | None = None
+    previous_2: FixedPointArray | None = None
+    for index in range(count):
+        decision = int(decisions[index])
+        if reset[index]:
+            current_1 = FixedPointArray.from_mantissas(
+                decision, decision_width, _COUNTER_FRACTIONAL_BITS
+            )
+            current_2 = FixedPointArray.from_mantissas(
+                decision, decision_width, _COUNTER_FRACTIONAL_BITS
+            )
+        else:
+            current_1 = previous_1 + decision
+            current_2 = current_1 + previous_2
+        first.append(int(current_1.get_mantissas()[0]))
+        second.append(int(current_2.get_mantissas()[0]))
+        previous_1 = current_1
+        previous_2 = current_2
+    return _integers_to_array(first), _integers_to_array(second)
+
+
+def _integers_to_array(values: list[int]) -> np.ndarray:
+    """Return values as int64, or as Python integers if they do not fit."""
+    low = -(1 << 63)
+    high = (1 << 63) - 1
+    if min(values) < low or max(values) > high:
+        return np.array(values, dtype=object)
+    return np.array(values, dtype=np.int64)
+
+
+def _run_conversion(
+    vin_p: np.ndarray,
+    vin_n: np.ndarray,
+    do_dwa: bool,
+    incremental_mode: bool,
+    reset_dwa: bool,
+    n_quantizer_bits: int,
+    cap_mismatch_sigma: float,
+    vrefp: float,
+    vrefn: float,
+    osr: int,
+) -> pd.DataFrame:
+    """Convert checked inputs and return one row per sample clock."""
+    n_samples = vin_p.shape[0]
+    differential = vin_p - vin_n
+    reset, sample_output = _make_control_signals(
+        n_samples, osr, incremental_mode
+    )
+    cap_p, cap_n = _make_capacitors(n_quantizer_bits, cap_mismatch_sigma)
+    vcm = (vrefp + vrefn) / 2.0
+    sample_input = differential.copy()
+    integrator_input = np.zeros(n_samples)
+    quantizer_vin_p = np.zeros(n_samples)
+    quantizer_vin_n = np.zeros(n_samples)
+    quantizer_vint_p = np.zeros(n_samples)
+    quantizer_vint_n = np.zeros(n_samples)
+    decision = np.zeros(n_samples, dtype=np.int64)
+    dac_feedback = np.zeros(n_samples)
+    integrator_1 = np.zeros(n_samples)
+    integrator_2 = np.zeros(n_samples)
+    dwa_pointer = np.zeros(n_samples, dtype=np.int64)
+    n_capacitors = cap_p.shape[0]
+    pointer = 0
+    for index in range(n_samples):
+        if reset[index]:
+            integrator_input[index] = 0.0
+        else:
+            integrator_input[index] = (
+                2.0 * integrator_1[index - 1] + integrator_2[index - 1]
+            )
+        quantizer_vint_p[index] = vcm + integrator_input[index] / 2.0
+        quantizer_vint_n[index] = vcm - integrator_input[index] / 2.0
+        quantizer_vin_p[index] = vcm + sample_input[index] / 2.0
+        quantizer_vin_n[index] = vcm - sample_input[index] / 2.0
+        if (
+            index == 0
+            or not do_dwa
+            or (reset[index] and do_dwa and reset_dwa)
+        ):
+            used_pointer = 0
+        else:
+            used_pointer = pointer
+        decision[index], dac_feedback[index] = _run_sar(
+            float(quantizer_vin_p[index]),
+            float(quantizer_vin_n[index]),
+            float(quantizer_vint_p[index]),
+            float(quantizer_vint_n[index]),
+            cap_p,
+            cap_n,
+            used_pointer,
+            vrefp,
+            vrefn,
+        )
+        pointer = (used_pointer + int(decision[index])) % n_capacitors
+        dwa_pointer[index] = pointer
+        if reset[index]:
+            integrator_1[index] = dac_feedback[index]
+            integrator_2[index] = 0.0
+        else:
+            integrator_1[index] = (
+                dac_feedback[index] + integrator_1[index - 1]
+            )
+            integrator_2[index] = (
+                integrator_1[index - 1] + integrator_2[index - 1]
+            )
+    incremental_1, incremental_2 = _integrate_decisions(
+        decision, reset, n_quantizer_bits
+    )
+    frame = pd.DataFrame(
+        {
+            "input": differential,
+            "sample_input": sample_input,
+            "integrator_input": integrator_input,
+            "vin_p": quantizer_vin_p,
+            "vin_n": quantizer_vin_n,
+            "vint_p": quantizer_vint_p,
+            "vint_n": quantizer_vint_n,
+            "quantizer_decision": decision,
+            "dac_feedback": dac_feedback,
+            "error": dac_feedback.copy(),
+            "integrator_1": integrator_1,
+            "integrator_2": integrator_2,
+            "incremental_1": incremental_1,
+            "incremental_2": incremental_2,
+            "reset": reset,
+            "sample_output": sample_output,
+            "dwa_pointer": dwa_pointer,
         }
-        self._cp = np.random.normal(1, cap_mismatch_sigma, \
-                                    2 ** n_quantizer_bits)
-        self._cn = np.random.normal(1, cap_mismatch_sigma, \
-                                    2 ** n_quantizer_bits)
-        self._generate_loop_arrays()
-        self._result_memory = np.zeros(max_nfft, dtype=int)
-        self._max_osr = max_osr
-        self._vrefp = vdd
-        self._vrefn = vss
+    )
+    return frame.loc[:, list(_RESULT_COLUMNS)]
 
-    def convert(self, signal_specs=None, time_series_input=None):
-        '''                                                                                                                                                                                
-        Converts input signals (either sinusoidal specifications or a pre-defined                                                                                                          
-        time-series array) and stores the results in memory.                                                                                                                               
-                                                                                                                                                                                           
-        Parameters:                                                                                                                                                                        
-            signal_specs (list of dict, optional): A list of dictionaries, each specifying                                                                                                 
-                                                  an input sinusoid's amplitude, frequency,                                                                                                
-                                                  and phase. Used if time_series_input is None.                                                                                            
-                                                  Example: [{'amplitude': a, 'frequency': f, 'phase': p}]                                                                                  
-            time_series_input (numpy.ndarray, optional): A 2D numpy array of shape (2, N)                                                                                                  
-                                                         representing differential input signals                                                                                           
-                                                         [V_inP, V_inN]. Used if signal_specs is None.                                                                                     
-                                                         N must equal self._reg['nfft'] * self._reg['osr'].                                                                                
-        ''' 
-        if signal_specs is not None:
-            self._generate_input_signals(signal_specs)
-        elif time_series_input is not None:
-            self._u = time_series_input
-        else:
-            raise ValueError('Either signal_specs or time_series_input must be provided')
 
-        print('Beginning DSM Loop')
-        self._generate_control_signals()
-        nfft_derived = self._reg['nfft'] * self._reg['osr']
-        n_total_samples = nfft_derived + self._reg['warmup_samples']
+def convert_nssar(
+    vin_p: np.ndarray,
+    vin_n: np.ndarray,
+    do_dwa: bool = True,
+    incremental_mode: bool = True,
+    reset_dwa: bool = False,
+    n_quantizer_bits: int = 3,
+    cap_mismatch_sigma: float = 0.0,
+    vrefp: float = 1.0,
+    vrefn: float = 0.0,
+    osr: int = DEFAULT_OSR,
+) -> pd.DataFrame:
+    """Return one row per sample clock for the noise-shaping SAR.
 
-        if signal_specs is not None:
-            self._generate_sine_wave_input_signals(signal_specs)
-        else:
-            if not isinstance(time_series_input, np.ndarray) or time_series_input.ndim != 2 or time_series_input.shape[0] != 2:                                                            
-                raise ValueError("time_series_input must be a 2D numpy array of shape (2, N).")                                                                             
-            if time_series_input.shape[1] < n_total_samples:                                                                                                                              
-                raise ValueError(f"time_series_input length (N={time_series_input.shape[1]}) must have at least ({n_total_samples}).")      
-            self._u_pos = time_series_input[0, :n_total_samples]                             
-            self._u_neg = time_series_input[1, :n_total_samples]                             
-            self._u = self._u_pos - self._u_neg
-             
-        for i in range(nfft_derived):
-            self._calculate_integrator_to_quantizer(i)
-            self._calculate_sample_to_quantizer(i)
-            self._quantize(i)
-            self._update_dwa(i)
-            self._update_analog_integrators(i)
-            self._update_incremental_integrators(i)
-        self._write_data_to_memory()
+    Call it with a register dictionary, for example
+    ``convert_nssar(vin_p, vin_n, **registers)``.
 
-    def write_register_value(self, key, value):
-        '''
-        writes a register value if the key is valid and if the value is valid
-        if the key is not valid, throws an UnfoundRegisterError
-        if the value is not valid, throws an IllegalRegisterValueError
-        '''
-        self._validate_register_write_value(key, value)
-        self._reg[key] = value
-        self._generate_loop_arrays()
+    Parameters
+    ----------
+    vin_p : numpy.ndarray
+        Positive input voltage, one value per sample clock.
+    vin_n : numpy.ndarray
+        Negative input voltage, one value per sample clock.
+        Same length as ``vin_p``.
+    do_dwa : bool, optional
+        True rotates the capacitors from the data-weighted averaging
+        pointer. Default is True.
+    incremental_mode : bool, optional
+        True resets the integrators and counters every ``osr``
+        clocks. Default is True.
+    reset_dwa : bool, optional
+        True clears the averaging pointer when the integrators reset.
+        Default is False.
+    n_quantizer_bits : int, optional
+        Number of SAR decisions, from 1 to 16. Default is 3.
+    cap_mismatch_sigma : float, optional
+        Standard deviation of each capacitor value about 1.
+        Default is 0.
+    vrefp : float, optional
+        Positive reference voltage. Default is 1.
+    vrefn : float, optional
+        Negative reference voltage. Default is 0.
+    osr : int, optional
+        Clocks per output sample. Default is 32.
 
-    def read_register_value(self, key):
-        '''
-        if the register exists, return the value
-        if the register does not exist, throw an UnfoundRegisterError
-        '''
-        self._validate_register_read_value(key)
-        return self._reg[key]
+    Returns
+    -------
+    pandas.DataFrame
+        One row per sample clock. Columns are ``input``,
+        ``sample_input``, ``integrator_input``, ``vin_p``, ``vin_n``,
+        ``vint_p``, ``vint_n``, ``quantizer_decision``,
+        ``dac_feedback``, ``error``, ``integrator_1``,
+        ``integrator_2``, ``incremental_1``, ``incremental_2``,
+        ``reset``, ``sample_output``, and ``dwa_pointer``.
+        ``incremental_1`` and ``incremental_2`` are signed integer
+        counts, format ``(n, 0)``, with ``n`` wide enough to hold
+        the count.
 
-    def read_output_data(self):
-        '''
-        Return nfft values from device memory as a Pandas Series
-        with time-series indices
-        '''
-        return pd.Series(self._result_memory[:self._reg['nfft']], self._t) 
+    Raises
+    ------
+    TypeError
+        If an argument has the wrong type.
+    ValueError
+        If a length, count, reference, or deviation is out of range.
+    """
+    _check_voltage_array(vin_p, "vin_p")
+    _check_voltage_array(vin_n, "vin_n")
+    _check_same_length(vin_p, vin_n)
+    _check_flag(do_dwa, "do_dwa")
+    _check_flag(incremental_mode, "incremental_mode")
+    _check_flag(reset_dwa, "reset_dwa")
+    _check_quantizer_bits(n_quantizer_bits)
+    _check_mismatch_sigma(cap_mismatch_sigma)
+    _check_reference(vrefp, "vrefp")
+    _check_reference(vrefn, "vrefn")
+    _check_distinct_references(vrefp, vrefn)
+    _check_osr(osr)
+    return _run_conversion(
+        np.asarray(vin_p, dtype=np.float64),
+        np.asarray(vin_n, dtype=np.float64),
+        do_dwa,
+        incremental_mode,
+        reset_dwa,
+        n_quantizer_bits,
+        float(cap_mismatch_sigma),
+        float(vrefp),
+        float(vrefn),
+        osr,
+    )
 
-    def read_conversion_data(self):
-        '''
-        Return osr * (nfft + n_offset) values from the conversion as a Pandas
-        DataFrame with time-series index
-        '''
-        output = pd.DataFrame()
-        output['t'] = self._t
-        output['U'] = self._u
-        output['Qin_sample'] = self._qin_sample
-        output['Qin_integ'] = self._qin_integ
-        output['v_inp'] = self._vinp
-        output['v_inn'] = self._vinn
-        output['v_intp'] = self._vintp
-        output['v_intn'] = self._vintn
-        output['E'] = self._error
-        output['I1'] = self._i1
-        output['I2'] = self._i2
-        output['V'] = self._v
-        output['D1_inc'] = self._d1_incremental
-        output['D2_inc'] = self._d2_incremental
-        output['reset'] = self._reset
-        output['sample_output'] = self._sample_output
-        output['DWA_pointer'] = self._dwa_pointer
-        output = output.set_index('t')
-        return output
 
-    def plot_output_fft(self, ax=None, color=None, label=None):
-        '''
-        Plot the FFT of the output and return a handle of the figure object
-        on which it's plotted. If ax is none, create and set up a new figure
-        and return it. If ax is not none, assume it's already set up and plot
-        on that
-        '''
-        color = 'k' if color is None else color
-        q_data = self._get_windowed_fft_data()
-        T = self._reg['osr'] / self._reg['fs']
-        freqs = np.fft.fftfreq(self._reg['nfft'], T)[1:1+(self._reg['nfft'] // 2)]
-        freqs[-1] *= -1
-        fft_pow = np.real(q_data * np.conj(q_data))
-        i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
-        fft_pow /= fft_pow[i_max_pow]
-        fft_pow_db = 10 * np.log10(fft_pow)
-        if ax is None:
-            fig, ax = plt.subplots()
-            # ax.set_xscale('log')
-            ax.set_xlabel('Input Frequency')
-            ax.set_ylabel('Output PSD')
-            ax.set_title('Output FFT')
-        else:
-            fig = ax.get_figure()
-        if label is None:
-            ax.plot(freqs[2:], fft_pow_db[2:], color, linewidth=0.5, \
-                    alpha=0.5)
-        else:
-            ax.plot(freqs[2:], fft_pow_db[2:], color, linewidth=0.5, \
-                    label=label, alpha=0.5)
-        return fig
+def _check_results(results: pd.DataFrame) -> None:
+    """Raise unless results is a DataFrame."""
+    if not isinstance(results, pd.DataFrame):
+        received = type(results).__name__
+        raise TypeError(f"results must be a DataFrame, got {received}")
 
-    def plot_quantizer_fft(self, ax=None):
-        '''
-        Plot the FFT of the output and return a handle of the figure object
-        on which it's plotted. If ax is none, create and set up a new figure
-        and return it. If ax is not none, assume it's already set up and plot
-        on that
-        '''
-        q_data = self._get_windowed_fft_data(True)
-        T = 1 / self._reg['fs']
-        nfft_derived = self._reg['nfft'] * self._reg['osr']
-        freqs = np.fft.fftfreq(nfft_derived, T)[1:1+(nfft_derived // 2)]
-        freqs[-1] *= -1
-        fft_pow = np.real(q_data * np.conj(q_data))
-        i_max_pow = np.argmax(fft_pow[3:]) + 3  # bin smearing due to Blackman
-        fft_pow /= fft_pow[i_max_pow]
-        fft_pow_db = 10 * np.log10(fft_pow)
-        if ax is None:
-            fig, ax = plt.subplots()
-            ax.set_xscale('log')
-            ax.set_xlabel('Input Frequency')
-            ax.set_ylabel('Quantizer PSD')
-            ax.set_title('Quantizer FFT')
-        else:
-            fig = ax.get_figure()
-        ax.plot(freqs[2:], fft_pow_db[2:])
-        critical_frequency = self._reg['fs'] / (2 * self._reg['osr'])
-        ax.axvline(x=critical_frequency, color='red', linestyle='--')
-        return fig
 
-    def plot_output_data(self, n_samples, ax=None):
-        '''
-        plots the output data in the interval (n_offset, n_offset + n_samples)
-        on the given axis and returns a handle to the figure on which it is
-        plotted
-        '''
-        plot_data = self._result_memory[:n_samples]
-        plot_time = self._t[self._sample_output]
-        plot_time = plot_time[-self._reg['nfft']:]
-        plot_time = plot_time[:n_samples]
-        if ax is None:
-            fig, ax = plt.subplots()
-            ax.set_xlabel('Sample Time [s]')
-            ax.set_ylabel('ADC Output')
-        else:
-            fig = ax.get_figure()
-        ax.plot(plot_time, plot_data)
-        return fig
+def _check_column(results: pd.DataFrame, column: str) -> None:
+    """Raise unless results contains column."""
+    _check_results(results)
+    if column not in results.columns:
+        raise ValueError(f"results must include {column}")
 
-    def get_sndr(self):
-        '''
-        Returns the SNDR of the last conversion. If no conversion has been
-        done yet, return 0
-        '''
-        fft_data = self._get_windowed_fft_data()[2:]  # filter out DC data
-        fft_pow = np.real(fft_data * np.conj(fft_data))
-        i_max_power = np.argmax(fft_pow)
-        signal_slice = np.arange(i_max_power-2, i_max_power+3)
-        filt = np.zeros(fft_pow.shape[0], dtype=bool)
-        filt[signal_slice] = True
-        is_signal_indices = filt
-        signal_power = np.sum(fft_pow[is_signal_indices])
-        noise_power = np.sum(fft_pow[~is_signal_indices])
-        sndr = signal_power / noise_power
-        sndr_db = 10 * np.log10(sndr)
-        return sndr_db
 
-    def get_sfdr(self):
-        '''
-        Returns the SFDR of the last conversion. If no conversion has been
-        done yet, return 0
-        '''
-        fft_data = self._get_windowed_fft_data()[2:]  # filter out DC data
-        fft_pow = np.real(fft_data * np.conj(fft_data))
-        i_max_power = np.argmax(fft_pow)
-        noise_slice_to_signal = np.arange(i_max_power-2)
-        noise_signal_to_fs = np.arange(i_max_power+3, fft_pow.shape[0])
-        indices = np.zeros(fft_pow.shape[0], dtype=bool)
-        is_noise_slice_low = indices
-        is_noise_slice_low[noise_slice_to_signal] = True
-        is_noise_slice_high = indices
-        is_noise_slice_low[noise_signal_to_fs] = True
-        signal_power = fft_pow[i_max_power]
-        noise_power_low = fft_pow[is_noise_slice_low]
-        noise_power_high = fft_pow[is_noise_slice_high]
-        max_pow_low = np.max(noise_power_low)
-        max_pow_high = np.max(noise_power_high)
-        noise_power = np.max((max_pow_high, max_pow_low))
-        sfdr = signal_power / noise_power
-        sfdr_db = 10 * np.log10(sfdr)
-        return sfdr_db
+def _check_warmup_samples(warmup_samples: int, n_rows: int) -> None:
+    """Raise unless warmup_samples leaves at least one row."""
+    if isinstance(warmup_samples, bool) or not isinstance(
+        warmup_samples, int
+    ):
+        received = type(warmup_samples).__name__
+        raise TypeError(
+            f"warmup_samples must be an int, got {received}"
+        )
+    if n_rows < 1:
+        raise ValueError(
+            f"results must contain at least 1 row, got {n_rows}"
+        )
+    if warmup_samples < 0 or warmup_samples >= n_rows:
+        raise ValueError(
+            "warmup_samples must be between 0 and "
+            f"{n_rows - 1}, got {warmup_samples}"
+        )
 
-    def _fp_quantize(self, value):
-        '''
-        quantizes the input value to the internal (N, R) values
-        '''
-        N = self._n_fixed_point_bits
-        R = self._n_fractional_bits
-        max_value = 2 ** (N - 1) - 1
-        min_value = -(2 ** (N - 1))
-        value = value * (2 ** R)
-        value = np.floor(value).astype(int)
-        is_over_max = value > max_value
-        is_under_min = value < min_value
-        value[is_over_max] = max_value
-        value[is_under_min] = min_value
-        return value
-    
-    def _fp_add(self, a, b):
-        pass
 
-    def _fp_mult(self, a, b):
-        pass
+def _check_sample_rate(fs: float) -> None:
+    """Raise unless fs is a positive real sample rate."""
+    if isinstance(fs, bool) or not isinstance(fs, (int, float)):
+        received = type(fs).__name__
+        raise TypeError(f"fs must be a real number, got {received}")
+    if not np.isfinite(fs):
+        raise ValueError(f"fs must be finite, got {fs}")
+    if fs <= 0:
+        raise ValueError(f"fs must be positive, got {fs}")
 
-    def _generate_loop_arrays(self):
-        '''
-        generates loop arrays for IADC and DSM conversion
-        '''
-        # derived parameters
-        T = 1 / self._reg['fs']
-        n_total_samples = self._reg['nfft'] * self._reg['osr']
-        self._t = np.arange(n_total_samples) * T
-        self._error = np.zeros(self._t.shape)
-        self._i1_pos = np.zeros(self._t.shape)
-        self._i1_neg = np.zeros(self._t.shape)
-        self._i2_pos = np.zeros(self._t.shape)
-        self._i2_neg = np.zeros(self._t.shape)
-        self._d1_incremental = np.zeros(self._t.shape)
-        self._d2_incremental = np.zeros(self._t.shape)
-        self._qin_sample = np.zeros(self._t.shape)
-        self._qin_integ = np.zeros(self._t.shape)
-        self._dwa_pointer = np.zeros(self._t.shape, dtype=int)
-        self._v = np.zeros(self._t.shape, dtype=int)
-        self._dac_output = np.zeros(self._t.shape)
-        self._vinp = np.zeros(self._t.shape)
-        self._vinn = np.zeros(self._t.shape)
-        self._vintp = np.zeros(self._t.shape)
-        self._vintn = np.zeros(self._t.shape)
 
-    def _generate_control_signals(self):
-        '''
-        Generate reset and sample_output signals
-        '''
-        osr = self._reg['osr']
-        n_samples = self._reg['nfft'] * osr
-        i = np.arange(n_samples)
-        self._reset = (i % osr == 0)
-        self._sample_output = (i % osr) == (osr - 1)
+def _check_n_samples(n_samples: int) -> None:
+    """Raise unless n_samples is a positive int."""
+    if isinstance(n_samples, bool) or not isinstance(n_samples, int):
+        received = type(n_samples).__name__
+        raise TypeError(f"n_samples must be an int, got {received}")
+    if n_samples < 1:
+        raise ValueError(f"n_samples must be positive, got {n_samples}")
 
-    def _generate_input_signals(self, data):
-        '''
-        Generates differential input signal u_pos and u_neg and stores as a class variable
-        '''
-        self._u_pos = self._t * 0
-        self._u_neg = self._t * 0
-        for d in data:
-            u = d['amplitude'] * \
-                np.cos(2 * np.pi * d['frequency'] * self._t + d['phase'])
-            self._u_pos += self._vdd / 2.0 + u / 2.0
-            self._u_neg += self._vdd / 2.0 - u / 2.0
-            self._u = self._u_pos - self._u_neg
 
-    def _calculate_integrator_to_quantizer(self, i):
-        '''
-        calculate vintp and vintn to the quantizer
-        '''
-        # vcm = (self._vrefp + self._vrefn) / 2
-        # if self._reset[i]:
-        #     self._qin_integ[i] = 0
-        # else:
-        #     self._qin_integ[i] = 2 * self._i1[i - 1] + self._i2[i - 1]
-        # self._vintp[i] = vcm + self._qin_integ[i] / 2
-        # self._vintn[i] = vcm - self._qin_integ[i] / 2
-        pass
+def _decimated_output(
+    results: pd.DataFrame, warmup_samples: int
+) -> np.ndarray:
+    """Return incremental_2 at each sample_output after warmup."""
+    _check_column(results, "incremental_2")
+    _check_column(results, "sample_output")
+    _check_warmup_samples(warmup_samples, len(results))
+    kept = results.iloc[warmup_samples:]
+    flags = np.asarray(kept["sample_output"], dtype=bool)
+    if not flags.any():
+        raise ValueError(
+            "results must include a sample_output after warmup, got none"
+        )
+    values = kept["incremental_2"].to_numpy()[flags]
+    return np.asarray(values, dtype=np.float64)
 
-    def _calculate_sample_to_quantizer(self, i):
-        '''
-        calculate vinp and vinn to the quantizer
-        '''
-        # self._qin_sample[i] = self._u[i]
-        # vcm = (self._vrefp + self._vrefn) / 2
-        # self._vinp[i] = vcm + self._qin_sample[i] / 2
-        # self._vinn[i] = vcm - self._qin_sample[i] / 2
-        pass
 
-    def _quantize(self, i):
-        '''
-        quantizer input with DWA, if applicable
-        '''
-        not_using_dwa = (i == 0) or (not self._reg['do_dwa'])
-        reset_dwa_pointer = self._reset[i] and self._reg['do_dwa'] and \
-            self._reg['reset_dwa']
-        if (not_using_dwa or reset_dwa_pointer):
-            pointer = 0
-        else:
-            pointer = self._dwa_pointer[i - 1]
-        self._v[i], self._dac_output[i] = self._run_sar(i, pointer)
-        self._error[i] = self._dac_output[i]
+def _quantizer_samples(
+    results: pd.DataFrame, warmup_samples: int
+) -> np.ndarray:
+    """Return quantizer decisions after warmup."""
+    _check_column(results, "quantizer_decision")
+    _check_warmup_samples(warmup_samples, len(results))
+    return np.asarray(
+        results["quantizer_decision"].iloc[warmup_samples:],
+        dtype=np.float64,
+    )
 
-    def _update_dwa(self, i):
-        '''
-        Update DWA pointer by adding the last quantizer value
-        '''
-        pointer = self._dwa_pointer[i - 1]
-        pointer += self._v[i]
-        max_pointer_value = self._cp.shape[0]
-        self._dwa_pointer[i] = pointer % max_pointer_value
 
-    def _update_analog_integrators(self, i):
-        if self._reset[i]:
-            self._i1[i] = self._error[i]
-            self._i2[i] = 0
-        else:
-            self._i1[i] = self._error[i] + self._i1[i - 1]
-            self._i2[i] = self._i1[i - 1] + self._i2[i - 1]
+def _windowed_spectrum(samples: np.ndarray) -> np.ndarray:
+    """Return the Blackman FFT of samples."""
+    window = np.blackman(samples.shape[0])
+    return np.fft.fft(samples * window)
 
-    def _update_incremental_integrators(self, i):
-        if self._reset[i]:
-            self._d1_incremental[i] = self._v[i]
-            self._d2_incremental[i] = self._d1_incremental[i]
-        else:
-            self._d1_incremental[i] = self._v[i] + self._d1_incremental[i - 1]
-            self._d2_incremental[i] = self._d1_incremental[i] + \
-                self._d2_incremental[i - 1]
 
-    def _write_data_to_memory(self):
-        adc_data = self._d2_incremental[self._sample_output]
-        self._result_memory[:self._reg['nfft']] = adc_data[-self._reg['nfft']:]
+def _band_powers(
+    spectrum: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
+    """Return power, signal bins, noise bins, and the peak bin."""
+    count = spectrum.shape[0]
+    nyquist = count // 2
+    guard = BLACKMAN_HALF_WIDTH
+    if nyquist <= guard:
+        raise ValueError(
+            "spectrum does not clear the DC leakage bins, "
+            f"got {count} samples"
+        )
+    power = np.abs(spectrum) ** 2
+    search = np.arange(guard + 1, nyquist + 1)
+    peak = int(search[np.argmax(power[search])])
+    signal_bins = np.arange(peak - guard, peak + guard + 1)
+    signal_bins = signal_bins[
+        (signal_bins >= 0) & (signal_bins <= nyquist)
+    ]
+    noise_bins = search[~np.isin(search, signal_bins)]
+    return power, signal_bins, noise_bins, peak
 
-    def _get_fft_frequencies(self, use_quantizer_data=False):
-        '''
-        Return frequencies of fft as frequency, not normalized to fs. If using
-        quantizer, go up to fs / 2, else only go up to fs / (2 * osr)
-        '''
-        if use_quantizer_data:
-            top_nfft_num = self._reg['osr'] * self._reg['nfft']
-        else:
-            top_nfft_num = self._reg['nfft']
-        top_nfft_num = top_nfft_num // 2
-        freqs = np.arange(top_nfft_num) + 1
-        return self._reg['fs'] * freqs / (2 * top_nfft_num)
 
-    def _get_windowed_fft_data(self, use_quantizer_data=False):
-        '''
-        Return windowed fft data, using the Blackman window,
-        as power normalized to the fundamental tone(s)
-        if not use_quantizer_data, use the output data
-        '''
-        if use_quantizer_data:
-            top_nfft_num = self._reg['osr'] * self._reg['nfft']
-            data = self._v[-top_nfft_num:]
-        else:
-            top_nfft_num = self._reg['nfft']
-            data = self._result_memory[:top_nfft_num]
-        fft_window = windows.blackman(top_nfft_num)
-        windowed_data = fft_window * data
-        return np.fft.fft(windowed_data)[1:(1 + top_nfft_num // 2)]
-    
-    def _run_sar(self, j, pointer):
-        '''
-        Actually runs SAR adc loop
-        '''
-        cp = self._cp
-        cn = self._cn
-        n_bits = int(np.log2(len(cp)))
+def _plot_normalized_spectrum(
+    axis: plt.Axes,
+    frequencies: np.ndarray,
+    spectrum: np.ndarray,
+    label: str,
+) -> None:
+    """Plot one-sided power in dB, normalized to the peak past DC."""
+    power = np.abs(spectrum) ** 2
+    nyquist = spectrum.shape[0] // 2
+    search = np.arange(BLACKMAN_HALF_WIDTH + 1, nyquist + 1)
+    if search.size:
+        peak = float(np.max(power[search]))
+    else:
+        peak = float(np.max(power))
+    if peak == 0.0:
+        power_db = np.zeros(power.shape)
+    else:
+        with np.errstate(divide="ignore"):
+            power_db = 10.0 * np.log10(power / peak)
+    positive = frequencies >= 0
+    axis.plot(frequencies[positive], power_db[positive], label=label)
 
-        # roll capacitor values if using DWA
-        cp = np.roll(cp, -pointer)
-        cn = np.roll(cn, -pointer)
 
-        # residue voltage for all conversions, at all points in conversion
-        vresp = np.zeros(n_bits + 1)
-        vresn = np.zeros(n_bits + 1)
-        bits = np.zeros(n_bits, dtype=int)
+def calculate_sndr_db(
+    results: pd.DataFrame, warmup_samples: int = 0
+) -> float:
+    """Return the signal-to-noise-and-distortion ratio in dB.
 
-        vcm = (self._vrefp + self._vrefn) / 2
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the measurement.
+        Default is 0.
 
-        cap_values = np.zeros(2**n_bits) + vcm
-        vresp[0] = self._vrefp - self._vinp[j]
-        vresn[0] = self._vrefp - self._vinn[j]
-        for i in range(n_bits):
-            filt = self._vintp[j] + vresn[i] >= self._vintn[j] + vresp[i]
-            bits[i] = 1 * filt
-            cap_values = self._update_cap_values(cap_values, i, filt)
-            inverted_cap_values = 1 - cap_values
-            qp = np.sum(cp * (cap_values)) + np.sum(cp) * (vresp[0] - vcm)
-            qn = np.sum(cn * (inverted_cap_values)) + np.sum(cn) * (vresn[0] - vcm)
-            vresp[i + 1] = qp / np.sum(cp)
-            vresn[i + 1] = qn / np.sum(cn)
-        bits_calc = n_bits - 1
-        positive_bits = bits_calc - np.where(bits == 1)[0]
-        return np.sum(np.power(2, positive_bits)), vresn[n_bits] - vresp[n_bits]
+    Returns
+    -------
+    float
+        Ratio in dB of the output tone to the rest of the
+        decimated band. Infinity when the noise power is zero.
+        The output samples are ``incremental_2`` where
+        ``sample_output`` is true.
 
-    def _update_cap_values(self, cap_values, i, bit):
-        '''
-        Update capacitor voltages to either 1 or 0 depending on the SAR conversion
-        '''
-        # calculate slice to update
-        n_bits = int(np.log2(cap_values.shape[0]))
-        n_update_bits = 2**(n_bits - (i + 1))
-        update_slice = np.where(cap_values == 0.5)[0]
-        if bit:
-            cap_values[update_slice[:n_update_bits]] = 1
-        else:
-            cap_values[update_slice[-(n_update_bits + 1):-1]] = 0
-        return cap_values
+    Raises
+    ------
+    TypeError
+        If ``warmup_samples`` has the wrong type.
+    ValueError
+        If the warmup or the table is unusable.
+    """
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    power, signal_bins, noise_bins, _peak = _band_powers(spectrum)
+    signal_power = float(np.sum(power[signal_bins]))
+    if noise_bins.size == 0:
+        return float("inf")
+    noise_power = float(np.sum(power[noise_bins]))
+    if noise_power == 0.0:
+        return float("inf")
+    return float(10.0 * np.log10(signal_power / noise_power))
 
-    class UnfoundRegisterError(Exception):
-        def __init__(self, register_name):
-            super().__init__(f'Register name \'{register_name}\' not found')
 
-    class IllegalRegisterValueError(Exception):
-        def __init__(self, key, value):
-            super().__init__(f'Value {value} illegal for register {key}')
+def calculate_sfdr_db(
+    results: pd.DataFrame, warmup_samples: int = 0
+) -> float:
+    """Return the spurious-free dynamic range in dB.
 
-    def _validate_register_write_value(self, key, value):
-        '''
-        Check that register write values are legal. If the key is not found,
-        raise a new UnfoundRegisterError. If the value is not legal, raise a
-        new IllegalRegisterValueError
-        '''
-        self._validate_register_key(key)
-        is_legal_nfft_value = (key == 'nfft') and \
-            (type(value) == type(1)) and \
-            (value <= self._result_memory.shape[0])
-        is_legal_osr_value = (key == 'osr') and (value <= self._max_osr)
-        is_legal_fs = (key == 'fs') and (type(value) == type(1))
-        is_legal_boolean_value = type(value) == type(True)
-        is_legal_register_value = is_legal_nfft_value or is_legal_osr_value \
-            or is_legal_fs or is_legal_boolean_value
-        if not is_legal_register_value:
-            raise IllegalRegisterValueError(key, value)
-        
-    def _validate_register_key(self, key):
-        '''
-        Check that register read value is legal. If the key is not found,
-        raise a new UnfoundRegisterError.
-        '''
-        if key not in self._reg.keys():
-            raise UnfoundRegisterError(key)
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the measurement.
+        Default is 0.
+
+    Returns
+    -------
+    float
+        Ratio in dB of the output tone to the largest other bin
+        in the decimated band. Infinity when that bin is zero.
+        The output samples are ``incremental_2`` where
+        ``sample_output`` is true.
+
+    Raises
+    ------
+    TypeError
+        If ``warmup_samples`` has the wrong type.
+    ValueError
+        If the warmup or the table is unusable.
+    """
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    power, _signal_bins, noise_bins, peak = _band_powers(spectrum)
+    if noise_bins.size == 0:
+        return float("inf")
+    noise_power = float(np.max(power[noise_bins]))
+    if noise_power == 0.0:
+        return float("inf")
+    signal_power = float(power[peak])
+    return float(10.0 * np.log10(signal_power / noise_power))
+
+
+def plot_output(
+    results: pd.DataFrame,
+    fs: float,
+    n_samples: int,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the decimated incremental output against time.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    n_samples : int
+        Number of output samples to plot, taken where
+        ``sample_output`` is true.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure is created when omitted.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the plot.
+
+    Raises
+    ------
+    TypeError
+        If ``results``, ``fs``, or ``n_samples`` has the wrong type.
+    ValueError
+        If ``n_samples`` or ``fs`` is out of range, or a column is
+        missing.
+    """
+    _check_results(results)
+    _check_n_samples(n_samples)
+    _check_sample_rate(fs)
+    _check_column(results, "sample_output")
+    _check_column(results, "incremental_2")
+    clocks = np.flatnonzero(
+        np.asarray(results["sample_output"], dtype=bool)
+    )
+    if n_samples > clocks.size:
+        raise ValueError(
+            f"n_samples must be at most {int(clocks.size)}, "
+            f"got {n_samples}"
+        )
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+    else:
+        figure = ax.figure
+        axis = ax
+    chosen = clocks[:n_samples]
+    axis.plot(
+        chosen / fs,
+        results["incremental_2"].iloc[list(chosen)],
+        label="Output",
+    )
+    axis.set_xlabel("Time (s)")
+    axis.set_ylabel("Incremental output")
+    axis.set_title("ADC output")
+    axis.legend()
+    axis.grid()
+    return figure
+
+
+def plot_spectrum(
+    results: pd.DataFrame,
+    fs: float,
+    osr: int = DEFAULT_OSR,
+    warmup_samples: int = 0,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the decimated output spectrum after skipping warmup.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    osr : int, optional
+        Clocks per output sample. The frequency axis uses
+        ``fs / osr``. Default is 32.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the spectrum. Default is 0.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure uses a logarithmic frequency
+        axis.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the spectrum.
+
+    Raises
+    ------
+    TypeError
+        If an argument has the wrong type.
+    ValueError
+        If ``fs``, ``osr``, or ``warmup_samples`` is out of range.
+    """
+    _check_sample_rate(fs)
+    _check_osr(osr)
+    samples = _decimated_output(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    frequencies = np.fft.fftfreq(samples.shape[0], d=osr / fs)
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+        axis.set_xscale("log")
+    else:
+        figure = ax.figure
+        axis = ax
+    _plot_normalized_spectrum(axis, frequencies, spectrum, "Output")
+    axis.set_xlabel("Frequency [Hz]")
+    axis.set_ylabel("Magnitude [dB]")
+    axis.set_title("ADC output spectrum")
+    axis.legend()
+    axis.grid(True, which="both", ls="-")
+    return figure
+
+
+def plot_quantizer_spectrum(
+    results: pd.DataFrame,
+    fs: float,
+    osr: int | None = None,
+    warmup_samples: int = 0,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    """Plot the quantizer spectrum after skipping warmup clocks.
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Table from :func:`convert_nssar`.
+    fs : float
+        Sample rate of the input clocks, in hertz.
+    osr : int or None, optional
+        Draw the band edge at half the sample rate divided by this
+        value. ``None`` draws no edge. Default is ``None``.
+    warmup_samples : int, optional
+        Leading sample clocks left out of the spectrum. Default is 0.
+    ax : matplotlib.axes.Axes or None, optional
+        Axis to draw on. A new figure uses a logarithmic frequency
+        axis.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure that contains the spectrum.
+
+    Raises
+    ------
+    TypeError
+        If an argument has the wrong type.
+    ValueError
+        If ``fs``, ``osr``, or ``warmup_samples`` is out of range.
+    """
+    _check_sample_rate(fs)
+    if osr is not None:
+        _check_osr(osr)
+    samples = _quantizer_samples(results, warmup_samples)
+    spectrum = _windowed_spectrum(samples)
+    frequencies = np.fft.fftfreq(samples.shape[0], d=1.0 / fs)
+    if ax is None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+        axis.set_xscale("log")
+    else:
+        figure = ax.figure
+        axis = ax
+    _plot_normalized_spectrum(axis, frequencies, spectrum, "Quantizer")
+    if osr is not None:
+        cutoff_hz = (fs / 2.0) / osr
+        cutoff_mhz = np.round(cutoff_hz / 1e6, 3)
+        axis.axvline(
+            x=cutoff_hz,
+            color="r",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"$OSR={osr}$, $f_{{max}}={cutoff_mhz}$ MHz",
+        )
+    axis.set_xlabel("Frequency [Hz]")
+    axis.set_ylabel("Magnitude [dB]")
+    axis.set_title("Quantizer spectrum")
+    axis.legend()
+    axis.grid(True, which="both", ls="-")
+    return figure
+
+
+class NSSARTests(unittest.TestCase):
+    """Tests conversion, register kwargs, and output measurements."""
+
+    _COLUMNS = [
+        "input",
+        "sample_input",
+        "integrator_input",
+        "vin_p",
+        "vin_n",
+        "vint_p",
+        "vint_n",
+        "quantizer_decision",
+        "dac_feedback",
+        "error",
+        "integrator_1",
+        "integrator_2",
+        "incremental_1",
+        "incremental_2",
+        "reset",
+        "sample_output",
+        "dwa_pointer",
+    ]
+
+    def _assert_rejects(
+        self,
+        error_type: type[BaseException],
+        text: str,
+        *args: object,
+        **kwargs: object,
+    ) -> None:
+        """Assert that convert_nssar raises and names the input."""
+        with self.assertRaises(error_type) as caught:
+            convert_nssar(*args, **kwargs)
+        self.assertIn(text, str(caught.exception))
+
+    def _constant_input(self, n_samples: int = 16) -> tuple[
+        np.ndarray, np.ndarray
+    ]:
+        """Return a constant differential pair."""
+        vin_p = np.full(n_samples, 0.7)
+        vin_n = np.full(n_samples, 0.3)
+        return vin_p, vin_n
+
+    def test_defaults_match_explicit_arguments(self) -> None:
+        """Tests the default registers, column order, and length."""
+        vin_p, vin_n = self._constant_input(8)
+        plain = convert_nssar(vin_p, vin_n)
+        explicit = convert_nssar(
+            vin_p,
+            vin_n,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=False,
+            n_quantizer_bits=3,
+            cap_mismatch_sigma=0.0,
+            vrefp=1.0,
+            vrefn=0.0,
+            osr=DEFAULT_OSR,
+        )
+        pd.testing.assert_frame_equal(plain, explicit)
+        self.assertEqual(list(plain.columns), self._COLUMNS)
+        self.assertEqual(len(plain), 8)
+
+    def test_register_kwargs_change_the_control_signals(self) -> None:
+        """Tests reset, averaging, and the register dictionary."""
+        vin_p, vin_n = self._constant_input(16)
+        osr = 4
+        registers = {
+            "do_dwa": True,
+            "incremental_mode": True,
+            "reset_dwa": True,
+        }
+        unpacked = convert_nssar(vin_p, vin_n, osr=osr, **registers)
+        named = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=True,
+        )
+        pd.testing.assert_frame_equal(unpacked, named)
+        running = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=True,
+            reset_dwa=False,
+        )
+        continuous = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=True,
+            incremental_mode=False,
+            reset_dwa=False,
+        )
+        no_dwa = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=False,
+            incremental_mode=True,
+            reset_dwa=True,
+        )
+        expected_reset = np.arange(16) % osr == 0
+        np.testing.assert_array_equal(unpacked["reset"], expected_reset)
+        continuous_reset = np.zeros(16, dtype=bool)
+        continuous_reset[0] = True
+        np.testing.assert_array_equal(
+            continuous["reset"], continuous_reset
+        )
+        expected_output = np.arange(16) % osr == (osr - 1)
+        np.testing.assert_array_equal(
+            unpacked["sample_output"], expected_output
+        )
+        n_capacitors = 2 ** 3
+        reset_rows = unpacked["reset"].to_numpy()
+        np.testing.assert_array_equal(
+            unpacked.loc[reset_rows, "dwa_pointer"],
+            unpacked.loc[reset_rows, "quantizer_decision"] % n_capacitors,
+        )
+        self.assertFalse(
+            np.array_equal(
+                unpacked["dwa_pointer"], running["dwa_pointer"]
+            )
+        )
+        np.testing.assert_array_equal(
+            no_dwa["dwa_pointer"],
+            no_dwa["quantizer_decision"] % n_capacitors,
+        )
+        np.testing.assert_array_equal(
+            unpacked["quantizer_decision"],
+            no_dwa["quantizer_decision"],
+        )
+        self.assertTrue(
+            np.all(unpacked.loc[reset_rows, "integrator_2"] == 0.0)
+        )
+        self.assertGreater(
+            float(np.max(np.abs(
+                continuous["integrator_2"] - unpacked["integrator_2"]
+            ))),
+            0.0,
+        )
+
+    def test_one_bit_decision_follows_the_input_sign(self) -> None:
+        """Tests that a 1-bit quantizer follows the sign of the input."""
+        differential = np.array([-0.4, -0.1, 0.0, 0.2, 0.5])
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            n_quantizer_bits=1,
+            osr=1,
+            incremental_mode=True,
+            do_dwa=False,
+        )
+        np.testing.assert_array_equal(
+            frame["quantizer_decision"],
+            np.array([0, 0, 1, 1, 1]),
+        )
+        np.testing.assert_array_equal(
+            frame["incremental_2"], frame["quantizer_decision"]
+        )
+
+    def test_decisions_rise_with_the_input(self) -> None:
+        """Tests that a reset each clock makes the decision follow input."""
+        differential = np.linspace(-0.95, 0.95, 21)
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=1,
+            incremental_mode=True,
+            do_dwa=False,
+        )
+        decisions = frame["quantizer_decision"].to_numpy()
+        self.assertTrue(np.all(np.diff(decisions) >= 0))
+        self.assertEqual(int(decisions[0]), 0)
+        self.assertEqual(int(decisions[-1]), 7)
+        np.testing.assert_allclose(frame["input"], differential)
+        np.testing.assert_allclose(frame["vin_p"], vin_p)
+        np.testing.assert_allclose(frame["vin_n"], vin_n)
+        np.testing.assert_allclose(frame["error"], frame["dac_feedback"])
+
+    def test_incremental_counters_restart_on_reset(self) -> None:
+        """Tests the integer up-counters against the reset recurrence."""
+        vin_p, vin_n = self._constant_input(12)
+        frame = convert_nssar(vin_p, vin_n, osr=4, incremental_mode=True)
+        decisions = frame["quantizer_decision"].to_numpy()
+        reset = frame["reset"].to_numpy()
+        expected_1: list[int] = []
+        expected_2: list[int] = []
+        previous_1 = 0
+        previous_2 = 0
+        for decision, is_reset in zip(decisions, reset):
+            if is_reset:
+                current_1 = int(decision)
+                current_2 = int(decision)
+            else:
+                current_1 = int(decision) + previous_1
+                current_2 = current_1 + previous_2
+            expected_1.append(current_1)
+            expected_2.append(current_2)
+            previous_1 = current_1
+            previous_2 = current_2
+        np.testing.assert_array_equal(
+            frame["incremental_1"], expected_1
+        )
+        np.testing.assert_array_equal(
+            frame["incremental_2"], expected_2
+        )
+        self.assertTrue(
+            np.issubdtype(frame["integrator_1"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["dac_feedback"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["vin_p"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["vint_p"].dtype, np.floating)
+        )
+        self.assertTrue(
+            np.issubdtype(frame["incremental_1"].dtype, np.integer)
+        )
+        self.assertGreaterEqual(int(decisions.min()), 0)
+        self.assertLessEqual(int(decisions.max()), 7)
+
+    def test_accepts_integer_voltages_and_reference_kwargs(self) -> None:
+        """Tests integer inputs and a non-default reference pair."""
+        vin_p = np.array([1, 1, 0, 0])
+        vin_n = np.array([0, 0, 1, 1])
+        frame = convert_nssar(vin_p, vin_n, osr=2)
+        self.assertEqual(len(frame), 4)
+        scaled = convert_nssar(
+            vin_p.astype(float),
+            vin_n.astype(float),
+            osr=2,
+            vrefp=2,
+            vrefn=-1,
+        )
+        self.assertEqual(len(scaled), 4)
+        self.assertFalse(
+            np.allclose(frame["dac_feedback"], scaled["dac_feedback"])
+        )
+
+    def test_zero_mismatch_is_repeatable(self) -> None:
+        """Tests that ideal capacitors do not depend on the random state."""
+        vin_p, vin_n = self._constant_input(8)
+        first = convert_nssar(vin_p, vin_n, cap_mismatch_sigma=0)
+        state = np.random.get_state()
+        np.random.seed(0)
+        second = convert_nssar(vin_p, vin_n, cap_mismatch_sigma=0.0)
+        np.random.set_state(state)
+        pd.testing.assert_frame_equal(first, second)
+        np.random.seed(3)
+        try:
+            noisy = convert_nssar(
+                vin_p, vin_n, cap_mismatch_sigma=0.05, osr=4
+            )
+        finally:
+            np.random.set_state(state)
+        self.assertEqual(len(noisy), 8)
+
+    def test_rejects_a_bad_input_array(self) -> None:
+        """Tests that voltage arrays name the type, shape, or length."""
+        good = np.zeros(4)
+        self._assert_rejects(TypeError, "list", [0.0, 0.1], good)
+        self._assert_rejects(TypeError, "vin_n", good, (0.0, 0.1))
+        self._assert_rejects(
+            ValueError, "(2, 4)", np.zeros((2, 4)), np.zeros((2, 4))
+        )
+        self._assert_rejects(ValueError, "got 4 and 3", good, np.zeros(3))
+        self._assert_rejects(
+            ValueError, "got 0", np.zeros(0), np.zeros(0)
+        )
+        self._assert_rejects(
+            TypeError,
+            "complex128",
+            np.zeros(4, dtype=np.complex128),
+            good,
+        )
+        self._assert_rejects(
+            TypeError,
+            "bool",
+            np.zeros(4, dtype=bool),
+            good,
+        )
+        bad = np.array([0.0, np.nan, 1.0])
+        self._assert_rejects(ValueError, "non-finite", bad, np.zeros(3))
+
+    def test_rejects_bad_registers_and_settings(self) -> None:
+        """Tests that each register names the value it received."""
+        vin_p, vin_n = self._constant_input(4)
+        self._assert_rejects(TypeError, "do_dwa", vin_p, vin_n, do_dwa=1)
+        self._assert_rejects(
+            TypeError, "incremental_mode", vin_p, vin_n,
+            incremental_mode="yes",
+        )
+        self._assert_rejects(
+            TypeError, "reset_dwa", vin_p, vin_n, reset_dwa=None
+        )
+        self._assert_rejects(
+            TypeError, "bool", vin_p, vin_n, n_quantizer_bits=True
+        )
+        self._assert_rejects(
+            ValueError, "got 0", vin_p, vin_n, n_quantizer_bits=0
+        )
+        self._assert_rejects(
+            ValueError, "got 17", vin_p, vin_n, n_quantizer_bits=17
+        )
+        self._assert_rejects(
+            TypeError, "str", vin_p, vin_n, cap_mismatch_sigma="0"
+        )
+        self._assert_rejects(
+            ValueError, "got -0.1", vin_p, vin_n, cap_mismatch_sigma=-0.1
+        )
+        self._assert_rejects(
+            ValueError,
+            "got nan",
+            vin_p,
+            vin_n,
+            cap_mismatch_sigma=float("nan"),
+        )
+        self._assert_rejects(TypeError, "vrefp", vin_p, vin_n, vrefp="1")
+        self._assert_rejects(
+            ValueError, "got inf", vin_p, vin_n, vrefn=float("inf")
+        )
+        self._assert_rejects(
+            ValueError, "got 1 and 1", vin_p, vin_n, vrefp=1, vrefn=1
+        )
+        self._assert_rejects(TypeError, "bool", vin_p, vin_n, osr=True)
+        self._assert_rejects(ValueError, "got 0", vin_p, vin_n, osr=0)
+
+    def _quantized_output_frame(self) -> pd.DataFrame:
+        """Return a coherent 8-bit sine in the decimated output.
+
+        The tone is bin 64 of 16384 samples. Every row is an output
+        sample, so the measurement uses the whole table.
+        """
+        n_samples = 2 ** 14
+        tone_bin = 64
+        amplitude = (1 << 7) - 1
+        index = np.arange(n_samples)
+        sine = amplitude * np.sin(
+            2.0 * np.pi * tone_bin * index / n_samples
+        )
+        quantized = np.round(sine).astype(np.int64)
+        return pd.DataFrame({
+            "incremental_2": quantized,
+            "sample_output": np.ones(n_samples, dtype=bool),
+            "quantizer_decision": quantized,
+        })
+
+    def test_full_band_sndr_matches_quantizer_formula(self) -> None:
+        """Tests that an 8-bit coherent sine is near 6.02N + 1.76 dB."""
+        frame = self._quantized_output_frame()
+        measured = calculate_sndr_db(frame, warmup_samples=0)
+        expected = 6.02 * 8 + 1.76
+        self.assertAlmostEqual(measured, expected, delta=1.0)
+        sfdr = calculate_sfdr_db(frame, warmup_samples=0)
+        self.assertGreater(sfdr, measured)
+
+    def test_dc_offset_does_not_change_sndr(self) -> None:
+        """Tests that adding DC does not change the measured ratio."""
+        frame = self._quantized_output_frame()
+        baseline = calculate_sndr_db(frame)
+        shifted = frame.copy()
+        shifted["incremental_2"] = shifted["incremental_2"] + 1000
+        measured = calculate_sndr_db(shifted)
+        self.assertAlmostEqual(measured, baseline, delta=0.5)
+
+    def test_warmup_skips_leading_clocks(self) -> None:
+        """Tests that warmup drops leading output samples."""
+        frame = self._quantized_output_frame()
+        prefix = 128
+        index = np.arange(prefix)
+        interferer = np.round(
+            200.0 * np.sin(2.0 * np.pi * 5 * index / prefix)
+        ).astype(np.int64)
+        garbage = pd.DataFrame({
+            "incremental_2": interferer,
+            "sample_output": np.ones(prefix, dtype=bool),
+            "quantizer_decision": np.zeros(prefix, dtype=np.int64),
+        })
+        both = pd.concat([garbage, frame], ignore_index=True)
+        skipped = calculate_sndr_db(both, warmup_samples=prefix)
+        clean = calculate_sndr_db(frame)
+        self.assertAlmostEqual(skipped, clean, delta=0.01)
+        self.assertLess(
+            calculate_sndr_db(both, warmup_samples=0), clean - 0.5
+        )
+
+    def test_rejects_a_bad_measurement(self) -> None:
+        """Tests that measurement helpers name the bad argument."""
+        frame = self._quantized_output_frame()
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(frame, warmup_samples=len(frame))
+        self.assertIn(str(len(frame)), str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            calculate_sfdr_db(frame, warmup_samples=True)
+        self.assertIn("bool", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(frame.iloc[:6])
+        self.assertIn("got 6", str(caught.exception))
+        missing = frame.drop(columns=["incremental_2"])
+        with self.assertRaises(ValueError) as caught:
+            calculate_sndr_db(missing)
+        self.assertIn("incremental_2", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            calculate_sfdr_db("nope")
+        self.assertIn("str", str(caught.exception))
+        with self.assertRaises(TypeError) as caught:
+            plot_output(frame, True, 4)
+        self.assertIn("bool", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_output(frame, 1.0e6, len(frame) + 1)
+        self.assertIn(str(len(frame)), str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_spectrum(frame, 1.0e6, osr=0)
+        self.assertIn("got 0", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_quantizer_spectrum(frame, -1.0)
+        self.assertIn("got -1", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            plot_spectrum(frame, float("nan"))
+        self.assertIn("nan", str(caught.exception))
+
+    def test_plot_functions_return_figures(self) -> None:
+        """Tests that the plot helpers draw a short conversion."""
+        n_samples = 64
+        index = np.arange(n_samples)
+        differential = 0.2 * np.sin(2.0 * np.pi * index / n_samples)
+        vin_p = 0.5 + differential / 2.0
+        vin_n = 0.5 - differential / 2.0
+        frame = convert_nssar(vin_p, vin_n, osr=8)
+        output = plot_output(frame, 100e6, 4)
+        spectrum = plot_spectrum(
+            frame, 100e6, osr=8, warmup_samples=0
+        )
+        quantizer = plot_quantizer_spectrum(
+            frame, 100e6, osr=8, warmup_samples=0
+        )
+        _figure, axis = plt.subplots()
+        shared = plot_output(frame, 100e6, 2, ax=axis)
+        self.assertIs(shared, axis.figure)
+        self.assertIsInstance(output, plt.Figure)
+        self.assertIsInstance(spectrum, plt.Figure)
+        self.assertIsInstance(quantizer, plt.Figure)
+        plt.close("all")
+
+
+def main() -> None:
+    """Plot one conversion and compare data-weighted averaging.
+
+    The tone sits on a bin of the decimated output. The sample rate
+    is 100 MHz and the oversampling ratio is 32. Mismatched
+    capacitors are redrawn from the same seed for each averaging mode.
+    """
+    fs = 100e6
+    osr = DEFAULT_OSR
+    n_output = 1024
+    n_samples = n_output * osr
+    prime = 97
+    frequency = fs * prime / (16 * n_output)
+    amplitude = 0.4
+    clocks = np.arange(n_samples)
+    differential = amplitude * np.cos(2.0 * np.pi * frequency * clocks / fs)
+    vin_p = 0.5 + differential / 2.0
+    vin_n = 0.5 - differential / 2.0
+    print("Running conversion...")
+    results = convert_nssar(
+        vin_p,
+        vin_n,
+        do_dwa=True,
+        incremental_mode=True,
+        reset_dwa=True,
+        osr=osr,
+    )
+    figure, (time_axis, spectrum_axis) = plt.subplots(1, 2, figsize=(15, 6))
+    plot_output(results, fs, 64, ax=time_axis)
+    plot_spectrum(results, fs, osr=osr, ax=spectrum_axis)
+    sndr = calculate_sndr_db(results)
+    sfdr = calculate_sfdr_db(results)
+    print(f"SNDR {sndr:.2f} dB")
+    print(f"SFDR {sfdr:.2f} dB")
+    quantizer = plot_quantizer_spectrum(results, fs, osr=osr)
+    figure.tight_layout()
+    figure.savefig("./adc_output.png")
+    quantizer.savefig("./adc_quantizer_spectrum.png")
+
+    print("Comparing data-weighted averaging...")
+    figure, axis = plt.subplots(figsize=(10, 6))
+    cases = (
+        ("DWA with reset", True, True, "k"),
+        ("DWA without reset", True, False, "b"),
+        ("No DWA", False, False, "r"),
+    )
+    for label, do_dwa, reset_dwa, color in cases:
+        np.random.seed(1)
+        frame = convert_nssar(
+            vin_p,
+            vin_n,
+            osr=osr,
+            do_dwa=do_dwa,
+            incremental_mode=True,
+            reset_dwa=reset_dwa,
+            cap_mismatch_sigma=0.02,
+        )
+        plot_spectrum(frame, fs, osr=osr, ax=axis)
+        reading = calculate_sndr_db(frame)
+        print(f"{label} SNDR {reading:.2f} dB")
+        axis.lines[-1].set_label(f"{label}, SNDR={np.round(reading, 1)} dB")
+        axis.lines[-1].set_color(color)
+    axis.legend()
+    axis.set_xscale("log")
+    figure.tight_layout()
+    figure.savefig("./adc_dwa_compare.png")
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
