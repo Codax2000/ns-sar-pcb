@@ -5,7 +5,7 @@ Alex Knowlton
 Simulation for a noise-shaping 2nd order SAR ADC with 1st-order DEM.
 
 **Deprecated**. This script was used for early prototyping only.
-``convert_nssar`` in ``nssar.py`` is the updated model.
+``convert_nssar`` in ``models.nssar`` is the updated model.
 '''
 
 

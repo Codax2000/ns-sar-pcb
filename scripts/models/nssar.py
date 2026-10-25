@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from fp_array import FixedPointArray
+from models.fp_array import FixedPointArray
 
 
 DEFAULT_OSR = 32

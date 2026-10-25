@@ -34,6 +34,15 @@ Diagram PNGs are generated into `docs/_static/img/` and are not committed. `make
 | Preview website | `make serve` | Serve the built HTML locally. |
 | Deploy website | `make deploy` | Push `docs/_build/html` to the `gh-pages` branch with `ghp-import`. |
 | Generate register RTL/UVM | `make gen` | Run PeakRDL register generation and redraw diagrams. |
+| Model unit tests | `PYTHONPATH=scripts uv run python -m unittest models.fp_array models.cordic models.sinegen_dac models.nssar` | Run the unittest cases in the modeling package. |
+| One HDL block test | `make hdltest.<name>` | Run `scripts/hdl_sim/test_<name>.py` with cocotb and Verilator. |
+| All HDL block tests | `make hdltest` | Run every `test_*.py` under `scripts/hdl_sim/`, or exit 0 if none exist yet. |
+
+Python layout under `scripts/`:
+
+- `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models (`from models.fp_array import ...` with `scripts` on `PYTHONPATH`)
+- `hdl_sim/` — cocotb + Verilator block-test scaffold (no DUT tests yet)
+- `diagrams.py`, `registers.py`, `peakrdl_templates/` — documentation and register tooling
 
 Pushes to `main` that change the docs, Python scripts under `scripts/`, register specifications, or the Python lockfile run [`.github/workflows/docs.yml`](.github/workflows/docs.yml). That workflow regenerates the diagrams, builds the Sphinx site, and publishes `docs/_build/html` to `gh-pages`, which is the branch GitHub Pages already serves. After the workflow is on `main`, the same job can be started by hand with **Actions → Docs → Run workflow**.
 

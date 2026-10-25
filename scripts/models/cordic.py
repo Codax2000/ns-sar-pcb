@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-from fp_array import FixedPointArray
+from models.fp_array import FixedPointArray
 
 
 ITERATIONS = 16

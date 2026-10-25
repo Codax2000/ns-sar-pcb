@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
-from cordic import cordic_rotate
-from fp_array import FixedPointArray
+from models.cordic import cordic_rotate
+from models.fp_array import FixedPointArray
 
 
 BLACKMAN_HALF_WIDTH = 3
