@@ -7,9 +7,9 @@
 # cocotb 2 reads COCOTB_TEST_MODULES. The top-level makefile still passes
 # MODULE (the cocotb 1 name); this file copies it across.
 #
-# A future test is scripts/hdl_sim/test_<name>.py. Optional <name>.mk beside
-# it sets VERILOG_SOURCES and, if needed, COCOTB_TOPLEVEL (default: <name>).
-# This tree has no DUT and no test module yet, so nothing is compiled.
+# A block test is scripts/hdl_sim/test_<name>.py plus optional <name>.mk
+# setting VERILOG_SOURCES and, if needed, COCOTB_TOPLEVEL (default: <name>).
+# dac_top.mk / test_dac_top.py check the datapath skeleton only.
 # UVM / system tests do not belong here.
 #
 # Verilator itself is a local install (cocotb wants 5.036+). It is not a
