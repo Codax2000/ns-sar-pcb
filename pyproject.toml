@@ -13,4 +13,6 @@ dependencies = [
     "schemdraw>=0.23",
     "scipy>=1.18.1",
     "sphinx>=9.1.0",
+    "sphinx-peakrdl>=0.3.0",
+    "sphinx-rtd-theme>=3.1.0",
 ]
