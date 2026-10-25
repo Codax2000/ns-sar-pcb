@@ -49,6 +49,14 @@ async def cpuif_access(dut, write, addr, data=0, biten=0xFFFF):
     rd_data = int(dut.s_cpuif_rd_data.value)
     rd_err = int(dut.s_cpuif_rd_err.value)
     wr_err = int(dut.s_cpuif_wr_err.value)
+    rd_ack = int(dut.s_cpuif_rd_ack.value)
+    wr_ack = int(dut.s_cpuif_wr_ack.value)
+    assert int(dut.s_cpuif_req_stall_wr.value) == 0
+    assert int(dut.s_cpuif_req_stall_rd.value) == 0
+    if write:
+        assert wr_ack == 1 and rd_ack == 0
+    else:
+        assert rd_ack == 1 and wr_ack == 0
     await FallingEdge(dut.sysclk)
     dut.s_cpuif_req.value = 0
     return rd_data, rd_err, wr_err

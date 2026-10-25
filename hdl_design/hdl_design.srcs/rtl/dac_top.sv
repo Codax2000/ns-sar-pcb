@@ -2,9 +2,10 @@
 // Skeleton of the on-fabric DAC datapath.
 //
 // Ports are the sysclk domain clock and active-low reset, the PeakRDL
-// passthrough CPUIF already used by dac_regs_mod in test_dac_top, and the
-// two unsigned 8-bit codes for the DAC5311 pair (same names as the
-// generate_dac_values columns dacp_value and dacn_value).
+// passthrough CPUIF (the ports peakrdl-regblock emits for dac_regs_mod,
+// including ack and stall), and the two unsigned 8-bit codes for the
+// DAC5311 pair (same names as the generate_dac_values columns
+// dacp_value and dacn_value).
 //
 // DAC5311 SYNC, SCLK, and DIN stay on test_dac_top. Power-down is the
 // dacp_power / dacn_power fields in dac_registers.rdl, not extra pins.
@@ -27,8 +28,12 @@ module dac_top (
     input  logic [3:0]  s_cpuif_addr,
     input  logic [15:0] s_cpuif_wr_data,
     input  logic [15:0] s_cpuif_wr_biten,
+    output logic        s_cpuif_req_stall_wr,
+    output logic        s_cpuif_req_stall_rd,
+    output logic        s_cpuif_rd_ack,
     output logic        s_cpuif_rd_err,
     output logic [15:0] s_cpuif_rd_data,
+    output logic        s_cpuif_wr_ack,
     output logic        s_cpuif_wr_err,
 
     // Unsigned DAC5311 codes, 0..255. Midscale 128 is unsigned zero
@@ -44,6 +49,12 @@ module dac_top (
     logic        cpuif_addr_hit;
 
     assign cpuif_addr_hit = (s_cpuif_addr == '0);
+    // Same-cycle accept. The generated regblock retimes the read and can
+    // stall the next write; this stub never stalls.
+    assign s_cpuif_req_stall_wr = 1'b0;
+    assign s_cpuif_req_stall_rd = 1'b0;
+    assign s_cpuif_rd_ack = s_cpuif_req && !s_cpuif_req_is_wr;
+    assign s_cpuif_wr_ack = s_cpuif_req &&  s_cpuif_req_is_wr;
     assign s_cpuif_rd_err = s_cpuif_req && !s_cpuif_req_is_wr && !cpuif_addr_hit;
     assign s_cpuif_wr_err = s_cpuif_req &&  s_cpuif_req_is_wr && !cpuif_addr_hit;
 

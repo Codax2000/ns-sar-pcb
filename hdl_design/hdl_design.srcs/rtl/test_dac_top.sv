@@ -133,20 +133,24 @@ module test_dac_top (
     // this CPUIF response is not connected. dacp_value / dacn_value
     // are the 8-bit codes a later shifter would send to the DAC5311s.
     dac_top i_dac_top (
-        .sysclk            (sysclk),
-        .rst_n             (rst_n),
+        .sysclk               (sysclk),
+        .rst_n                (rst_n),
 
-        .s_cpuif_req       (sysclk_dac_if_req_posedge),
-        .s_cpuif_req_is_wr (!sysclk_dac_if_rd_en),
-        .s_cpuif_addr      ({sysclk_dac_if_addr[3:1], 1'b0}),
-        .s_cpuif_wr_data   (sysclk_dac_if_wr_data),
-        .s_cpuif_wr_biten  (16'hFFFF),
-        .s_cpuif_rd_err    (),
-        .s_cpuif_rd_data   (),
-        .s_cpuif_wr_err    (),
+        .s_cpuif_req          (sysclk_dac_if_req_posedge),
+        .s_cpuif_req_is_wr    (!sysclk_dac_if_rd_en),
+        .s_cpuif_addr         ({sysclk_dac_if_addr[3:1], 1'b0}),
+        .s_cpuif_wr_data      (sysclk_dac_if_wr_data),
+        .s_cpuif_wr_biten     (16'hFFFF),
+        .s_cpuif_req_stall_wr (),
+        .s_cpuif_req_stall_rd (),
+        .s_cpuif_rd_ack       (),
+        .s_cpuif_rd_err       (),
+        .s_cpuif_rd_data      (),
+        .s_cpuif_wr_ack       (),
+        .s_cpuif_wr_err       (),
 
-        .dacp_value        (),
-        .dacn_value        ()
+        .dacp_value           (),
+        .dacn_value           ()
     );
 
     // DAC5311 SYNC/SCLK/DIN. The shifter is not in this skeleton.
