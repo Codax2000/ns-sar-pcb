@@ -126,34 +126,19 @@ module test_dac_top (
     assign dac_if_rd_err  = 0;
     assign dac_if_wr_err  = 0;
 
-    // TODO: assign this to 1 when DSM is locked
-    assign hwif_in.STATUS.dsm_locked.next = 0;
-
-    // Datapath skeleton. SPI reads still return dac_regs_mod data;
-    // this CPUIF response is not connected. dacp_value / dacn_value
-    // are the 8-bit codes a later shifter would send to the DAC5311s.
-    dac_top i_dac_top (
-        .sysclk               (sysclk),
-        .rst_n                (rst_n),
-
-        .s_cpuif_req          (sysclk_dac_if_req_posedge),
-        .s_cpuif_req_is_wr    (!sysclk_dac_if_rd_en),
-        .s_cpuif_addr         ({sysclk_dac_if_addr[3:1], 1'b0}),
-        .s_cpuif_wr_data      (sysclk_dac_if_wr_data),
-        .s_cpuif_wr_biten     (16'hFFFF),
-        .s_cpuif_req_stall_wr (),
-        .s_cpuif_req_stall_rd (),
-        .s_cpuif_rd_ack       (),
-        .s_cpuif_rd_err       (),
-        .s_cpuif_rd_data      (),
-        .s_cpuif_wr_ack       (),
-        .s_cpuif_wr_err       (),
-
-        .dacp_value           (),
-        .dacn_value           ()
+    // Datapath skeleton. SPI still terminates in dac_regs_mod.
+    // hwif_out is the programmed registers; hwif_in is the
+    // dsm_locked writeback. 8-bit codes stay inside dac_datapath.
+    dac_datapath i_dac_datapath (
+        .clk        (sysclk),
+        .rst_n      (rst_n),
+        .hwif_in    (hwif_in),
+        .hwif_out   (hwif_out),
+        .dacp_value (),
+        .dacn_value ()
     );
 
-    // DAC5311 SYNC/SCLK/DIN. The shifter is not in this skeleton.
+    // dac5311_ctrl serial pins are not brought out of the skeleton.
     // syncb is active-low, so it is held high.
     assign sinegen_syncb = 1'b1;
     assign sinegen_sclk  = 1'b0;

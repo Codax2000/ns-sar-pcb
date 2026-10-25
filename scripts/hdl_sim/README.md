@@ -11,7 +11,7 @@ From the repository root, after `uv sync`:
 
 `make hdltest.dac_snr` maps to cocotb module `test_dac_snr`. This makefile copies `MODULE` to cocotb 2's `COCOTB_TEST_MODULES` and includes cocotb's `Makefile.sim`.
 
-`make hdltest.dac_top` runs `test_dac_top.py` against Verilog module `dac_top`. `dac_top.mk` sets `VERILOG_SOURCES` and `COCOTB_TOPLEVEL`. The test checks reset and the one-word CPUIF loopback. It does not score a sine or an SNR. `test_dac_top.sv` instantiates `dac_top` for the chip, but that wrapper also instantiates generated `dac_regs_mod`, so the block test does not elaborate it.
+`make hdltest.dac_datapath` runs `test_dac_datapath.py` against Verilog module `dac_datapath`. `dac_datapath.mk` sets `VERILOG_SOURCES` and `COCOTB_TOPLEVEL`, and regenerates the gitignored `dac_regs_mod_pkg` from `dac_registers.rdl`. The test checks reset codes and `dsm_locked`. It does not score a sine or an SNR. `test_dac_top.sv` owns SPI and `dac_regs_mod` and wires `hwif_in` / `hwif_out` into `dac_datapath`.
 
 Adding another block test takes two pieces:
 
