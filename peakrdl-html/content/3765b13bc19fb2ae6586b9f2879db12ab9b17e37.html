@@ -10,8 +10,6 @@
     <dt>Base Offset:</dt><dd class="address">0x0</dd>
     <dt>Size:</dt><dd class="address">0x2</dd>
     
-    <dt>Source:</dt><dd><a href="https://github.com/Codax2000/ns-sar-pcb/blob/feature/completed-sphinx-port/hdl_design/hdl_design.srcs/registers/dac_registers.rdl#L15" target="_blank">dac_registers.rdl</a></dd>
-    
 </dl>
 
 <h2>Contents</h2>
@@ -54,24 +52,24 @@
             <a class="headerlink" href="#amplitude" title="Permalink to this row"></a>
         </td>
     </tr>
-    <tr id="frequency">
+    <tr id="amplitude_scale">
         <td>[3:0]</td>
-        <td><a href="#frequency.desc">frequency</a></td>
+        <td><a href="#amplitude_scale.desc">amplitude_scale</a></td>
         <td>
             <span title='Readable and Writable'>rw</span></td>
-        <td>0x0
+        <td>0x8
         </td>
         <td>
-            <input id="_FieldValueTesterfrequency" class="field-value-tester"
+            <input id="_FieldValueTesteramplitude_scale" class="field-value-tester"
                 type="text" autocomplete="off"
-                data-name="frequency" oninput="onDecodedFieldInput(this)"/>
+                data-name="amplitude_scale" oninput="onDecodedFieldInput(this)"/>
         </td>
         <td>-</td>
         <td>
-            <button type="button" id="_RadixButtonfrequency" class="radix-button"
+            <button type="button" id="_RadixButtonamplitude_scale" class="radix-button"
                 title="Switch radix" aria-label="Switch radix"
-                data-name="frequency" onclick="onRadixSwitch(this)">H</button>
-            <a class="headerlink" href="#frequency" title="Permalink to this row"></a>
+                data-name="amplitude_scale" onclick="onRadixSwitch(this)">H</button>
+            <a class="headerlink" href="#amplitude_scale" title="Permalink to this row"></a>
         </td>
     </tr>
 </table>
@@ -88,13 +86,13 @@
     <a class="headerlink" href="#amplitude.desc" title="Permalink to this headline"></a>
 </h3>
 <div id="_Content.amplitude.desc">
-<p>Amplitude setting of the DAC. Describes a power of 2, so increase of 1 in this field will generate an amplitude twice as large as the previous code. 4'hF translates to full-scale.</p>
+<p>Amplitude divider. The output is divided by 2^(15-b).</p>
 </div>
 
-<h3 id="frequency.desc">frequency
-    <a class="headerlink" href="#frequency.desc" title="Permalink to this headline"></a>
+<h3 id="amplitude_scale.desc">amplitude_scale
+    <a class="headerlink" href="#amplitude_scale.desc" title="Permalink to this headline"></a>
 </h3>
-<div id="_Content.frequency.desc">
-<p>Frequency setting of the DAC sine gen. Describes a power of 2, so increase of 1 in this field will generate a frequency twice as high as the previous.</p>
+<div id="_Content.amplitude_scale.desc">
+<p>Amplitude scaling factor. The output is about a/15 of full scale.</p>
 </div>
 </div>
