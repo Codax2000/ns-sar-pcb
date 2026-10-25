@@ -19,6 +19,7 @@ This has several goals:
    hdl
    pcb
    verification
+   modeling
 
 ADC Architecture
 ----------------
