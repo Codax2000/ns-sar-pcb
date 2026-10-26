@@ -28,11 +28,9 @@ module spi (
     
     enum logic [1:0] {ADDR, RECEIVE_WRITE, DRIVE_READ} addr_state;
 
-    assign miso_en = 0;
-
     always_ff @(posedge scl or posedge cs_b) begin
         if (cs_b) begin
-            addr_state          <= 0;
+            addr_state          <= ADDR;
             load_address        <= 0;
             byte_count          <= 0;
             miso_shift_reg      <= 0;
@@ -76,10 +74,7 @@ module spi (
     assign if_req = rd_en || wr_en;
 
     always_ff @(negedge scl or posedge cs_b) begin
-        if (cs_b) begin
-            miso <= 0;
-        end
-        else begin
+        if (!cs_b) begin
             if (if_req)
                 miso_shift_reg <= if_rd_data;
             else

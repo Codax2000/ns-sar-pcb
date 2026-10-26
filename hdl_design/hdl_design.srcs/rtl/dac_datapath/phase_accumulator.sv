@@ -5,6 +5,10 @@ module phase_accumulator (
     // Software-programmed dac_regs fields (regblock hwif_out).
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
 
+    // High while either DAC is enabled. The valid pulse is meant to
+    // run at clk/16; that divider is not implemented.
+    input  i_en,
+
     // phase outputs
     output [15:0] o_phase,
     output        o_valid
@@ -14,6 +18,7 @@ module phase_accumulator (
     assign o_phase = '0;
     assign o_valid = 1'b0;
 
-    wire _unused_ok = &{1'b0, rst_n, clk, hwif_out.FREQUENCY.frequency.value};
+    wire _unused_ok = &{1'b0, rst_n, clk, i_en,
+                        hwif_out.FREQUENCY.frequency.value};
 
 endmodule

@@ -1,4 +1,6 @@
-
+// DAC subsystem top. Host SPI and the two DAC5311 board pins live here.
+// The ADC is a separate subsystem. chip_top is the container that
+// instantiates both.
 module test_dac_top (
     // system clock and reset
     input sysclk,
@@ -126,23 +128,17 @@ module test_dac_top (
     assign dac_if_rd_err  = 0;
     assign dac_if_wr_err  = 0;
 
-    // Datapath skeleton. SPI still terminates in dac_regs_mod.
-    // hwif_out is the programmed registers; hwif_in is the
-    // dsm_locked writeback. 8-bit codes stay inside dac_datapath.
+    // Programmed registers go in on hwif_out. dsm_locked comes back
+    // on hwif_in. DAC5311 SYNC/SCLK/DIN are the datapath outputs.
     dac_datapath i_dac_datapath (
-        .clk        (sysclk),
-        .rst_n      (rst_n),
-        .hwif_in    (hwif_in),
-        .hwif_out   (hwif_out),
-        .dacp_value (),
-        .dacn_value ()
+        .clk           (sysclk),
+        .rst_n         (rst_n),
+        .hwif_in       (hwif_in),
+        .hwif_out      (hwif_out),
+        .sinegen_syncb (sinegen_syncb),
+        .sinegen_sclk  (sinegen_sclk),
+        .sinegen_dinp  (sinegen_dinp),
+        .sinegen_dinn  (sinegen_dinn)
     );
-
-    // dac5311_ctrl serial pins are not brought out of the skeleton.
-    // syncb is active-low, so it is held high.
-    assign sinegen_syncb = 1'b1;
-    assign sinegen_sclk  = 1'b0;
-    assign sinegen_dinp  = 1'b0;
-    assign sinegen_dinn  = 1'b0;
 
 endmodule

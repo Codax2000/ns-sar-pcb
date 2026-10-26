@@ -14,11 +14,12 @@ module dsm_error_feedback (
     output        o_valid
 );
 
-    // Delta-sigma error feedback is not implemented.
+    // Error feedback around this block is not implemented.
+    // dsm_enable is the mux select, not an input to the modulator stub.
     assign o_cosine_dsm = '0;
     assign o_valid      = 1'b0;
 
     wire _unused_ok = &{1'b0, rst_n, clk, i_valid, i_cosine,
-                        hwif_out.ENABLE.dsm_enable.value};
+                        hwif_out.CLK_DIV.clk_div_value.value};
 
 endmodule
