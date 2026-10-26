@@ -41,7 +41,7 @@ Diagram PNGs are generated into `docs/_static/img/` and are not committed. `make
 Python layout under `scripts/`:
 
 - `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models (`from models.fp_array import ...` with `scripts` on `PYTHONPATH`)
-- `hdl_sim/` — cocotb + Verilator block tests. `make hdltest.dac_top` checks the DAC subsystem serial-pin stub, not SNR.
+- `hdl_sim/` — cocotb + Verilator block tests. `make hdltest.dac_datapath` checks that the idle DAC datapath wrapper stays at midscale, not SNR.
 - `diagrams.py`, `registers.py`, `peakrdl_templates/` — documentation and register tooling
 
 Pushes to `main` that change the docs, Python scripts under `scripts/`, register specifications, or the Python lockfile run [`.github/workflows/docs.yml`](.github/workflows/docs.yml). That workflow regenerates the diagrams, builds the Sphinx site, and publishes `docs/_build/html` to `gh-pages`, which is the branch GitHub Pages already serves. After the workflow is on `main`, the same job can be started by hand with **Actions → Docs → Run workflow**.

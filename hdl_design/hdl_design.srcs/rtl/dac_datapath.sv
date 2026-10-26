@@ -7,8 +7,8 @@
 //
 // Chain: phase accumulator -> CORDIC -> DSM -> bypass mux -> DAC5311
 // control. Shared rst_n. The 8-bit codes never leave this hierarchy.
-// sinegen_* are the board pins already on test_dac_top: one active-low
-// SYNC, one SCLK, and DIN for the positive and negative DAC5311.
+// One SCLK, a separate active-low SYNC and DIN for each DAC5311.
+// test_dac_top maps these onto the board pins (one shared SYNC).
 
 module dac_datapath (
     input  logic clk,
@@ -17,10 +17,11 @@ module dac_datapath (
     output dac_regs_mod_pkg::dac_regs__in_t  hwif_in,
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
 
-    output logic sinegen_syncb,
-    output logic sinegen_sclk,
-    output logic sinegen_dinp,
-    output logic sinegen_dinn
+    output logic o_sclk,
+    output logic o_syncb_dacp,
+    output logic o_syncb_dacn,
+    output logic o_din_dacp,
+    output logic o_din_dacn
 );
 
     logic        phase_en;
@@ -84,10 +85,11 @@ module dac_datapath (
         .hwif_out      (hwif_out),
         .i_cosine      (cosine_to_dac),
         .i_valid       (dac_valid),
-        .sinegen_syncb (sinegen_syncb),
-        .sinegen_sclk  (sinegen_sclk),
-        .sinegen_dinp  (sinegen_dinp),
-        .sinegen_dinn  (sinegen_dinn)
+        .o_sclk        (o_sclk),
+        .o_syncb_dacp  (o_syncb_dacp),
+        .o_syncb_dacn  (o_syncb_dacn),
+        .o_din_dacp    (o_din_dacp),
+        .o_din_dacn    (o_din_dacn)
     );
 
     // TODO: drive this from the delta-sigma warmup, not a constant.

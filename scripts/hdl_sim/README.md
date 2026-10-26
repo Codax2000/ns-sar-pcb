@@ -11,7 +11,7 @@ From the repository root, after `uv sync`:
 
 `make hdltest.dac_snr` maps to cocotb module `test_dac_snr`. This makefile copies `MODULE` to cocotb 2's `COCOTB_TEST_MODULES` and includes cocotb's `Makefile.sim`.
 
-`make hdltest.dac_top` runs `test_dac_top.py` against Verilog module `test_dac_top` (`dac_top.mk` sets `COCOTB_TOPLEVEL`). That module is the DAC subsystem: host SPI and the DAC5311 `sinegen_*` pins. The test checks that those serial pins stay at the stub idle levels. It does not score a sine or an SNR, and it does not poke the hwif structs. The makefile regenerates the gitignored DAC register package from `dac_registers.rdl`.
+`make hdltest.dac_datapath` runs `test_dac_datapath.py` against Verilog module `tb_dac_datapath` (`dac_datapath.mk` sets `COCOTB_TOPLEVEL`). That wrapper lives in `wrappers/` and packs flattened register inputs into `hwif_out`. Two `dac_5311` models (`hdl_design.srcs/dv/models/dac_5311.sv`) turn the serial pins into real voltages. The test checks that an idle serializer leaves both outputs at midscale. It does not score a sine or an SNR. The makefile regenerates the gitignored DAC register package from `dac_registers.rdl`.
 
 Adding another block test takes two pieces:
 

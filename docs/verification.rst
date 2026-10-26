@@ -7,9 +7,9 @@ and so there will be three levels of verification.
 
 1. Block-level testbench with ``cocotb`` and Verilator. This is to compare against the fixed-point math and Python modeling.
    From the repository root, ``make hdltest.<name>`` runs ``scripts/hdl_sim/test_<name>.py``
-   (``MODULE=test_<name>``, ``SIM=verilator``). ``make hdltest.dac_top`` elaborates
-   ``test_dac_top``, the DAC subsystem, and checks that the DAC5311 serial pins stay at
-   the stub idle levels. It does not compare a waveform to the Python model. ``make hdltest``
+   (``MODULE=test_<name>``, ``SIM=verilator``). ``make hdltest.dac_datapath`` elaborates
+   ``tb_dac_datapath`` and checks that both DAC5311 real outputs stay at midscale while the
+   serializer stub is idle. It does not compare a waveform to the Python model. ``make hdltest``
    runs every ``test_*.py`` there, and exits without a simulator when that directory has none.
 2. System-level testbench with UVM. This ensures that the SPI interface can control the device as intended.
    It will also be used for randomized DAC outputs and ADC sampling. This will not check that SNR is correct,

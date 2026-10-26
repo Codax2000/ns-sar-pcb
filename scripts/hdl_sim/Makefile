@@ -9,7 +9,7 @@
 #
 # A block test is scripts/hdl_sim/test_<name>.py plus optional <name>.mk
 # setting VERILOG_SOURCES and, if needed, COCOTB_TOPLEVEL (default: <name>).
-# dac_top.mk / test_dac_top.py elaborate the DAC subsystem top.
+# dac_datapath.mk / test_dac_datapath.py elaborate tb_dac_datapath.
 # UVM / system tests do not belong here.
 #
 # Verilator itself is a local install (cocotb wants 5.036+). It is not a
