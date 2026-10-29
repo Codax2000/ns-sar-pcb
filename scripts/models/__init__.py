@@ -1,6 +1,6 @@
 """Behavioral models for the fixed-point datapath, CORDIC, DAC, and SAR.
 
-Import with ``scripts`` on ``PYTHONPATH``::
+``uv sync`` installs this package. From the repository root::
 
-    from models.fp_array import FixedPointArray
+    uv run python -m models.sinegen_dac
 """

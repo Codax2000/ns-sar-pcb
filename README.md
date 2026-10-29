@@ -34,13 +34,14 @@ Diagram PNGs are generated into `docs/_static/img/` and are not committed. `make
 | Preview website | `make serve` | Serve the built HTML locally. |
 | Deploy website | `make deploy` | Push `docs/_build/html` to the `gh-pages` branch with `ghp-import`. |
 | Generate register RTL/UVM | `make gen` | Run PeakRDL register generation and redraw diagrams. |
-| Model unit tests | `PYTHONPATH=scripts uv run python -m unittest models.fp_array models.cordic models.sinegen_dac models.nssar` | Run the unittest cases in the modeling package. |
+| Run a model | `uv run python -m models.sinegen_dac` | Run a model from the repo root after `uv sync`. Same form for `models.cordic`, `models.nssar`, `models.fp_array`, `models.fp_logic`, `models.nssar_prototype`, and `models.nssar_test`. `uv run python scripts/models/sinegen_dac.py` works too. |
+| Model unit tests | `uv run python -m unittest models.fp_array models.cordic models.sinegen_dac models.nssar` | Run the unittest cases in the modeling package. |
 | One HDL block test | `make hdltest.<name>` | Run `scripts/hdl_sim/test_<name>.py` with cocotb and Verilator. |
 | All HDL block tests | `make hdltest` | Run every `test_*.py` under `scripts/hdl_sim/`. With none present, exit 0. |
 
 Python layout under `scripts/`:
 
-- `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models (`from models.fp_array import ...` with `scripts` on `PYTHONPATH`)
+- `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models. `uv sync` installs this package, so `from models.fp_array import ...` works from the repository root.
 - `hdl_sim/` — cocotb + Verilator block tests. `make hdltest.dac_datapath` checks that the idle DAC datapath wrapper stays at midscale, not SNR.
 - `diagrams.py`, `registers.py`, `peakrdl_templates/` — documentation and register tooling
 

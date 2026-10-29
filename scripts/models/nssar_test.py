@@ -1,8 +1,8 @@
 """Plot a noise-shaping SAR conversion.
 
-Run from the repository root with ``scripts`` on ``PYTHONPATH``::
+From the repository root, after ``uv sync``::
 
-    PYTHONPATH=scripts uv run python -m models.nssar_test
+    uv run python -m models.nssar_test
 """
 
 from models.nssar import main

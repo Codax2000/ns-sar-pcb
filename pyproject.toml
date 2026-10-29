@@ -18,3 +18,19 @@ dependencies = [
     "sphinx-peakrdl>=0.3.0",
     "sphinx-rtd-theme>=3.1.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Install this repo into the venv so `import models` works from the
+# repository root. The package lives at scripts/models; the sources
+# rewrite drops the scripts/ prefix so the import name stays `models`.
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts/models"]
+
+[tool.hatch.build.targets.wheel.sources]
+"scripts" = ""
