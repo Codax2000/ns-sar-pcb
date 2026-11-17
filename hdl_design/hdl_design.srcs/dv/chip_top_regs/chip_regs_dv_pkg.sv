@@ -168,7 +168,7 @@ package chip_regs_dv_pkg;
     // reg - dac_regs::AC_CONFIG
     class dac_regs__AC_CONFIG extends uvm_reg;
         `uvm_object_utils(dac_regs__AC_CONFIG)
-        rand uvm_reg_field frequency;
+        rand uvm_reg_field amplitude_scale;
         rand uvm_reg_field amplitude;
 
         function new(string name = "dac_regs__AC_CONFIG");
@@ -176,8 +176,8 @@ package chip_regs_dv_pkg;
         endfunction : new
 
         virtual function void build();
-            this.frequency = uvm_reg_field::type_id::create("frequency");
-            this.frequency.configure(this, 4, 0, "RW", 0, 'h0, 1, 1, 0);
+            this.amplitude_scale = uvm_reg_field::type_id::create("amplitude_scale");
+            this.amplitude_scale.configure(this, 4, 0, "RW", 0, 'h8, 1, 1, 0);
             this.amplitude = uvm_reg_field::type_id::create("amplitude");
             this.amplitude.configure(this, 4, 4, "RW", 0, 'hf, 1, 1, 0);
         endfunction : build
@@ -261,6 +261,21 @@ package chip_regs_dv_pkg;
         endfunction : build
     endclass : dac_regs__STATUS
 
+    // reg - dac_regs::FREQUENCY
+    class dac_regs__FREQUENCY extends uvm_reg;
+        `uvm_object_utils(dac_regs__FREQUENCY)
+        rand uvm_reg_field frequency;
+
+        function new(string name = "dac_regs__FREQUENCY");
+            super.new(name, 16, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.frequency = uvm_reg_field::type_id::create("frequency");
+            this.frequency.configure(this, 16, 0, "RW", 0, 'h0, 1, 1, 1);
+        endfunction : build
+    endclass : dac_regs__FREQUENCY
+
     // addrmap - dac_regs
     class dac_regs extends uvm_reg_block;
         `uvm_object_utils(dac_regs)
@@ -270,6 +285,7 @@ package chip_regs_dv_pkg;
         rand dac_regs__dc_value_reg DACN_DC_VALUE;
         rand dac_regs__CLK_DIV CLK_DIV;
         rand dac_regs__STATUS STATUS;
+        rand dac_regs__FREQUENCY FREQUENCY;
 
         function new(string name = "dac_regs");
             super.new(name);
@@ -307,6 +323,11 @@ package chip_regs_dv_pkg;
 
             this.STATUS.build();
             this.default_map.add_reg(this.STATUS, 'ha);
+            this.FREQUENCY = dac_regs__FREQUENCY::type_id::create("FREQUENCY");
+            this.FREQUENCY.configure(this);
+
+            this.FREQUENCY.build();
+            this.default_map.add_reg(this.FREQUENCY, 'hc);
         endfunction : build
     endclass : dac_regs
 

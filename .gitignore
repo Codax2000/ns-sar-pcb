@@ -1,5 +1,12 @@
 __pycache__/
 scripts/__pycache__/
+.venv/
+
+# Cocotb / Verilator build products (scripts/hdl_sim).
+scripts/hdl_sim/sim_build/
+scripts/hdl_sim/results.xml
+scripts/hdl_sim/dump.vcd
+scripts/hdl_sim/dump.fst
 
 hdl_design/hdl_design.cache/
 hdl_design/hdl_design.hw/

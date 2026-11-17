@@ -23,17 +23,29 @@ There will soon be a bash script that will run the digital regression and show p
 
 ## Building Documentation
 
-Given that this project is being written in Windows with no native Makefile support, everything is done via bash script. The plus side of this is that scripts could be added into commits.
+Run these commands from the repository root. Python dependencies are installed with `uv` (`.python-version` is 3.12; `uv.lock` pins Sphinx, the Read the Docs theme, sphinx-peakrdl, and schemdraw).
 
-All scripts should be run **from the toplevel of the source directory**. The file paths are relative and depend on that behavior.
+Diagram PNGs are generated into `docs/_static/img/` and are not committed. `make doc` regenerates them before the Sphinx build.
 
 | Action | Terminal Command | Behavior |
 | :--- | :--- | :--- |
-| Generate all documentation and publish | `source gen_all.sh ` | Regenerate the website, documentation, RTL, register map, and push to GitHub Pages. |
-| Generate register RTL/UVM, etc | `python ./scripts/registers.py` | Runs the registers script, which generates RTL, website information, and UVM stuff. |
-| Build website | `cd docs; mkdocs build` | Build website, which can then be opened using `index.html` in browser. |
-| Deploy website | `cd docs; mkdocs gh-deploy` | Deploy website to GitHub Pages |
-| Dump all source files to text | `source ./scripts/dump.sh` | Dump all Python files, HDL files, Git log, and documentation to text files. Nice for giving to LLMs for analysis. |
+| Generate diagrams | `uv run python ./scripts/diagrams.py` | Write schemdraw PNGs under `docs/_static/img/`. |
+| Build website | `make doc` | Generate diagrams, then build Sphinx HTML into `docs/_build/html`. |
+| Preview website | `make serve` | Serve the built HTML locally. |
+| Deploy website | `make deploy` | Push `docs/_build/html` to the `gh-pages` branch with `ghp-import`. |
+| Generate register RTL/UVM | `make gen` | Run PeakRDL register generation and redraw diagrams. |
+| Run a model | `uv run python -m models.sinegen_dac` | Run a model from the repo root after `uv sync`. Same form for `models.cordic`, `models.nssar`, `models.fp_array`, `models.fp_logic`, `models.nssar_prototype`, and `models.nssar_test`. `uv run python scripts/models/sinegen_dac.py` works too. |
+| Model unit tests | `uv run python -m unittest models.fp_array models.cordic models.sinegen_dac models.nssar` | Run the unittest cases in the modeling package. |
+| One HDL block test | `make hdltest.<name>` | Run `scripts/hdl_sim/test_<name>.py` with cocotb and Verilator. |
+| All HDL block tests | `make hdltest` | Run every `test_*.py` under `scripts/hdl_sim/`. With none present, exit 0. |
+
+Python layout under `scripts/`:
+
+- `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models. `uv sync` installs this package, so `from models.fp_array import ...` works from the repository root.
+- `hdl_sim/` — cocotb + Verilator block tests. `make hdltest.dac_datapath` checks that the idle DAC datapath wrapper stays at midscale, not SNR.
+- `diagrams.py`, `registers.py`, `peakrdl_templates/` — documentation and register tooling
+
+Pushes to `main` that change the docs, Python scripts under `scripts/`, register specifications, or the Python lockfile run [`.github/workflows/docs.yml`](.github/workflows/docs.yml). That workflow regenerates the diagrams, builds the Sphinx site, and publishes `docs/_build/html` to `gh-pages`, which is the branch GitHub Pages already serves. After the workflow is on `main`, the same job can be started by hand with **Actions → Docs → Run workflow**.
 
 # AI Tools for this Project
 

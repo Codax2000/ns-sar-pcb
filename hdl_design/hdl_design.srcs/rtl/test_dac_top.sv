@@ -1,4 +1,6 @@
-
+// DAC subsystem top. Host SPI and the two DAC5311 board pins live here.
+// The ADC is a separate subsystem. chip_top is the container that
+// instantiates both.
 module test_dac_top (
     // system clock and reset
     input sysclk,
@@ -126,7 +128,25 @@ module test_dac_top (
     assign dac_if_rd_err  = 0;
     assign dac_if_wr_err  = 0;
 
-    // TODO: assign this to 1 when DSM is locked
-    assign hwif_in.STATUS.dsm_locked.next = 0;
+    logic syncb_dacp;
+    logic syncb_dacn;
+
+    // The board has one active-low SYNC. The datapath has one per DAC.
+    // AND keeps the pin inactive only while both frames are inactive.
+    assign sinegen_syncb = syncb_dacp & syncb_dacn;
+
+    // Programmed registers go in on hwif_out. dsm_locked comes back
+    // on hwif_in.
+    dac_datapath i_dac_datapath (
+        .clk          (sysclk),
+        .rst_n        (rst_n),
+        .hwif_in      (hwif_in),
+        .hwif_out     (hwif_out),
+        .o_sclk       (sinegen_sclk),
+        .o_syncb_dacp (syncb_dacp),
+        .o_syncb_dacn (syncb_dacn),
+        .o_din_dacp   (sinegen_dinp),
+        .o_din_dacn   (sinegen_dinn)
+    );
 
 endmodule
