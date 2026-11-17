@@ -1629,6 +1629,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numba" },
     { name = "pandas" },
+    { name = "peakrdl" },
     { name = "schemdraw" },
     { name = "scipy" },
     { name = "sphinx" },
@@ -1645,6 +1646,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "numba", specifier = ">=0.68.0" },
     { name = "pandas", specifier = ">=3.0.6" },
+    { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "schemdraw", specifier = ">=0.23" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "sphinx", specifier = ">=9.1.0" },
@@ -1850,6 +1852,37 @@ wheels = [
 ]
 
 [[package]]
+name = "peakrdl"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "peakrdl-cheader" },
+    { name = "peakrdl-cli" },
+    { name = "peakrdl-html" },
+    { name = "peakrdl-ipxact" },
+    { name = "peakrdl-regblock" },
+    { name = "peakrdl-systemrdl" },
+    { name = "peakrdl-uvm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5f/dd/c329e3f50e0129180d2b6dffcf13e3140277ab2e929ab774d91ea84ae85c/peakrdl-1.5.0.tar.gz", hash = "sha256:7aa5abce889fd75083f860727bbf69aacb969ec3d204250e808576237ced0dec", size = 5052, upload-time = "2025-10-03T04:17:09.521Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/2a/1d7c2cf934e779caeddb72b7f22f74a86ad815a1cb48bdfa46c7b3af6110/peakrdl-1.5.0-py3-none-any.whl", hash = "sha256:819ae8fb445969d125329c9b6fc1c164a1e9bef02f0594698db5bce2aa0a0277", size = 5186, upload-time = "2025-10-03T04:17:08.255Z" },
+]
+
+[[package]]
+name = "peakrdl-cheader"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/eb/0029f029510523277d2aea7c6a7b86f4c6a14da092c06700434d191483be/peakrdl_cheader-1.1.0.tar.gz", hash = "sha256:2e1593d68ca96608eb0b29ae3efbd5abca961050984d4ee1e4a65998237cd58b", size = 30518, upload-time = "2026-03-28T02:57:52.734Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/a4/112cc4f9c80c7c1373e38e33172d8219bf4db360b915dd856e2fb31a0cec/peakrdl_cheader-1.1.0-py3-none-any.whl", hash = "sha256:72bc5af33a0a353eacc88fd35e271a9f008176b758fdb0c7cfbff1f5144c42af", size = 19765, upload-time = "2026-03-28T02:57:51.268Z" },
+]
+
+[[package]]
 name = "peakrdl-cli"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1875,6 +1908,56 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/19/0a/069fd914b588ef1d9dbc89031d962293fa2b9255c3b1104f9de9f0891320/peakrdl_html-2.12.2.tar.gz", hash = "sha256:7be4b92dead8d296d714da5d25e71249ebf488bccdd255ed7581f32dd3a99546", size = 11255605, upload-time = "2026-03-06T04:57:29.273Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/32/8bb83251ca56366af0fcea102331b337e87b2baeca81ade16942357e172f/peakrdl_html-2.12.2-py3-none-any.whl", hash = "sha256:1b74a43579900b48fb6ebf0468b91c50d2256828d1f9751da8bfeb2f0883710c", size = 5582847, upload-time = "2026-03-06T04:57:26.857Z" },
+]
+
+[[package]]
+name = "peakrdl-ipxact"
+version = "3.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a0/f6/af8f79d853081ce9258c60863606291ad5aab9e12eccd050f2e3e8a3a051/peakrdl_ipxact-3.5.0.tar.gz", hash = "sha256:183b9e5412cad7734c25c710ca3722f75f8776b8c20ed38c1d4b83ac409d92d8", size = 71628, upload-time = "2024-10-15T04:45:01.901Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/81/778784087d63d004d8db431212153e635d89bd43fd05f61391090211d6f5/peakrdl_ipxact-3.5.0-py3-none-any.whl", hash = "sha256:930460f2b95cf5be52d7fadad416f040b68defbc17c372a58c581ee7195be364", size = 40804, upload-time = "2024-10-15T04:45:00.346Z" },
+]
+
+[[package]]
+name = "peakrdl-regblock"
+version = "1.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ca/d1/f6488f1d3ac8b3cfa7120ed9e8c586193c8372f2336ee8e94d8559261da0/peakrdl_regblock-1.3.1.tar.gz", hash = "sha256:d72803e62ff0c0feb2c17a51263e39cdee14ec6bf5dc8a7100e8a93f63306a07", size = 555526, upload-time = "2026-03-28T03:05:09.748Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/69/c35c9a4d2d461a839e9041c763fcfe6294f5399e13dc554c60ecbea67e34/peakrdl_regblock-1.3.1-py3-none-any.whl", hash = "sha256:d769306d834dea3dbd02cdd976f694d2009ef33dbb72bcfadc344b7de6cfb492", size = 83185, upload-time = "2026-03-28T03:05:08.144Z" },
+]
+
+[[package]]
+name = "peakrdl-systemrdl"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/3e/bc15ce1445c7b80717d4babc6d1de92f857e1ff00cd8eefeb9505c9c19f2/peakrdl_systemrdl-1.0.1.tar.gz", hash = "sha256:77fe097d01d252b365f9d603e2712a85b3cf65f32c7ad52aadd1a8dea9635a5e", size = 16359, upload-time = "2025-11-07T03:30:55.24Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/b0/1ac2934d117e3e8cb59afc7f658b1dc5b2a34ede0718952ab6993990b5ca/peakrdl_systemrdl-1.0.1-py3-none-any.whl", hash = "sha256:17d72641ade637e5650a20589977a3452316ecb630f500907f4c579c0a8f7ebd", size = 10208, upload-time = "2025-11-07T03:30:53.546Z" },
+]
+
+[[package]]
+name = "peakrdl-uvm"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5a/d4/de4c1e44ba589aaae7fa230266516ba67608e7dca425ccf3a7b21bb062ab/peakrdl_uvm-2.4.0.tar.gz", hash = "sha256:bebbec7ea84c76137e3e61442565d1de9a225eaf01774c65de3d10dd7096ad78", size = 15293, upload-time = "2025-11-25T01:59:54.771Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/f0/cc6f81291ce62422ca6b73efe2e032d86689dadd91a04356e199f0b915e1/peakrdl_uvm-2.4.0-py3-none-any.whl", hash = "sha256:2ec87aaac25f6597a0a0b173edae8cd81d1dd05957591013f1e6b93957de0d87", size = 16945, upload-time = "2025-11-25T01:59:53.029Z" },
 ]
 
 [[package]]

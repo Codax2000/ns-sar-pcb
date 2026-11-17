@@ -18,8 +18,4 @@ module cordic (
     assign o_cosine = '0;
     assign o_valid  = 1'b0;
 
-    wire _unused_ok = &{1'b0, rst_n, clk, i_valid, i_phase,
-                        hwif_out.AC_CONFIG.amplitude_scale.value,
-                        hwif_out.AC_CONFIG.amplitude.value};
-
 endmodule

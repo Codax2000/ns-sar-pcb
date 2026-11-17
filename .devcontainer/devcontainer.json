@@ -1,0 +1,4 @@
+{
+    "name": "aisland-sandbox",
+    "image": "localhost/aisland-sandbox:latest"
+}

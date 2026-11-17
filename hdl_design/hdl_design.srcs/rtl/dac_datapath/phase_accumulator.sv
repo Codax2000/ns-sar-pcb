@@ -1,24 +1,45 @@
 module phase_accumulator (
-    input  logic rst_n,
+    input  logic rst,
     input  logic clk,
 
     // Software-programmed dac_regs fields (regblock hwif_out).
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
-
-    // High while either DAC is enabled. The valid pulse is meant to
-    // run at clk/16; that divider is not implemented.
-    input  i_en,
 
     // phase outputs
     output [15:0] o_phase,
     output        o_valid
 );
 
-    // Frequency tuning word is not accumulated yet.
-    assign o_phase = '0;
-    assign o_valid = 1'b0;
+    localparam  VALID_COUNT = 16;
+    logic [7:0] idle_counter;
 
-    wire _unused_ok = &{1'b0, rst_n, clk, i_en,
-                        hwif_out.FREQUENCY.frequency.value};
+    logic dacp_ac_en;
+    logic dacn_ac_en;
+    logic accumulator_en;
+
+    assign dacp_ac_en = hwif_out.ENABLE.dacp_enable.value &&
+                        (hwif_out.ENABLE.dacp_mode.value == dac_regs_mod_pkg::dac_regs__frequency_mode_e__AC);
+    assign dacn_ac_en = hwif_out.ENABLE.dacn_enable.value &&
+                        (hwif_out.ENABLE.dacn_mode.value == dac_regs_mod_pkg::dac_regs__frequency_mode_e__AC);
+    assign accumulator_en = dacp_ac_en || dacn_ac_en;
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            idle_counter <= 1'b0;
+            o_phase <= 1'b0;
+            o_valid <= 1'b0;
+        end
+        else if (accumulator_en) begin
+            if (idle_counter == VALID_COUNT - 1) begin
+                idle_counter <= 1'b0;
+                o_valid <= 1'b1;
+                o_phase <= o_phase + hwif_out.FREQUENCY.frequency.value;
+            end
+            else begin
+                o_valid <= 1'b0;
+                idle_counter <= idle_counter + 1;
+            end
+        end
+    end
 
 endmodule
