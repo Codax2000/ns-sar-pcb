@@ -27,58 +27,58 @@ module dac_datapath (
     output logic o_din_dacn
 );
 
-    logic        phase_en;
-    logic [15:0] phase;
-    logic        phase_valid;
-    logic [15:0] cosine;
-    logic        cosine_valid;
-    logic [15:0] cosine_dsm;
-    logic        dsm_valid;
-    logic [15:0] cosine_to_dac;
-    logic        dac_valid;
+    // logic        phase_en;
+    // logic [15:0] phase;
+    // logic        phase_valid;
+    // logic [15:0] cosine;
+    // logic        cosine_valid;
+    // logic [15:0] cosine_dsm;
+    // logic        dsm_valid;
+    // logic [15:0] cosine_to_dac;
+    // logic        dac_valid;
 
     // One-cycle datapath reset after a software write. swmod is the
     // regblock's write strobe. STATUS.dsm_locked is read-only; its
     // swmod is tied off inside the regblock and is not a write.
-    logic reg_write;
-    logic reg_write_q;
-    logic dp_rst_n;
+    // logic reg_write;
+    // logic reg_write_q;
+    // logic dp_rst_n;
 
-    assign reg_write = hwif_out.AC_CONFIG.amplitude_scale.swmod
-                     | hwif_out.AC_CONFIG.amplitude.swmod
-                     | hwif_out.ENABLE.dacp_enable.swmod
-                     | hwif_out.ENABLE.dacp_mode.swmod
-                     | hwif_out.ENABLE.dacn_enable.swmod
-                     | hwif_out.ENABLE.dacn_mode.swmod
-                     | hwif_out.ENABLE.dsm_enable.swmod
-                     | hwif_out.DACP_DC_VALUE.dc_value.swmod
-                     | hwif_out.DACN_DC_VALUE.dc_value.swmod
-                     | hwif_out.CLK_DIV.clk_div_value.swmod
-                     | hwif_out.STATUS.dacp_power.swmod
-                     | hwif_out.STATUS.dacn_power.swmod
-                     | hwif_out.FREQUENCY.frequency.swmod;
+    // assign reg_write = hwif_out.AC_CONFIG.amplitude_scale.swmod
+    //                  | hwif_out.AC_CONFIG.amplitude.swmod
+    //                  | hwif_out.ENABLE.dacp_enable.swmod
+    //                  | hwif_out.ENABLE.dacp_mode.swmod
+    //                  | hwif_out.ENABLE.dacn_enable.swmod
+    //                  | hwif_out.ENABLE.dacn_mode.swmod
+    //                  | hwif_out.ENABLE.dsm_enable.swmod
+    //                  | hwif_out.DACP_DC_VALUE.dc_value.swmod
+    //                  | hwif_out.DACN_DC_VALUE.dc_value.swmod
+    //                  | hwif_out.CLK_DIV.clk_div_value.swmod
+    //                  | hwif_out.STATUS.dacp_power.swmod
+    //                  | hwif_out.STATUS.dacn_power.swmod
+    //                  | hwif_out.FREQUENCY.frequency.swmod;
 
-    always_ff @(posedge clk) begin
-        if (!rst_n)
-            reg_write_q <= 1'b0;
-        else
-            reg_write_q <= reg_write;
-    end
+    // always_ff @(posedge clk) begin
+    //     if (!rst_n)
+    //         reg_write_q <= 1'b0;
+    //     else
+    //         reg_write_q <= reg_write;
+    // end
 
-    assign dp_rst_n = rst_n & ~reg_write_q;
+    // assign dp_rst_n = rst_n & ~reg_write_q;
 
     // Sketch enable into the NCO. Either DAC being enabled runs it.
-    assign phase_en = hwif_out.ENABLE.dacp_enable.value
-                    | hwif_out.ENABLE.dacn_enable.value;
+    // assign phase_en = hwif_out.ENABLE.dacp_enable.value
+    //                 | hwif_out.ENABLE.dacn_enable.value;
 
-    phase_accumulator i_phase_accumulator (
-        .rst_n    (dp_rst_n),
-        .clk      (clk),
-        .hwif_out (hwif_out),
-        .i_en     (phase_en),
-        .o_phase  (phase),
-        .o_valid  (phase_valid)
-    );
+    // phase_accumulator i_phase_accumulator (
+    //     .rst_n    (dp_rst_n),
+    //     .clk      (clk),
+    //     .hwif_out (hwif_out),
+    //     .i_en     (phase_en),
+    //     .o_phase  (phase),
+    //     .o_valid  (phase_valid)
+    // );
 
     // cordic i_cordic (
     //     .rst_n    (dp_rst_n),
@@ -125,7 +125,7 @@ module dac_datapath (
     //     .o_din_dacn    (o_din_dacn)
     // );
 
-    // // TODO: drive this from the delta-sigma warmup, not a constant.
-    // assign hwif_in.STATUS.dsm_locked.next = 1'b0;
+    // TODO: drive this from the delta-sigma warmup, not a constant.
+    assign hwif_in.STATUS.dsm_locked.next = 1'b0;
 
 endmodule

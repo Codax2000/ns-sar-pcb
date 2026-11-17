@@ -14,8 +14,8 @@ module cordic (
     output        o_valid
 );
 
-    // CORDIC rotation is not implemented.
-    assign o_cosine = '0;
-    assign o_valid  = 1'b0;
+    logic signed [15:0] x_prerotate, y_prerotate, z_remaining;
+    logic        [3:0]  iteration;
+    logic               prerotate_valid;
 
 endmodule
