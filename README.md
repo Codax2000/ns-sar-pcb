@@ -36,13 +36,13 @@ Diagram PNGs are generated into `docs/_static/img/` and are not committed. `make
 | Generate register RTL/UVM | `make gen` | Run PeakRDL register generation and redraw diagrams. |
 | Run a model | `uv run python -m models.sinegen_dac` | Run a model from the repo root after `uv sync`. Same form for `models.cordic`, `models.nssar`, `models.fp_array`, `models.fp_logic`, `models.nssar_prototype`, and `models.nssar_test`. `uv run python scripts/models/sinegen_dac.py` works too. |
 | Model unit tests | `uv run python -m unittest models.fp_array models.cordic models.sinegen_dac models.nssar` | Run the unittest cases in the modeling package. |
-| One HDL block test | `make hdltest.<name>` | Run `scripts/hdl_sim/test_<name>.py` with cocotb and Verilator. |
-| All HDL block tests | `make hdltest` | Run every `test_*.py` under `scripts/hdl_sim/`. With none present, exit 0. |
+| One HDL block test | `make hdltest TOPLEVEL=<module> TEST=<python module> SOURCES=<file.f>` | Elaborate that module with Verilator and run `scripts/hdl_sim/<python module>.py`. |
+| SPI register test | `make hdltest.spi SOURCES=<file.f>` | Write and read a DAC register on `test_dac_top`. See `scripts/hdl_sim/README.md`. |
 
 Python layout under `scripts/`:
 
 - `models/` — fixed-point, CORDIC, sine-generator DAC, and noise-shaping SAR models. `uv sync` installs this package, so `from models.fp_array import ...` works from the repository root.
-- `hdl_sim/` — cocotb + Verilator block tests. `make hdltest.dac_datapath` checks that the idle DAC datapath wrapper stays at midscale, not SNR.
+- `hdl_sim/` — cocotb + Verilator tests. `send_spi` in `tb_test_dac_top.py` drives the `test_dac_top` SPI pins in mode 0.
 - `diagrams.py`, `registers.py`, `peakrdl_templates/` — documentation and register tooling
 
 Pushes to `main` that change the docs, Python scripts under `scripts/`, register specifications, or the Python lockfile run [`.github/workflows/docs.yml`](.github/workflows/docs.yml). That workflow regenerates the diagrams, builds the Sphinx site, and publishes `docs/_build/html` to `gh-pages`, which is the branch GitHub Pages already serves. After the workflow is on `main`, the same job can be started by hand with **Actions → Docs → Run workflow**.

@@ -1,23 +1,44 @@
-# Block-level HDL tests
+# HDL simulation
 
-Cocotb and Verilator block tests live in this directory. UVM system tests are a different target and are not run from here.
+Cocotb 2 tests in this directory run on Verilator. From the repository root, `uv sync` installs `cocotb` (it is a `pyproject.toml` dependency). Verilator 5.036 or newer is a separate install; `uv` does not provide it.
 
-From the repository root, after `uv sync`:
+`make`, `make help`, and `make clean` do not start the simulator.
 
-| Command | Makefile arguments | Runs |
-| --- | --- | --- |
-| `make hdltest.<name>` | `MODULE=test_<name>` `SIM=verilator` | `test_<name>.py` |
-| `make hdltest` | `SIM=verilator` | Every `test_*.py`, or nothing if there are none |
+From the repository root:
 
-`make hdltest.dac_snr` maps to cocotb module `test_dac_snr`. This makefile copies `MODULE` to cocotb 2's `COCOTB_TEST_MODULES` and includes cocotb's `Makefile.sim`.
+```text
+make hdltest TOPLEVEL=<hdl module> TEST=<python module> SOURCES=<file.f>
+```
 
-`make hdltest.dac_datapath` runs `test_dac_datapath.py` against Verilog module `tb_dac_datapath` (`dac_datapath.mk` sets `COCOTB_TOPLEVEL`). That wrapper lives in `wrappers/` and packs flattened register inputs into `hwif_out`. Two `dac_5311` models (`hdl_design.srcs/dv/models/dac_5311.sv`) turn the serial pins into real voltages. The test checks that an idle serializer leaves both outputs at midscale. It does not score a sine or an SNR. The makefile regenerates the gitignored DAC register package from `dac_registers.rdl`.
+| Variable | Role |
+| --- | --- |
+| `TOPLEVEL` | HDL toplevel module. Passed to cocotb as `COCOTB_TOPLEVEL`. |
+| `TEST` | Python module in this directory, without `.py`. Passed as `COCOTB_TEST_MODULES`. |
+| `SOURCES` | Path of a plain Verilator filelist (one RTL or SV path per line). Passed as `verilator -f`. |
+| `VERILOG_SOURCES` | Space-separated sources. Use instead of `SOURCES`, or as well as it. |
+| `SIM` | Simulator. Default `verilator`. |
 
-Adding another block test takes two pieces:
+`make -C` runs the simulator in this directory, so paths inside the filelist and in `VERILOG_SOURCES` are relative to `scripts/hdl_sim`. `SOURCES` itself may be relative to the repository root or to this directory.
 
-1. `test_<name>.py` — cocotb tests.
-2. Verilog sources — `<name>.mk` setting `VERILOG_SOURCES` (and `COCOTB_TOPLEVEL` if the Verilog module is not `<name>`), or the same variables on the `make` command line.
+`make hdltest.spi SOURCES=<file.f>` sets `TOPLEVEL=test_dac_top` and `TEST=test_spi`.
 
-`make hdltest.<name>` stops before the simulator if either piece is missing. `make hdltest` exits 0 without calling Verilator while no `test_*.py` files exist.
+Register RTL comes from `make gen` (`scripts/registers.py`), not from this directory. That writes the gitignored DAC block under `hdl_design/hdl_design.srcs/rtl/registers/dac/`. A filelist for the SPI test:
 
-Verilator is not installed by `uv`. Cocotb supports Verilator 5.036 and newer; install that binary locally. `cocotb` and `cocotb-bus` are Python dependencies in `pyproject.toml`. The makefile prepends the repository `.venv/bin` directory so `cocotb-config` is found without activating the virtualenv.
+```text
+../../hdl_design/hdl_design.srcs/rtl/registers/sync_nstage.sv
+../../hdl_design/hdl_design.srcs/rtl/posedge_detector.sv
+../../hdl_design/hdl_design.srcs/rtl/registers/spi.sv
+../../hdl_design/hdl_design.srcs/rtl/registers/dac/dac_regs_mod_pkg.sv
+../../hdl_design/hdl_design.srcs/rtl/registers/dac/dac_regs_mod.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath/phase_accumulator.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath/cordic.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath/dsm_error_feedback.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath/dsm_bypass_mux.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath/dac5311_ctrl.sv
+../../hdl_design/hdl_design.srcs/rtl/dac_datapath.sv
+../../hdl_design/hdl_design.srcs/rtl/test_dac_top.sv
+```
+
+`tb_test_dac_top.py` defines `send_spi`. It drives `test_dac_top` pins `csb`, `scl`, and `mosi`, and samples `miso`, SPI mode 0 (CPOL=0, CPHA=0, MSB first). `test_spi.py` writes the FREQUENCY register and reads it back. The SPI clock-domain crossing is still wrong, so that readback can fail. Nothing here changes the RTL.
+
+On Windows, use GNU make. If `cocotb-config` is not picked up, put `.venv/Scripts` on `PATH`.
