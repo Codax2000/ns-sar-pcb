@@ -1,6 +1,7 @@
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 
+EXTRA_ARGS   += -f filelist.f
 COMPILE_ARGS += --trace --trace-structs
 SIM_ARGS     += --trace
 
