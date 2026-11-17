@@ -7,12 +7,15 @@
 // on the DUT boundary, so each software-visible field is a flat input
 // here and is packed into dac_regs__out_t below. hwif_in is the hardware
 // writeback (only STATUS.dsm_locked.next). The datapath ties that off.
+// i_reg_write drives every .swmod member. One pulse resets the datapath
+// chain for one clock.
 //
 // Two dac_5311 models convert the serial pins into real voltages.
 
 module tb_dac_datapath (
     input logic clk,
     input logic rst_n,
+    input logic i_reg_write,
 
     input logic [3:0]  amplitude_scale,
     input logic [3:0]  amplitude,
@@ -54,6 +57,21 @@ module tb_dac_datapath (
     assign hwif_out.STATUS.dacp_power.value         = dacp_power;
     assign hwif_out.STATUS.dacn_power.value         = dacn_power;
     assign hwif_out.FREQUENCY.frequency.value       = frequency;
+
+    assign hwif_out.AC_CONFIG.amplitude_scale.swmod = i_reg_write;
+    assign hwif_out.AC_CONFIG.amplitude.swmod       = i_reg_write;
+    assign hwif_out.ENABLE.dacp_enable.swmod        = i_reg_write;
+    assign hwif_out.ENABLE.dacp_mode.swmod          = i_reg_write;
+    assign hwif_out.ENABLE.dacn_enable.swmod        = i_reg_write;
+    assign hwif_out.ENABLE.dacn_mode.swmod          = i_reg_write;
+    assign hwif_out.ENABLE.dsm_enable.swmod         = i_reg_write;
+    assign hwif_out.DACP_DC_VALUE.dc_value.swmod    = i_reg_write;
+    assign hwif_out.DACN_DC_VALUE.dc_value.swmod    = i_reg_write;
+    assign hwif_out.CLK_DIV.clk_div_value.swmod     = i_reg_write;
+    assign hwif_out.STATUS.dacp_power.swmod         = i_reg_write;
+    assign hwif_out.STATUS.dacn_power.swmod         = i_reg_write;
+    assign hwif_out.STATUS.dsm_locked.swmod         = i_reg_write;
+    assign hwif_out.FREQUENCY.frequency.swmod       = i_reg_write;
 
     dac_datapath i_dac_datapath (
         .clk          (clk),

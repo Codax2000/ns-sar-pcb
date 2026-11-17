@@ -6,7 +6,10 @@
 // STATUS.dsm_locked.next, held at 0.
 //
 // Chain: phase accumulator -> CORDIC -> DSM -> bypass mux -> DAC5311
-// control. Shared rst_n. The 8-bit codes never leave this hierarchy.
+// control. Any software write ORs the writable fields' swmod strobes
+// and resets that chain for one cycle (dp_rst_n). The block's own
+// rst_n is what clears that strobe flop. The 8-bit codes never leave
+// this hierarchy.
 // One SCLK, a separate active-low SYNC and DIN for each DAC5311.
 // test_dac_top maps these onto the board pins (one shared SYNC).
 
@@ -34,12 +37,42 @@ module dac_datapath (
     logic [15:0] cosine_to_dac;
     logic        dac_valid;
 
+    // One-cycle datapath reset after a software write. swmod is the
+    // regblock's write strobe. STATUS.dsm_locked is read-only; its
+    // swmod is tied off inside the regblock and is not a write.
+    logic reg_write;
+    logic reg_write_q;
+    logic dp_rst_n;
+
+    assign reg_write = hwif_out.AC_CONFIG.amplitude_scale.swmod
+                     | hwif_out.AC_CONFIG.amplitude.swmod
+                     | hwif_out.ENABLE.dacp_enable.swmod
+                     | hwif_out.ENABLE.dacp_mode.swmod
+                     | hwif_out.ENABLE.dacn_enable.swmod
+                     | hwif_out.ENABLE.dacn_mode.swmod
+                     | hwif_out.ENABLE.dsm_enable.swmod
+                     | hwif_out.DACP_DC_VALUE.dc_value.swmod
+                     | hwif_out.DACN_DC_VALUE.dc_value.swmod
+                     | hwif_out.CLK_DIV.clk_div_value.swmod
+                     | hwif_out.STATUS.dacp_power.swmod
+                     | hwif_out.STATUS.dacn_power.swmod
+                     | hwif_out.FREQUENCY.frequency.swmod;
+
+    always_ff @(posedge clk) begin
+        if (!rst_n)
+            reg_write_q <= 1'b0;
+        else
+            reg_write_q <= reg_write;
+    end
+
+    assign dp_rst_n = rst_n & ~reg_write_q;
+
     // Sketch enable into the NCO. Either DAC being enabled runs it.
     assign phase_en = hwif_out.ENABLE.dacp_enable.value
                     | hwif_out.ENABLE.dacn_enable.value;
 
     phase_accumulator i_phase_accumulator (
-        .rst_n    (rst_n),
+        .rst_n    (dp_rst_n),
         .clk      (clk),
         .hwif_out (hwif_out),
         .i_en     (phase_en),
@@ -48,7 +81,7 @@ module dac_datapath (
     );
 
     cordic i_cordic (
-        .rst_n    (rst_n),
+        .rst_n    (dp_rst_n),
         .clk      (clk),
         .hwif_out (hwif_out),
         .i_phase  (phase),
@@ -58,7 +91,7 @@ module dac_datapath (
     );
 
     dsm_error_feedback i_dsm_error_feedback (
-        .rst_n        (rst_n),
+        .rst_n        (dp_rst_n),
         .clk          (clk),
         .hwif_out     (hwif_out),
         .i_cosine     (cosine),
@@ -68,7 +101,7 @@ module dac_datapath (
     );
 
     dsm_bypass_mux i_dsm_bypass_mux (
-        .rst_n          (rst_n),
+        .rst_n          (dp_rst_n),
         .clk            (clk),
         .hwif_out       (hwif_out),
         .i_cosine       (cosine),
@@ -80,7 +113,7 @@ module dac_datapath (
     );
 
     dac5311_ctrl i_dac5311_ctrl (
-        .rst_n         (rst_n),
+        .rst_n         (dp_rst_n),
         .clk           (clk),
         .hwif_out      (hwif_out),
         .i_cosine      (cosine_to_dac),
