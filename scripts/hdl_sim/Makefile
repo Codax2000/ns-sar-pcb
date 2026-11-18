@@ -9,6 +9,7 @@ VERILOG_SOURCES += $(RTL)/registers/spi.sv
 VERILOG_SOURCES += $(RTL)/registers/dac/dac_regs_mod_pkg.sv
 VERILOG_SOURCES += $(RTL)/registers/dac/dac_regs_mod.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath/phase_accumulator.sv
 VERILOG_SOURCES += $(RTL)/test_dac_top.sv
 
 # PeakRDL regblock trips MULTIDRIVEN; unused cpuif ack/stall pins trip PINMISSING.

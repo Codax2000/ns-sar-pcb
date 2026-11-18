@@ -8,7 +8,7 @@ module spi (
 
     // system clock
     input  logic sysclk,
-    input  logic rst_n,
+    input  logic rst,
 
     output logic                      if_req,
     output logic                      if_rd_en,
@@ -115,14 +115,14 @@ module spi (
         }),
         .src_clk(1'b0),
         .dest_clk(sysclk),
-        .dest_clk_rst(~rst_n)
+        .dest_clk_rst(rst)
     );
 
     posedge_detector #(
         .N_CYCLES(3)
     ) i_req_posedge_detector (
         .clk(sysclk),
-        .rst(~rst_n),
+        .rst(rst),
         .in (sync_req),
         .posedge_detected(if_req)
     );
@@ -135,7 +135,7 @@ module spi (
     // samples this when a request is in flight, so holding indefinitely
     // is enough (see docs/hdl.rst SPI CDC).
     always_ff @(posedge sysclk) begin
-        if (!rst_n)
+        if (rst)
             if_rd_data_held <= '0;
         else if (if_req)
             if_rd_data_held <= if_rd_data;

@@ -1,6 +1,6 @@
 """Stimulus for the bare ``spi`` module: one write, then one read.
 
-Pin names match ``spi`` (``rst_n``, ``cs_b``). ``if_rd_data`` is driven
+Pin names match ``spi`` (``rst``, ``cs_b``). ``if_rd_data`` is driven
 by hand so a following read can shift that value out on ``miso``. Check
 write ``if_addr`` / ``if_wr_data`` in the waveform; the test only asserts
 MISO readback of the hand-set data.
@@ -57,7 +57,7 @@ async def test_write_then_read(dut):
     """Write, then read back hand-driven ``if_rd_data`` on MISO."""
     cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_NS, unit="ns").start())
 
-    dut.rst_n.value = 0
+    dut.rst.value = 1
     dut.cs_b.value = 1
     dut.scl.value = 0
     dut.mosi.value = 0
@@ -66,7 +66,7 @@ async def test_write_then_read(dut):
     dut.if_wr_err.value = 0
 
     await ClockCycles(dut.sysclk, 8)
-    dut.rst_n.value = 1
+    dut.rst.value = 0
     await ClockCycles(dut.sysclk, 8)
 
     await send_spi(dut, spi_frame(False, SPI_ADDR, 0x1234))
