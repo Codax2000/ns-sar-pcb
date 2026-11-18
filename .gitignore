@@ -7,6 +7,8 @@ scripts/hdl_sim/sim_build/
 scripts/hdl_sim/results.xml
 scripts/hdl_sim/dump.vcd
 scripts/hdl_sim/dump.fst
+scripts/hdl_sim/verilator.log
+./verilator.log
 
 hdl_design/hdl_design.cache/
 hdl_design/hdl_design.hw/
@@ -21,6 +23,7 @@ adc_regs/
 hdl_design/hdl_design.srcs/dv/axi_top_env/
 hdl_design/hdl_design.srcs/rtl/registers/adc/
 hdl_design/hdl_design.srcs/rtl/registers/dac/
+scripts/hdl_sim/chip_regs.py
 
 hdl_design/hdl_design.srcs/dv/waveforms
 

@@ -22,4 +22,9 @@ SIM_ARGS     += --trace
 %.wave:
 	gtkwave dump.vcd
 
+# If cocotb-config is missing, the include path collapses to /Makefile.sim and
+# would otherwise match %.sim forever. Fail clearly instead.
+/Makefile.sim:
+	$(error cocotb-config not found; activate the venv or put cocotb on PATH)
+
 include $(shell cocotb-config --makefiles)/Makefile.sim

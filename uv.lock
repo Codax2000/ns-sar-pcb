@@ -1630,6 +1630,7 @@ dependencies = [
     { name = "numba" },
     { name = "pandas" },
     { name = "peakrdl" },
+    { name = "peakrdl-pyuvm" },
     { name = "schemdraw" },
     { name = "scipy" },
     { name = "sphinx" },
@@ -1647,6 +1648,7 @@ requires-dist = [
     { name = "numba", specifier = ">=0.68.0" },
     { name = "pandas", specifier = ">=3.0.6" },
     { name = "peakrdl", specifier = ">=1.5.0" },
+    { name = "peakrdl-pyuvm", specifier = ">=0.9.0" },
     { name = "schemdraw", specifier = ">=0.23" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "sphinx", specifier = ">=9.1.0" },
@@ -1920,6 +1922,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a0/f6/af8f79d853081ce9258c60863606291ad5aab9e12eccd050f2e3e8a3a051/peakrdl_ipxact-3.5.0.tar.gz", hash = "sha256:183b9e5412cad7734c25c710ca3722f75f8776b8c20ed38c1d4b83ac409d92d8", size = 71628, upload-time = "2024-10-15T04:45:01.901Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/70/81/778784087d63d004d8db431212153e635d89bd43fd05f61391090211d6f5/peakrdl_ipxact-3.5.0-py3-none-any.whl", hash = "sha256:930460f2b95cf5be52d7fadad416f040b68defbc17c372a58c581ee7195be364", size = 40804, upload-time = "2024-10-15T04:45:00.346Z" },
+]
+
+[[package]]
+name = "peakrdl-pyuvm"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "numpy" },
+    { name = "pyuvm" },
+    { name = "systemrdl-compiler" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/0d/04d3bf78c9b24432194ee3e56e89be8cd5dba6aaee8e065b515c4600c5c6/peakrdl_pyuvm-0.9.0.tar.gz", hash = "sha256:b0397fc33d76c2278fb4a2c163ff59107c3bc7eae43382081704920975e9785f", size = 68678, upload-time = "2026-09-16T10:59:48.888Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/dc/b64d1422e0feada12f4688cf366e926bd56eef9f5df011b3daa2103052eb/peakrdl_pyuvm-0.9.0-py3-none-any.whl", hash = "sha256:4f6f7231e752f624e05b32af456d539018c5d865e111f163f9f6c0e7d37ef325", size = 15899, upload-time = "2026-09-16T10:59:47.584Z" },
 ]
 
 [[package]]
@@ -2220,6 +2237,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4c/68/fbea05ec6fb318bdcf56ea47596605614554f51d77bfd14f6fb481139ad8/python_markdown_math-0.9.tar.gz", hash = "sha256:567395553dc4941e79b3789a1096dcabb3fda9539d150d558ef3507948b264a3", size = 8680, upload-time = "2025-04-10T10:10:31.84Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/eb/68/ecf3535c40845de2efd8ac2d092dd5fca0868219fa3684d9e58ef7abeece/python_markdown_math-0.9-py3-none-any.whl", hash = "sha256:ac9932df517a5c0f6d01c56e7a44d065eca4a420893ac45f7a6937c67cb41e86", size = 6046, upload-time = "2025-04-10T10:10:30.318Z" },
+]
+
+[[package]]
+name = "pyuvm"
+version = "5.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cocotb" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/10/8ea037c21bb758b50a33b95f1d2dbdd8b5dae14d93298e13cf418704ef9c/pyuvm-5.0.0.tar.gz", hash = "sha256:32d9246b47281a4aa34a6062a1e5ccb5d0f9d2657fff29511837b09de005d8b3", size = 115633, upload-time = "2026-08-31T20:09:09.005Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/19/394894dcfbcaca315f96c4c5edb9a58582d234718647ad76efe49aa20088/pyuvm-5.0.0-py3-none-any.whl", hash = "sha256:9165a06b5544b1a33af242b0c4cdfc5f3e5d3e6463aeef69a35884a8bd6a91cd", size = 111988, upload-time = "2026-08-31T20:09:07.81Z" },
 ]
 
 [[package]]
