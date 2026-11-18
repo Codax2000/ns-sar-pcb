@@ -1,57 +1,46 @@
-"""SPI master helper for the ``test_dac_top`` pins.
+"""Write FREQUENCY on ``test_dac_top`` over SPI, then read it back.
 
-``test_dac_top`` exposes ``csb``, ``scl``, ``mosi``, ``miso``, and
-``miso_en``. This module drives the first three and samples ``miso``.
-``miso_en`` is the output-enable for the chip pin; ``test_dac_top``
-does not tri-state ``miso``, so the helper reads ``miso`` directly.
+Pins: ``arst_n``, ``csb``, ``scl``, ``mosi`` / ``miso``. SPI address 6 is
+FREQUENCY (CPUIF byte address ``0xC``).
 """
 
-from cocotb.triggers import Timer
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import ClockCycles, Timer
 
-# SPI mode 0 at 1 MHz, same rate as the UVM SPI driver's default.
-SPI_HALF_PERIOD_NS = 500
-
-
-def _as_byte(value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"SPI byte must be an int, got {value!r}")
-    if value < 0 or value > 255:
-        raise ValueError(f"SPI byte out of range 0..255: {value}")
-    return value
+SYSCLK_PERIOD_NS = 10
+SPI_HALF_PERIOD_NS = 100
+SPI_ADDR_FREQUENCY = 6
+WRITE_DATA = 0x1234
 
 
-def _sample_bit(signal) -> int:
-    """1 when the pin is a solid 1. X and Z read as 0."""
-    return 1 if str(signal.value) == "1" else 0
+def spi_frame(read: bool, addr: int, data: int = 0) -> list[int]:
+    """Four-byte frame: command word, then write data or read dummies."""
+    command = (0x8000 if read else 0) | (addr & 0x7FFF)
+    return [
+        (command >> 8) & 0xFF,
+        command & 0xFF,
+        (data >> 8) & 0xFF,
+        data & 0xFF,
+    ]
 
 
 async def send_spi(dut, mosi_bytes: list[int]) -> list[int]:
-    """Clock one full-duplex SPI frame and return the MISO bytes.
-
-    SPI mode 0 on ``test_dac_top``: CPOL=0, CPHA=0. ``csb`` is active
-    low and ``scl`` idles low. Bits are MSB first. Each MOSI bit is
-    set up while SCL is low; the matching MISO bit is sampled while
-    SCL is high, before the falling edge. One call is one chip-select
-    frame. The returned list has one byte per entry of ``mosi_bytes``.
-    """
-    payload = [_as_byte(byte) for byte in mosi_bytes]
-    if not payload:
-        return []
-
+    """Clock one SPI mode 0 frame; return MISO bytes."""
     received: list[int] = []
     dut.scl.value = 0
     dut.csb.value = 1
     await Timer(SPI_HALF_PERIOD_NS, unit="ns")
     dut.csb.value = 0
 
-    for tx_byte in payload:
+    for tx_byte in mosi_bytes:
         rx_byte = 0
         for bit_index in range(7, -1, -1):
             dut.mosi.value = (tx_byte >> bit_index) & 1
             await Timer(SPI_HALF_PERIOD_NS, unit="ns")
             dut.scl.value = 1
             await Timer(SPI_HALF_PERIOD_NS, unit="ns")
-            rx_byte = (rx_byte << 1) | _sample_bit(dut.miso)
+            rx_byte = (rx_byte << 1) | int(dut.miso.value)
             dut.scl.value = 0
         received.append(rx_byte)
 
@@ -60,3 +49,26 @@ async def send_spi(dut, mosi_bytes: list[int]) -> list[int]:
     dut.mosi.value = 0
     await Timer(SPI_HALF_PERIOD_NS, unit="ns")
     return received
+
+
+@cocotb.test()
+async def test_frequency_write_read(dut):
+    """Write FREQUENCY and expect the same value on the next read."""
+    cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_NS, unit="ns").start())
+
+    dut.arst_n.value = 0
+    dut.csb.value = 1
+    dut.scl.value = 0
+    dut.mosi.value = 0
+
+    await ClockCycles(dut.sysclk, 8)
+    dut.arst_n.value = 1
+    await ClockCycles(dut.sysclk, 8)
+
+    await send_spi(dut, spi_frame(False, SPI_ADDR_FREQUENCY, WRITE_DATA))
+    await ClockCycles(dut.sysclk, 16)
+    miso = await send_spi(dut, spi_frame(True, SPI_ADDR_FREQUENCY))
+    got = (miso[2] << 8) | miso[3]
+    assert got == WRITE_DATA, (
+        f"FREQUENCY readback was 0x{got:04X}, wrote 0x{WRITE_DATA:04X}"
+    )

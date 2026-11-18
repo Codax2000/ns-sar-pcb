@@ -70,14 +70,8 @@ doc: diagrams
 serve:
 	python -m http.server --directory docs/_build/html
 
-# Cocotb + Verilator. See scripts/hdl_sim/README.md.
-# make hdltest TOPLEVEL=<module> TEST=<python module> SOURCES=<file.f>
-# make hdltest.spi SOURCES=<file.f>   (TOPLEVEL=test_dac_top TEST=test_spi)
-hdltest:
-	$(MAKE) -C scripts/hdl_sim hdltest SIM=verilator
-
-hdltest.%:
-	$(MAKE) -C scripts/hdl_sim hdltest.$* SIM=verilator
+%.sim:
+	$(MAKE) -C scripts/hdl_sim $*.sim SIM=verilator
 
 # Local publish of docs/_build/html to the gh-pages branch.
 deploy:
