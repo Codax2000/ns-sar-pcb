@@ -78,6 +78,12 @@ One of the issues with this SPI scheme is that there is no time for a typical CD
    :align: center
 
 Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is to latch and hold the read data until the synchronized SPI clock returns to 0.
+In reality, it's actually easier to just latch and hold it indefinitely, since the SPI shift
+register only latches read data when it's actually used.
+
+.. image:: ./_static/screenshots/spi_cdc.png
+   :alt: SPI CDC Simulation
+   :align: center
 
 Integration
 -----------

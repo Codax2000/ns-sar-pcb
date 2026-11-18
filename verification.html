@@ -90,9 +90,10 @@
 and so there will be three levels of verification.</p>
 <ol class="arabic simple">
 <li><p>Block-level testbench with <code class="docutils literal notranslate"><span class="pre">cocotb</span></code> and Verilator. This is to compare against the fixed-point math and Python modeling.
-From the repository root, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest.&lt;name&gt;</span></code> runs <code class="docutils literal notranslate"><span class="pre">scripts/hdl_sim/test_&lt;name&gt;.py</span></code>
-(<code class="docutils literal notranslate"><span class="pre">MODULE=test_&lt;name&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">SIM=verilator</span></code>). <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest</span></code> runs every <code class="docutils literal notranslate"><span class="pre">test_*.py</span></code> there, and
-exits without starting a simulator when none have been added yet.</p></li>
+From the repository root, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest</span> <span class="pre">TOPLEVEL=&lt;module&gt;</span> <span class="pre">TEST=&lt;python</span> <span class="pre">module&gt;</span> <span class="pre">SOURCES=&lt;file.f&gt;</span></code>
+elaborates that module with Verilator and runs <code class="docutils literal notranslate"><span class="pre">scripts/hdl_sim/&lt;python</span> <span class="pre">module&gt;.py</span></code>.
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">hdltest.spi</span> <span class="pre">SOURCES=&lt;file.f&gt;</span></code> writes and reads a DAC register through <code class="docutils literal notranslate"><span class="pre">test_dac_top</span></code>.
+Register RTL comes from <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">gen</span></code>. The SPI readback can fail until the clock-domain crossing is fixed.</p></li>
 <li><p>System-level testbench with UVM. This ensures that the SPI interface can control the device as intended.
 It will also be used for randomized DAC outputs and ADC sampling. This will not check that SNR is correct,
 but should be able to check that the ADC sampling is a sine wave in the waveform viewer.

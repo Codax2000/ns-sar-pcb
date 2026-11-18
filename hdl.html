@@ -125,7 +125,10 @@
 <h3>SPI CDC<a class="headerlink" href="#spi-cdc" title="Link to this heading"></a></h3>
 <p>One of the issues with this SPI scheme is that there is no time for a typical CDC scheme. The CDC scheme, as it currently stands, is to synchronize the signals from SPI to the system clock, which will be roughly 5 times the maximum SPI clock speed. The current idea is to do the following (signals synchronized to SPI clock in purple):</p>
 <img alt="SPI CDC" class="align-center" src="_images/spi_cdc.png" />
-<p>Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is to latch and hold the read data until the synchronized SPI clock returns to 0.</p>
+<p>Instead of synchronizing the read data to the SPI clock (which is impossible) the idea is to latch and hold the read data until the synchronized SPI clock returns to 0.
+In reality, it’s actually easier to just latch and hold it indefinitely, since the SPI shift
+register only latches read data when it’s actually used.</p>
+<img alt="SPI CDC Simulation" class="align-center" src="_static/screenshots/spi_cdc.png" />
 </section>
 </section>
 <section id="integration">
