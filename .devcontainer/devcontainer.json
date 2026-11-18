@@ -1,0 +1,9 @@
+{
+    "name": "aisland-sandbox",
+    "image": "localhost/aisland-sandbox:latest",
+    "containerEnv": {
+        "UV_PROJECT_ENVIRONMENT": "/opt/venv",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8"
+    }
+}

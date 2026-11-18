@@ -25,6 +25,7 @@ module posedge_detector # (
                     next_state = COUNT;
             end
             DONE: next_state = in ? DONE : READY;
+            default: next_state = READY;
         endcase
     end
 

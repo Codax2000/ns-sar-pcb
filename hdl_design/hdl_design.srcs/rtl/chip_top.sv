@@ -1,6 +1,6 @@
 // Module: chip_top
 // Toplevel container module chiefly responsible for managing IO buffer connections.
-// Only <adc_top> and <dac_top> are included.
+// Only <adc_top> and <test_dac_top> are included.
 module chip_top (
     // system clock
     input  wire sysclk,

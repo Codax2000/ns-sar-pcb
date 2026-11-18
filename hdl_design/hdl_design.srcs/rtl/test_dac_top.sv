@@ -1,4 +1,6 @@
-
+// DAC subsystem top. Host SPI and the two DAC5311 board pins live here.
+// The ADC is a separate subsystem. chip_top is the container that
+// instantiates both.
 module test_dac_top (
     // system clock and reset
     input sysclk,
@@ -57,43 +59,6 @@ module test_dac_top (
         .if_wr_err (dac_if_wr_err )
     );
 
-    // Sync-to-sysclk
-    logic        sysclk_dac_if_req;  
-    logic        sysclk_dac_if_req_posedge;    
-    logic        sysclk_dac_if_rd_en;  
-    logic [3:0]  sysclk_dac_if_addr; 
-    logic [15:0] sysclk_dac_if_wr_data;
-    logic [15:0] sysclk_dac_if_rd_data;
-    logic        sysclk_dac_if_rd_err;
-    logic        sysclk_dac_if_wr_err;
-
-    sync_nstage #(.N_BITS(22)) i_spi_to_sysclk_sync (
-        .src_data ({
-            dac_if_req, 
-            dac_if_rd_en, 
-            dac_if_addr[3:0], 
-            dac_if_wr_data
-        }),
-        .dest_data ({
-            sysclk_dac_if_req, 
-            sysclk_dac_if_rd_en, 
-            sysclk_dac_if_addr, 
-            sysclk_dac_if_wr_data
-        }),
-        .src_clk(0),
-        .dest_clk(sysclk),
-        .dest_clk_rst(!rst_n)
-    );
-
-    posedge_detector #(
-        .N_CYCLES(3)
-    ) i_req_posedge_detector (
-        .clk(sysclk),
-        .rst(!rst_n),
-        .in (sysclk_dac_if_req),
-        .posedge_detected(sysclk_dac_if_req_posedge)
-    );
-
     dac_regs_mod_pkg::dac_regs__in_t  hwif_in;
     dac_regs_mod_pkg::dac_regs__out_t hwif_out;
 
@@ -101,32 +66,41 @@ module test_dac_top (
         .clk(sysclk),
         .rst(!rst_n),
 
-        .s_cpuif_req      ( sysclk_dac_if_req_posedge),
-        .s_cpuif_req_is_wr(!sysclk_dac_if_rd_en),
-        .s_cpuif_addr     ({sysclk_dac_if_addr[3:1], 1'b0}),
-        .s_cpuif_wr_data  ( sysclk_dac_if_wr_data),
+        .s_cpuif_req      ( dac_if_req),
+        .s_cpuif_req_is_wr(!dac_if_rd_en),
+        .s_cpuif_addr     ({dac_if_addr[2:0], 1'b0}),
+        .s_cpuif_wr_data  ( dac_if_wr_data),
         .s_cpuif_wr_biten ( 16'hFFFF),
-        .s_cpuif_rd_err   ( sysclk_dac_if_rd_err),
-        .s_cpuif_rd_data  ( sysclk_dac_if_rd_data),
-        .s_cpuif_wr_err   ( sysclk_dac_if_wr_err),
+        .s_cpuif_rd_err   ( dac_if_rd_err),
+        .s_cpuif_rd_data  ( dac_if_rd_data),
+        .s_cpuif_wr_err   ( dac_if_wr_err),
 
         .hwif_in(hwif_in),
         .hwif_out(hwif_out)
     );
 
-    always_ff @(posedge sysclk) begin
-        if (!rst_n)
-            dac_if_rd_data <= 0;
-        else begin
-            if (sysclk_dac_if_req_posedge)
-                dac_if_rd_data <= sysclk_dac_if_rd_data;
-        end
-    end
-
     assign dac_if_rd_err  = 0;
     assign dac_if_wr_err  = 0;
 
-    // TODO: assign this to 1 when DSM is locked
-    assign hwif_in.STATUS.dsm_locked.next = 0;
+    logic syncb_dacp;
+    logic syncb_dacn;
+
+    // The board has one active-low SYNC. The datapath has one per DAC.
+    // AND keeps the pin inactive only while both frames are inactive.
+    assign sinegen_syncb = syncb_dacp & syncb_dacn;
+
+    // Programmed registers go in on hwif_out. dsm_locked comes back
+    // on hwif_in.
+    dac_datapath i_dac_datapath (
+        .clk          (sysclk),
+        .rst_n        (rst_n),
+        .hwif_in      (hwif_in),
+        .hwif_out     (hwif_out),
+        .o_sclk       (sinegen_sclk),
+        .o_syncb_dacp (syncb_dacp),
+        .o_syncb_dacn (syncb_dacn),
+        .o_din_dacp   (sinegen_dinp),
+        .o_din_dacn   (sinegen_dinn)
+    );
 
 endmodule

@@ -70,13 +70,8 @@ doc: diagrams
 serve:
 	python -m http.server --directory docs/_build/html
 
-# Cocotb + Verilator block tests. See scripts/hdl_sim/README.md.
-# `make hdltest.dac_snr` -> MODULE=test_dac_snr. UVM system tests are separate.
-hdltest.%:
-	$(MAKE) -C scripts/hdl_sim MODULE=test_$* SIM=verilator
-
-hdltest:
-	$(MAKE) -C scripts/hdl_sim SIM=verilator
+%.sim:
+	$(MAKE) -C scripts/hdl_sim $*.sim SIM=verilator
 
 # Local publish of docs/_build/html to the gh-pages branch.
 deploy:

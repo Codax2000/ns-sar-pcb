@@ -248,7 +248,8 @@ def main():
 
     1. DAC  — compile dac_registers.rdl  -> AXI4-Lite RTL
     2. ADC  — compile adc_registers.rdl  -> passthrough RTL + synchronizer
-    3. Top  — compile chip_top.rdl       -> unified UVM RAL package + HTML
+    3. Top  — compile adc + dac specs, then chip_top.rdl
+              -> unified UVM RAL package + C header
     '''
 
     args = parse_input_arguments()
@@ -268,14 +269,18 @@ def main():
     gen_adc_rtl(adc_root, args.adc_rtl)
 
     # ------------------------------------------------------------------
-    # 3. Top: unified UVM RAL + HTML
-    #    chip_top.rdl `include`s both sub-maps, so we only need to pass
-    #    the top file; the RDL compiler resolves the includes itself.
+    # 3. Top: unified UVM RAL + C header
     #    The UDPs file must still be compiled first in a fresh RDLCompiler
-    #    instance — `include` does not pull in the Python UDP registrations.
+    #    instance — compiling the sub-maps here does not pull in the
+    #    Python UDP registrations by itself.
     # ------------------------------------------------------------------
+    # chip_top.rdl instantiates adc_regs and dac_regs. The `include`s
+    # of those specs were removed so Sphinx does not compile each
+    # sub-map twice, so both files are compiled into this compiler
+    # before the top file.
     print('[registers.py] Compiling chip_top for UVM RAL...')
-    top_root = compile_rdl(args.udp_spec, args.top_spec)
+    top_root = compile_rdl(
+        args.udp_spec, args.adc_spec, args.dac_spec, args.top_spec)
     gen_uvm_pkg(top_root, args.uvmpkg,
                 user_template_dir='./scripts/peakrdl_templates')
     

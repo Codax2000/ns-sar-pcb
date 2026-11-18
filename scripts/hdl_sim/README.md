@@ -1,21 +1,16 @@
-# Block-level HDL tests
+# HDL simulation
 
-Cocotb and Verilator block tests live in this directory. UVM system tests are a different target and are not run from here.
+Cocotb 2 tests in this directory run on Verilator. From the repository root, `uv sync` installs `cocotb` (it is a `pyproject.toml` dependency). Verilator 5.036 or newer is a separate install; `uv` does not provide it.
 
-From the repository root, after `uv sync`:
+`make`, `make help`, and `make clean` do not start the simulator.
 
-| Command | Makefile arguments | Runs |
-| --- | --- | --- |
-| `make hdltest.<name>` | `MODULE=test_<name>` `SIM=verilator` | `test_<name>.py` |
-| `make hdltest` | `SIM=verilator` | Every `test_*.py`, or nothing if there are none |
+From `scripts/hdl_sim` (sources are listed in the `Makefile`):
 
-`make hdltest.dac_snr` maps to cocotb module `test_dac_snr`. This makefile copies `MODULE` to cocotb 2's `COCOTB_TEST_MODULES` and includes cocotb's `Makefile.sim`.
+```text
+make spi.sim            # bare spi, tb_spi.py
+make test_dac_top.sim   # test_dac_top, tb_test_dac_top.py
+```
 
-Nothing in this directory is a real test yet, and there is no dummy DUT. Adding one takes two pieces:
+`%.sim` sets `TOPLEVEL=$*` and `COCOTB_TEST_MODULES=tb_$*`. All RTL in the Makefile is compiled for every target. `tb_spi.py` drives `spi` (`rst_n`, `cs_b`) with hand-set `if_rd_data`. `tb_test_dac_top.py` writes and reads FREQUENCY on `test_dac_top` (`arst_n`, `csb`).
 
-1. `test_<name>.py` — cocotb tests.
-2. Verilog sources — `<name>.mk` setting `VERILOG_SOURCES` (and `COCOTB_TOPLEVEL` if the Verilog module is not `<name>`), or the same variables on the `make` command line.
-
-`make hdltest.<name>` stops before the simulator if either piece is missing. `make hdltest` exits 0 without calling Verilator while no `test_*.py` files exist.
-
-Verilator is not installed by `uv`. Cocotb supports Verilator 5.036 and newer; install that binary locally. `cocotb` and `cocotb-bus` are Python dependencies in `pyproject.toml`. The makefile prepends the repository `.venv/bin` directory so `cocotb-config` is found without activating the virtualenv.
+On Windows, use GNU make. If `cocotb-config` is not picked up, put `.venv/Scripts` on `PATH`.
