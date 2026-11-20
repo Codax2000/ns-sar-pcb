@@ -27,15 +27,15 @@ module dac_datapath (
     output logic o_din_dacn
 );
 
-    logic        phase_en;
-    logic [15:0] phase;
-    logic        phase_valid;
-    logic [15:0] cosine;
-    logic        cosine_valid;
-    logic [15:0] cosine_dsm;
-    logic        dsm_valid;
-    logic [15:0] cosine_to_dac;
-    logic        dac_valid;
+    logic               phase_en;
+    logic signed [15:0] phase;
+    logic               phase_valid;
+    logic signed [15:0] cosine;
+    logic               cosine_valid;
+    logic signed [15:0] cosine_dsm;
+    logic               dsm_valid;
+    logic         [7:0] cosine_to_dac;
+    logic               dac_valid;
 
     // One-cycle datapath reset after a software write using RDL swmod (write)
     logic reg_write;
@@ -65,7 +65,7 @@ module dac_datapath (
 
     assign datapath_rst = rst || reg_write_q;
 
-    phase_accumulator i_phase_accumulator (
+    phase_accumulator u_phase_accumulator (
         .rst      (datapath_rst),
         .clk      (clk),
         .hwif_out (hwif_out),
@@ -73,15 +73,15 @@ module dac_datapath (
         .o_valid  (phase_valid)
     );
 
-    // cordic i_cordic (
-    //     .rst_n    (dp_rst_n),
-    //     .clk      (clk),
-    //     .hwif_out (hwif_out),
-    //     .i_phase  (phase),
-    //     .i_valid  (phase_valid),
-    //     .o_cosine (cosine),
-    //     .o_valid  (cosine_valid)
-    // );
+    cordic u_cordic (
+        .rst      (datapath_rst),
+        .clk      (clk),
+        .hwif_out (hwif_out),
+        .i_phase  (phase),
+        .i_valid  (phase_valid),
+        .o_cosine (cosine),
+        .o_valid  (cosine_valid)
+    );
 
     // dsm_error_feedback i_dsm_error_feedback (
     //     .rst_n        (dp_rst_n),

@@ -35,7 +35,7 @@ async def test_frequency_write_read(dut):
         0x0000, # DACN_DC_VALUE
         0x0000, # CLK_DIV
         0x0000, # STATUS
-        0x1010  # FREQUENCY
+        0x0710  # FREQUENCY
     ]
     await write_reg(dut, 0x00, write_data)
 
