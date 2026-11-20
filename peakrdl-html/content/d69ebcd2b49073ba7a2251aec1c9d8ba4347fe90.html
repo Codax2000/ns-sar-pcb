@@ -52,8 +52,17 @@
             <a class="headerlink" href="#dsm_locked" title="Permalink to this row"></a>
         </td>
     </tr>
+    <tr class="reserved-field">
+    <td>[3:2]</td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+    <td></td>
+    <td>-</td>
+    <td></td>
+</tr>
     <tr id="dacn_power">
-        <td>[3:2]</td>
+        <td>[1]</td>
         <td><a href="#dacn_power.desc">dacn_power</a></td>
         <td>
             <span title='Readable and Writable'>rw</span></td>
@@ -73,7 +82,7 @@
         </td>
     </tr>
     <tr id="dacp_power">
-        <td>[1:0]</td>
+        <td>[0]</td>
         <td><a href="#dacp_power.desc">dacp_power</a></td>
         <td>
             <span title='Readable and Writable'>rw</span></td>
@@ -113,13 +122,13 @@
     <a class="headerlink" href="#dacn_power.desc" title="Permalink to this headline"></a>
 </h3>
 <div id="_Content.dacn_power.desc">
-<p>DACN power value, as described by DAC5311 datasheet.</p>
+<p>DACN pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm</p>
 </div>
 
 <h3 id="dacp_power.desc">dacp_power
     <a class="headerlink" href="#dacp_power.desc" title="Permalink to this headline"></a>
 </h3>
 <div id="_Content.dacp_power.desc">
-<p>DACP power value, as described by DAC5311 datasheet.</p>
+<p>DACP pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm</p>
 </div>
 </div>
