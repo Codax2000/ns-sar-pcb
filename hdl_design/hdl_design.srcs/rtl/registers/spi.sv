@@ -4,7 +4,7 @@ module spi (
     input  logic mosi,
     output logic miso,
     output logic miso_en,
-    input  logic cs_b,
+    input  logic csb,
 
     // system clock
     input  logic sysclk,
@@ -39,8 +39,8 @@ module spi (
 
     enum logic [1:0] {ADDR, RECEIVE_WRITE, DRIVE_READ} addr_state;
 
-    always_ff @(posedge scl or posedge cs_b) begin
-        if (cs_b) begin
+    always_ff @(posedge scl or posedge csb) begin
+        if (csb) begin
             addr_state          <= ADDR;
             load_address        <= 0;
             byte_count          <= 0;
@@ -141,8 +141,8 @@ module spi (
             if_rd_data_held <= if_rd_data;
     end
 
-    always_ff @(negedge scl or posedge cs_b) begin
-        if (cs_b) begin
+    always_ff @(negedge scl or posedge csb) begin
+        if (csb) begin
             miso_shift_reg <= 0;
         end
         else begin

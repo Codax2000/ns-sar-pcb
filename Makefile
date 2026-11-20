@@ -15,7 +15,6 @@ DAC_RTL_DIR  := ./hdl_design/hdl_design.srcs/rtl/registers/dac
 ADC_RTL_DIR  := ./hdl_design/hdl_design.srcs/rtl/registers/adc
 TOP_HTML_DIR := ./docs/docs/chip_top
 DOCS_IMG_DIR := ./docs/docs/img
-PYUVM_REG    := ./scripts/hdl_sim/chip_regs.py
 UVM_PKG      := ./hdl_design/hdl_design.srcs/dv/chip_top_regs/chip_regs_dv_pkg.sv
 ADC_SYNC     := ./hdl_design/hdl_design.srcs/rtl/registers/adc/adc_reg_sync.sv
 C_HEADER     := ./software/firmware/src/registers/chip_top_registers.h
@@ -40,9 +39,6 @@ gen: clean
 		-t chip_top \
 		-o $(UVM_PKG) \
 		--use-factory
-	peakrdl pyuvm $(UDP_SPEC) $(ADC_SPEC) $(DAC_SPEC) $(TOP_SPEC) \
-		-t chip_top \
-		-o $(PYUVM_REG)
 	@python $(IMG_SCRIPT)
 	@echo "[Makefile] Done."
 

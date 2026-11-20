@@ -38,7 +38,7 @@ module adc_top (
 
         .scl    (scl),
         .mosi   (mosi),
-        .cs_b   (csb),
+        .csb    (csb),
         .miso   (miso),
         .miso_en(miso_en),
 

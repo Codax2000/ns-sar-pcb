@@ -253,9 +253,9 @@ package chip_regs_dv_pkg;
 
         virtual function void build();
             this.dacp_power = uvm_reg_field::type_id::create("dacp_power");
-            this.dacp_power.configure(this, 2, 0, "RW", 0, 'h0, 1, 1, 0);
+            this.dacp_power.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
             this.dacn_power = uvm_reg_field::type_id::create("dacn_power");
-            this.dacn_power.configure(this, 2, 2, "RW", 0, 'h0, 1, 1, 0);
+            this.dacn_power.configure(this, 1, 1, "RW", 0, 'h0, 1, 1, 0);
             this.dsm_locked = uvm_reg_field::type_id::create("dsm_locked");
             this.dsm_locked.configure(this, 1, 4, "RO", 1, 'h0, 1, 1, 0);
         endfunction : build

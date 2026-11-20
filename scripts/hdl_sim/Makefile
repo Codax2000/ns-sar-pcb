@@ -17,7 +17,7 @@ COMPILE_ARGS += --trace --trace-structs -Wno-MULTIDRIVEN -Wno-PINMISSING
 SIM_ARGS     += --trace
 
 %.sim:
-	$(MAKE) sim TOPLEVEL=$* COCOTB_TEST_MODULES=tb_$* 2>&1 | tee verilator.log
+	$(MAKE) sim TOPLEVEL=$* COCOTB_TEST_MODULES=tests.test_$* 2>&1 | tee verilator.log
 
 %.wave:
 	gtkwave dump.vcd
@@ -28,3 +28,7 @@ SIM_ARGS     += --trace
 	$(error cocotb-config not found; activate the venv or put cocotb on PATH)
 
 include $(shell cocotb-config --makefiles)/Makefile.sim
+
+# Extend cocotb's clean:: (root `make clean` recurses here).
+clean::
+	@$(RM) -f verilator.log
