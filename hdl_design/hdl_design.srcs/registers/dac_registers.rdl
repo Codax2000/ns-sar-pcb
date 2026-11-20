@@ -67,11 +67,11 @@ addrmap dac_regs {
 
     reg {
         field {
-            desc="DACP power value, as described by DAC5311 datasheet.";
-        } dacp_power [1:0];
+            desc="DACP pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm";
+        } dacp_power [0:0];
         field {
-            desc="DACN power value, as described by DAC5311 datasheet.";
-        } dacn_power [3:2];
+            desc="DACN pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm";
+        } dacn_power [1:1];
         field {
             desc="If 1, means delta-sigma modulator is warmed up after enable.";
             sw=r;

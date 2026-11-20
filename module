@@ -1,0 +1,5 @@
+#%Module1.0
+module-whatis "Tools for NS-SAR PCB Digital"
+
+module load vivado
+module load verilator

@@ -4,11 +4,11 @@ module spi (
     input  logic mosi,
     output logic miso,
     output logic miso_en,
-    input  logic cs_b,
+    input  logic csb,
 
     // system clock
     input  logic sysclk,
-    input  logic rst_n,
+    input  logic rst,
 
     output logic                      if_req,
     output logic                      if_rd_en,
@@ -39,8 +39,8 @@ module spi (
 
     enum logic [1:0] {ADDR, RECEIVE_WRITE, DRIVE_READ} addr_state;
 
-    always_ff @(posedge scl or posedge cs_b) begin
-        if (cs_b) begin
+    always_ff @(posedge scl or posedge csb) begin
+        if (csb) begin
             addr_state          <= ADDR;
             load_address        <= 0;
             byte_count          <= 0;
@@ -115,14 +115,14 @@ module spi (
         }),
         .src_clk(1'b0),
         .dest_clk(sysclk),
-        .dest_clk_rst(~rst_n)
+        .dest_clk_rst(rst)
     );
 
     posedge_detector #(
         .N_CYCLES(3)
     ) i_req_posedge_detector (
         .clk(sysclk),
-        .rst(~rst_n),
+        .rst(rst),
         .in (sync_req),
         .posedge_detected(if_req)
     );
@@ -135,14 +135,14 @@ module spi (
     // samples this when a request is in flight, so holding indefinitely
     // is enough (see docs/hdl.rst SPI CDC).
     always_ff @(posedge sysclk) begin
-        if (!rst_n)
+        if (rst)
             if_rd_data_held <= '0;
         else if (if_req)
             if_rd_data_held <= if_rd_data;
     end
 
-    always_ff @(negedge scl or posedge cs_b) begin
-        if (cs_b) begin
+    always_ff @(negedge scl or posedge csb) begin
+        if (csb) begin
             miso_shift_reg <= 0;
         end
         else begin

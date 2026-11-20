@@ -21,11 +21,11 @@ module test_dac_top (
 );
 
     // Sync reset generation
-    logic rst_n;
+    logic rst;
 
     sync_nstage #(.N_BITS(1)) i_rst_sync (
-        .src_data(arst_n),
-        .dest_data(rst_n),
+        .src_data(~arst_n),
+        .dest_data(rst),
         .src_clk(1'b0),
         .dest_clk(sysclk),
         .dest_clk_rst(1'b0)
@@ -42,11 +42,11 @@ module test_dac_top (
 
     spi i_dac_spi (
         .sysclk(sysclk),
-        .rst_n (rst_n),
+        .rst   (rst),
 
         .scl    (scl),
         .mosi   (mosi),
-        .cs_b   (csb),
+        .csb    (csb),
         .miso   (miso),
         .miso_en(miso_en),
 
@@ -64,7 +64,7 @@ module test_dac_top (
 
     dac_regs_mod i_registers (
         .clk(sysclk),
-        .rst(!rst_n),
+        .rst(rst),
 
         .s_cpuif_req      ( dac_if_req),
         .s_cpuif_req_is_wr(!dac_if_rd_en),
@@ -93,7 +93,7 @@ module test_dac_top (
     // on hwif_in.
     dac_datapath i_dac_datapath (
         .clk          (sysclk),
-        .rst_n        (rst_n),
+        .rst          (rst),
         .hwif_in      (hwif_in),
         .hwif_out     (hwif_out),
         .o_sclk       (sinegen_sclk),

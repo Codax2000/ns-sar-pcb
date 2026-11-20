@@ -1,0 +1,4 @@
+# PeakRDL CLI config (auto-loaded from the repo root).
+# Custom UVM Jinja overrides previously passed via registers.py.
+[uvm]
+user_template_dir = "scripts/peakrdl_templates"

@@ -2,9 +2,6 @@
 # PeakRDL Register Generation Makefile
 # ---------------------------------------------------------------------------
 
-# Python Executable and Script
-PYTHON       := python3
-REG_SCRIPT   := ./scripts/registers.py 
 IMG_SCRIPT   := ./scripts/diagrams.py
 
 # RDL Source Specs
@@ -22,23 +19,27 @@ UVM_PKG      := ./hdl_design/hdl_design.srcs/dv/chip_top_regs/chip_regs_dv_pkg.s
 ADC_SYNC     := ./hdl_design/hdl_design.srcs/rtl/registers/adc/adc_reg_sync.sv
 C_HEADER     := ./software/firmware/src/registers/chip_top_registers.h
 
-.PHONY: gen clean diagrams doc serve deploy hdltest
+.PHONY: gen clean diagrams doc serve deploy
 
 gen: clean
-	@mkdir -p $(DAC_RTL_DIR) $(ADC_RTL_DIR) $(TOP_HTML_DIR) \
-		$(dir $(UVM_PKG)) $(dir $(C_HEADER)) $(DOCS_IMG_DIR)
-	@$(PYTHON) $(REG_SCRIPT) \
-		--udp-spec $(UDP_SPEC) \
-		--dac-spec $(DAC_SPEC) \
-		--adc-spec $(ADC_SPEC) \
-		--top-spec $(TOP_SPEC) \
-		--dac-rtl  $(DAC_RTL_DIR) \
-		--adc-rtl  $(ADC_RTL_DIR) \
-		--top-html $(TOP_HTML_DIR) \
-		--uvmpkg   $(UVM_PKG) \
-		--sync     $(ADC_SYNC) \
-		--cheader  $(C_HEADER)
-	@uv run python $(IMG_SCRIPT)
+	@mkdir -p $(DAC_RTL_DIR) $(ADC_RTL_DIR) $(dir $(UVM_PKG)) $(DOCS_IMG_DIR)
+	peakrdl regblock $(UDP_SPEC) $(DAC_SPEC) \
+		-o $(DAC_RTL_DIR) \
+		--cpuif passthrough \
+		--module-name dac_regs_mod \
+		--hwif-report \
+		--rt-read-response
+	peakrdl regblock $(UDP_SPEC) $(ADC_SPEC) \
+		-o $(ADC_RTL_DIR) \
+		--cpuif passthrough \
+		--module-name adc_regs_mod \
+		--hwif-report \
+		--rt-read-response
+	peakrdl uvm $(UDP_SPEC) $(ADC_SPEC) $(DAC_SPEC) $(TOP_SPEC) \
+		-t chip_top \
+		-o $(UVM_PKG) \
+		--use-factory
+	@python $(IMG_SCRIPT)
 	@echo "[Makefile] Done."
 
 clean:
@@ -61,11 +62,11 @@ clean:
 # Schemdraw figures referenced by the Sphinx sources.
 # Written to docs/_static/img/ (gitignored).
 diagrams:
-	uv run python $(IMG_SCRIPT)
+	python $(IMG_SCRIPT)
 
 # HTML docs. Pushes to main publish the same build via .github/workflows/docs.yml.
 doc: diagrams
-	uv run python -m sphinx.cmd.build -b html docs docs/_build/html
+	python -m sphinx.cmd.build -b html docs docs/_build/html
 
 serve:
 	python -m http.server --directory docs/_build/html
