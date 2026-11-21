@@ -1,6 +1,6 @@
 addrmap dac_regs {
 
-    desc = "DAC sine gen register map";
+    desc = "DAC sine gen register map. Software-writable registers other than ENABLE are double-buffered and take effect when ENABLE is written.";
     default regwidth=16;
     default accesswidth=16;
     default sw=rw;
@@ -14,6 +14,8 @@ addrmap dac_regs {
     };
 
     reg {
+        desc = "Double-buffered amplitude configuration. Writes take effect when ENABLE is written.";
+        buffer_writes = true;
         field {
             desc = "Amplitude scaling factor. The output is about a/15 of full scale.";
             reset=8;
@@ -26,6 +28,8 @@ addrmap dac_regs {
     } AC_CONFIG;
 
     reg dc_value_reg {
+        desc = "Double-buffered DC output value. Writes take effect when ENABLE is written.";
+        buffer_writes = true;
         field {
             desc = "DAC output value in DC mode.";
         } dc_value [7:0];
@@ -36,6 +40,8 @@ addrmap dac_regs {
     dc_value_reg DACN_DC_VALUE;
 
     reg {
+        desc = "Double-buffered clock divider. Writes take effect when ENABLE is written.";
+        buffer_writes = true;
         field {
             desc = "Global DAC clock divider value. Describes a power of 2; 0 means no clock division from system clock, F means 1 << 16 division from system clock.";
         } clk_div_value [7:0];
@@ -43,6 +49,8 @@ addrmap dac_regs {
     } CLK_DIV;
 
     reg {
+        desc = "Double-buffered pulldown controls. dacp_power and dacn_power take effect when ENABLE is written. dsm_locked is hardware-written and is not buffered.";
+        buffer_writes = true;
         field {
             desc="DACP pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm";
         } dacp_power [0:0];
@@ -50,7 +58,7 @@ addrmap dac_regs {
             desc="DACN pulldown strength when disabled. 0: 1 kOhm, 1: 100 kOhm";
         } dacn_power [1:1];
         field {
-            desc="If 1, means delta-sigma modulator is warmed up after enable.";
+            desc="If 1, means delta-sigma modulator is warmed up after enable. Hardware-written and not double-buffered.";
             sw=r;
             hw=w;
         } dsm_locked [4:4];
@@ -58,12 +66,15 @@ addrmap dac_regs {
     } STATUS;
 
     reg {
+        desc = "Double-buffered frequency tuning word. Writes take effect when ENABLE is written.";
+        buffer_writes = true;
         field {
             desc = "DDS frequency tuning word (FTW). The output frequency is f_out = FTW * fs / 2^16.";
         } frequency [15:0];
     } FREQUENCY;
 
     reg {
+        desc = "DAC enables and modes. Not double-buffered. A write commits the other DAC registers.";
         field {
             desc = "Enable for DACP.";
         } dacp_enable [0:0];
@@ -85,4 +96,12 @@ addrmap dac_regs {
         } dsm_enable [4:4];
         // bits [15:5] reserved
     } ENABLE;
+
+    // A write to ENABLE commits the buffered registers.
+    AC_CONFIG->wbuffer_trigger = ENABLE;
+    DACP_DC_VALUE->wbuffer_trigger = ENABLE;
+    DACN_DC_VALUE->wbuffer_trigger = ENABLE;
+    CLK_DIV->wbuffer_trigger = ENABLE;
+    STATUS->wbuffer_trigger = ENABLE;
+    FREQUENCY->wbuffer_trigger = ENABLE;
 };
