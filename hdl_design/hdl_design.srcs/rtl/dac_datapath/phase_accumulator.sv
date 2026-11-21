@@ -13,15 +13,12 @@ module phase_accumulator (
     localparam  VALID_COUNT = 16;
     logic [7:0] idle_counter;
 
-    logic dacp_ac_en;
-    logic dacn_ac_en;
-    logic accumulator_en;
-
-    assign dacp_ac_en = hwif_out.ENABLE.dacp_enable.value &&
+    wire dacp_ac_en = hwif_out.ENABLE.dacp_enable.value &&
                         (hwif_out.ENABLE.dacp_mode.value == dac_regs_mod_pkg::dac_regs__frequency_mode_e__AC);
-    assign dacn_ac_en = hwif_out.ENABLE.dacn_enable.value &&
+    wire dacn_ac_en = hwif_out.ENABLE.dacn_enable.value &&
                         (hwif_out.ENABLE.dacn_mode.value == dac_regs_mod_pkg::dac_regs__frequency_mode_e__AC);
-    assign accumulator_en = dacp_ac_en || dacn_ac_en;
+    wire phase_increment_gt0 = hwif_out.FREQUENCY.frequency.value != 16'h0000;
+    wire accumulator_en = (dacp_ac_en || dacn_ac_en) && phase_increment_gt0;
 
     always_ff @(posedge clk) begin
         if (rst) begin

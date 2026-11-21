@@ -30,8 +30,8 @@ module dac_datapath (
     logic               phase_en;
     logic signed [15:0] phase;
     logic               phase_valid;
-    logic signed [15:0] cosine;
-    logic               cosine_valid;
+    logic signed [15:0] sine;
+    logic               sine_valid;
     logic signed [15:0] cosine_dsm;
     logic               dsm_valid;
     logic         [7:0] cosine_to_dac;
@@ -79,8 +79,8 @@ module dac_datapath (
         .hwif_out (hwif_out),
         .i_phase  (phase),
         .i_valid  (phase_valid),
-        .o_cosine (cosine),
-        .o_valid  (cosine_valid)
+        .o_sine   (sine),
+        .o_valid  (sine_valid)
     );
 
     // dsm_error_feedback i_dsm_error_feedback (

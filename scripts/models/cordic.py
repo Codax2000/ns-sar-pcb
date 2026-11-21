@@ -9,6 +9,7 @@ import unittest
 import numpy as np
 
 from models.fp_array import FixedPointArray
+from pdb import set_trace
 
 
 ITERATIONS = 16
@@ -147,6 +148,7 @@ def cordic_rotate(
     _check_angle_types(angles)
     _check_angle_quantization(angles)
     _check_shapes(magnitudes, angles)
+
     angle_shape = angles.get_mantissas().shape
     scales = np.broadcast_to(
         np.asarray(magnitudes, dtype=np.int64), angle_shape
@@ -155,6 +157,7 @@ def cordic_rotate(
     remaining_angles, x_vector, y_vector = _pre_rotate(angles, magnitude)
     for index in range(ITERATIONS):
         directions = _calculate_directions(remaining_angles)
+        set_trace()
         shifted_x = x_vector >> index
         shifted_y = y_vector >> index
         x_vector = (x_vector - shifted_y * directions).re_quantize(
@@ -171,7 +174,7 @@ def cordic_rotate(
         remaining_angles = (
             remaining_angles - arctangent * directions
         ).re_quantize(16, 16)
-    return x_vector
+    return y_vector
 
 
 def _get_initial_vector(scales: np.ndarray) -> np.ndarray:
@@ -469,6 +472,11 @@ class CORDICTests(unittest.TestCase):
 def main() -> None:
     """Plot cosine for scale 15 against the ideal value."""
     import matplotlib.pyplot as plt
+
+    # simulation testcase: phase = 0x0710, scale = 8
+    phase = FixedPointArray.from_mantissas(0x0710, 16, 16)
+    scale = 8
+    cosine = cordic_rotate(scale, phase)
 
     phases = np.arange(1 << 16, dtype=np.uint16)
     signed = phases.astype(np.int16).astype(np.int64)
