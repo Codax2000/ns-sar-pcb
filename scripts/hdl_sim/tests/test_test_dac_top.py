@@ -48,4 +48,4 @@ async def test_frequency_write_read(dut):
     )
 
     await write_reg(dut, 0x06, [0x002F])
-    await ClockCycles(dut.sysclk, 1600)
+    await ClockCycles(dut.sysclk, 3600)

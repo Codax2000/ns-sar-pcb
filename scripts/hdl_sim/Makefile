@@ -12,6 +12,7 @@ VERILOG_SOURCES += $(RTL)/dac_datapath.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath/phase_accumulator.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath/cordic_glue_logic.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath/cordic.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath/cordic_rom.sv
 VERILOG_SOURCES += $(RTL)/test_dac_top.sv
 
 # PeakRDL regblock trips MULTIDRIVEN; unused cpuif ack/stall pins trip PINMISSING.
