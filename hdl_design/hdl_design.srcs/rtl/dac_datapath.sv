@@ -32,9 +32,9 @@ module dac_datapath (
     logic               phase_valid;
     logic signed [15:0] sine;
     logic               sine_valid;
-    logic signed [15:0] cosine_dsm;
+    logic signed  [7:0] sine_dsm;
     logic               dsm_valid;
-    logic         [7:0] cosine_to_dac;
+    logic         [7:0] sine_to_dac;
     logic               dac_valid;
 
     // One-cycle datapath reset after a software write using RDL swmod (write)
@@ -83,27 +83,27 @@ module dac_datapath (
         .o_valid  (sine_valid)
     );
 
-    // dsm_error_feedback i_dsm_error_feedback (
-    //     .rst_n        (dp_rst_n),
-    //     .clk          (clk),
-    //     .hwif_out     (hwif_out),
-    //     .i_cosine     (cosine),
-    //     .i_valid      (cosine_valid),
-    //     .o_cosine_dsm (cosine_dsm),
-    //     .o_valid      (dsm_valid)
-    // );
+    dsm_error_feedback u_dsm_error_feedback (
+        .rst          (datapath_rst),
+        .clk          (clk),
+        .hwif_out     (hwif_out),
+        .i_sine       (sine),
+        .i_valid      (sine_valid),
+        .o_sine_dsm   (sine_dsm),
+        .o_valid      (dsm_valid)
+    );
 
-    // dsm_bypass_mux i_dsm_bypass_mux (
-    //     .rst_n          (dp_rst_n),
-    //     .clk            (clk),
-    //     .hwif_out       (hwif_out),
-    //     .i_cosine       (cosine),
-    //     .i_cosine_valid (cosine_valid),
-    //     .i_cosine_dsm   (cosine_dsm),
-    //     .i_dsm_valid    (dsm_valid),
-    //     .o_cosine       (cosine_to_dac),
-    //     .o_valid        (dac_valid)
-    // );
+    bypass_mux u_bypass_mux (
+        .rst            (datapath_rst),
+        .clk            (clk),
+        .hwif_out       (hwif_out),
+        .i_sine         (sine),
+        .i_sine_valid   (sine_valid),
+        .i_sine_dsm     (sine_dsm),
+        .i_dsm_valid    (dsm_valid),
+        .o_sine         (sine_to_dac),
+        .o_valid        (dac_valid)
+    );
 
     // dac5311_ctrl i_dac5311_ctrl (
     //     .rst_n         (dp_rst_n),

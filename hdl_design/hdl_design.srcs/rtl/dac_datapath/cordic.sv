@@ -181,7 +181,7 @@ module cordic (
         end
         else begin
             if (iteration_r == 4'hE) begin
-                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude_scale.value);
+                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude.value);
                 o_valid <= 1;
             end
             else begin

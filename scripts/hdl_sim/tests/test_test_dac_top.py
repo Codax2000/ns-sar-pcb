@@ -30,7 +30,7 @@ async def test_frequency_write_read(dut):
 
     write_data = [
         0x00F8, # AC CONFIG
-        0x000F, # ENABLE
+        0x001F, # ENABLE
         0x0000, # DACP_DC_VALUE
         0x0000, # DACN_DC_VALUE
         0x0000, # CLK_DIV

@@ -25,29 +25,6 @@ addrmap dac_regs {
         // bits [15:8] reserved
     } AC_CONFIG;
 
-    reg {
-        field {
-            desc = "Enable for DACP.";
-        } dacp_enable [0:0];
-        field {
-            desc = "Mode for DACP.";
-            encode = frequency_mode_e;
-            reset = frequency_mode_e::DC;
-        } dacp_mode [1:1];
-        field {
-            desc = "Enable for DACN.";
-        } dacn_enable [2:2];
-        field {
-            desc = "Mode for DACN.";
-            encode = frequency_mode_e;
-            reset = frequency_mode_e::DC;
-        } dacn_mode [3:3];
-        field {
-            desc = "Enable for DAC delta-sigma modulator. Used to reduce quantization noise in AC mode.";
-        } dsm_enable [4:4];
-        // bits [15:5] reserved
-    } ENABLE;
-
     reg dc_value_reg {
         field {
             desc = "DAC output value in DC mode.";
@@ -85,4 +62,27 @@ addrmap dac_regs {
             desc = "DDS frequency tuning word (FTW). The output frequency is f_out = FTW * fs / 2^16.";
         } frequency [15:0];
     } FREQUENCY;
+
+    reg {
+        field {
+            desc = "Enable for DACP.";
+        } dacp_enable [0:0];
+        field {
+            desc = "Mode for DACP.";
+            encode = frequency_mode_e;
+            reset = frequency_mode_e::DC;
+        } dacp_mode [1:1];
+        field {
+            desc = "Enable for DACN.";
+        } dacn_enable [2:2];
+        field {
+            desc = "Mode for DACN.";
+            encode = frequency_mode_e;
+            reset = frequency_mode_e::DC;
+        } dacn_mode [3:3];
+        field {
+            desc = "Enable for DAC delta-sigma modulator. Used to reduce quantization noise in AC mode.";
+        } dsm_enable [4:4];
+        // bits [15:5] reserved
+    } ENABLE;
 };
