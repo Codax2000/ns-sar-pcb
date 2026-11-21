@@ -165,13 +165,13 @@ package chip_regs_dv_pkg;
         endfunction : build
     endclass : adc_regs
 
-    // reg - dac_regs::AC_CONFIG
-    class dac_regs__AC_CONFIG extends uvm_reg;
-        `uvm_object_utils(dac_regs__AC_CONFIG)
+    // reg - dac_regs::AC_CONFIG_wbuffer_trigger_9caa3f2d
+    class dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d extends uvm_reg;
+        `uvm_object_utils(dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d)
         rand uvm_reg_field amplitude_scale;
         rand uvm_reg_field amplitude;
 
-        function new(string name = "dac_regs__AC_CONFIG");
+        function new(string name = "dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d");
             super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
@@ -181,7 +181,73 @@ package chip_regs_dv_pkg;
             this.amplitude = uvm_reg_field::type_id::create("amplitude");
             this.amplitude.configure(this, 4, 4, "RW", 0, 'hf, 1, 1, 0);
         endfunction : build
-    endclass : dac_regs__AC_CONFIG
+    endclass : dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d
+
+    // reg - dac_regs::dc_value_reg_wbuffer_trigger_9caa3f2d
+    class dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d extends uvm_reg;
+        `uvm_object_utils(dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d)
+        rand uvm_reg_field dc_value;
+
+        function new(string name = "dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d");
+            super.new(name, 16, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.dc_value = uvm_reg_field::type_id::create("dc_value");
+            this.dc_value.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 1);
+        endfunction : build
+    endclass : dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d
+
+    // reg - dac_regs::CLK_DIV_wbuffer_trigger_9caa3f2d
+    class dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d extends uvm_reg;
+        `uvm_object_utils(dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d)
+        rand uvm_reg_field clk_div_value;
+
+        function new(string name = "dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d");
+            super.new(name, 16, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.clk_div_value = uvm_reg_field::type_id::create("clk_div_value");
+            this.clk_div_value.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 1);
+        endfunction : build
+    endclass : dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d
+
+    // reg - dac_regs::STATUS_wbuffer_trigger_9caa3f2d
+    class dac_regs__STATUS_wbuffer_trigger_9caa3f2d extends uvm_reg;
+        `uvm_object_utils(dac_regs__STATUS_wbuffer_trigger_9caa3f2d)
+        rand uvm_reg_field dacp_power;
+        rand uvm_reg_field dacn_power;
+        rand uvm_reg_field dsm_locked;
+
+        function new(string name = "dac_regs__STATUS_wbuffer_trigger_9caa3f2d");
+            super.new(name, 16, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.dacp_power = uvm_reg_field::type_id::create("dacp_power");
+            this.dacp_power.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
+            this.dacn_power = uvm_reg_field::type_id::create("dacn_power");
+            this.dacn_power.configure(this, 1, 1, "RW", 0, 'h0, 1, 1, 0);
+            this.dsm_locked = uvm_reg_field::type_id::create("dsm_locked");
+            this.dsm_locked.configure(this, 1, 4, "RO", 1, 'h0, 1, 1, 0);
+        endfunction : build
+    endclass : dac_regs__STATUS_wbuffer_trigger_9caa3f2d
+
+    // reg - dac_regs::FREQUENCY_wbuffer_trigger_9caa3f2d
+    class dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d extends uvm_reg;
+        `uvm_object_utils(dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d)
+        rand uvm_reg_field frequency;
+
+        function new(string name = "dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d");
+            super.new(name, 16, UVM_NO_COVERAGE);
+        endfunction : new
+
+        virtual function void build();
+            this.frequency = uvm_reg_field::type_id::create("frequency");
+            this.frequency.configure(this, 16, 0, "RW", 0, 'h0, 1, 1, 1);
+        endfunction : build
+    endclass : dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d
 
     // reg - dac_regs::ENABLE
     class dac_regs__ENABLE extends uvm_reg;
@@ -210,82 +276,16 @@ package chip_regs_dv_pkg;
         endfunction : build
     endclass : dac_regs__ENABLE
 
-    // reg - dac_regs::dc_value_reg
-    class dac_regs__dc_value_reg extends uvm_reg;
-        `uvm_object_utils(dac_regs__dc_value_reg)
-        rand uvm_reg_field dc_value;
-
-        function new(string name = "dac_regs__dc_value_reg");
-            super.new(name, 16, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.dc_value = uvm_reg_field::type_id::create("dc_value");
-            this.dc_value.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 1);
-        endfunction : build
-    endclass : dac_regs__dc_value_reg
-
-    // reg - dac_regs::CLK_DIV
-    class dac_regs__CLK_DIV extends uvm_reg;
-        `uvm_object_utils(dac_regs__CLK_DIV)
-        rand uvm_reg_field clk_div_value;
-
-        function new(string name = "dac_regs__CLK_DIV");
-            super.new(name, 16, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.clk_div_value = uvm_reg_field::type_id::create("clk_div_value");
-            this.clk_div_value.configure(this, 8, 0, "RW", 0, 'h0, 1, 1, 1);
-        endfunction : build
-    endclass : dac_regs__CLK_DIV
-
-    // reg - dac_regs::STATUS
-    class dac_regs__STATUS extends uvm_reg;
-        `uvm_object_utils(dac_regs__STATUS)
-        rand uvm_reg_field dacp_power;
-        rand uvm_reg_field dacn_power;
-        rand uvm_reg_field dsm_locked;
-
-        function new(string name = "dac_regs__STATUS");
-            super.new(name, 16, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.dacp_power = uvm_reg_field::type_id::create("dacp_power");
-            this.dacp_power.configure(this, 1, 0, "RW", 0, 'h0, 1, 1, 0);
-            this.dacn_power = uvm_reg_field::type_id::create("dacn_power");
-            this.dacn_power.configure(this, 1, 1, "RW", 0, 'h0, 1, 1, 0);
-            this.dsm_locked = uvm_reg_field::type_id::create("dsm_locked");
-            this.dsm_locked.configure(this, 1, 4, "RO", 1, 'h0, 1, 1, 0);
-        endfunction : build
-    endclass : dac_regs__STATUS
-
-    // reg - dac_regs::FREQUENCY
-    class dac_regs__FREQUENCY extends uvm_reg;
-        `uvm_object_utils(dac_regs__FREQUENCY)
-        rand uvm_reg_field frequency;
-
-        function new(string name = "dac_regs__FREQUENCY");
-            super.new(name, 16, UVM_NO_COVERAGE);
-        endfunction : new
-
-        virtual function void build();
-            this.frequency = uvm_reg_field::type_id::create("frequency");
-            this.frequency.configure(this, 16, 0, "RW", 0, 'h0, 1, 1, 1);
-        endfunction : build
-    endclass : dac_regs__FREQUENCY
-
     // addrmap - dac_regs
     class dac_regs extends uvm_reg_block;
         `uvm_object_utils(dac_regs)
-        rand dac_regs__AC_CONFIG AC_CONFIG;
+        rand dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d AC_CONFIG;
+        rand dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d DACP_DC_VALUE;
+        rand dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d DACN_DC_VALUE;
+        rand dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d CLK_DIV;
+        rand dac_regs__STATUS_wbuffer_trigger_9caa3f2d STATUS;
+        rand dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d FREQUENCY;
         rand dac_regs__ENABLE ENABLE;
-        rand dac_regs__dc_value_reg DACP_DC_VALUE;
-        rand dac_regs__dc_value_reg DACN_DC_VALUE;
-        rand dac_regs__CLK_DIV CLK_DIV;
-        rand dac_regs__STATUS STATUS;
-        rand dac_regs__FREQUENCY FREQUENCY;
 
         function new(string name = "dac_regs");
             super.new(name);
@@ -293,41 +293,41 @@ package chip_regs_dv_pkg;
 
         virtual function void build();
             this.default_map = create_map("reg_map", 0, 2, UVM_NO_ENDIAN);
-            this.AC_CONFIG = dac_regs__AC_CONFIG::type_id::create("AC_CONFIG");
+            this.AC_CONFIG = dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d::type_id::create("AC_CONFIG");
             this.AC_CONFIG.configure(this);
 
             this.AC_CONFIG.build();
             this.default_map.add_reg(this.AC_CONFIG, 'h0);
+            this.DACP_DC_VALUE = dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d::type_id::create("DACP_DC_VALUE");
+            this.DACP_DC_VALUE.configure(this);
+
+            this.DACP_DC_VALUE.build();
+            this.default_map.add_reg(this.DACP_DC_VALUE, 'h2);
+            this.DACN_DC_VALUE = dac_regs__dc_value_reg_wbuffer_trigger_9caa3f2d::type_id::create("DACN_DC_VALUE");
+            this.DACN_DC_VALUE.configure(this);
+
+            this.DACN_DC_VALUE.build();
+            this.default_map.add_reg(this.DACN_DC_VALUE, 'h4);
+            this.CLK_DIV = dac_regs__CLK_DIV_wbuffer_trigger_9caa3f2d::type_id::create("CLK_DIV");
+            this.CLK_DIV.configure(this);
+
+            this.CLK_DIV.build();
+            this.default_map.add_reg(this.CLK_DIV, 'h6);
+            this.STATUS = dac_regs__STATUS_wbuffer_trigger_9caa3f2d::type_id::create("STATUS");
+            this.STATUS.configure(this);
+
+            this.STATUS.build();
+            this.default_map.add_reg(this.STATUS, 'h8);
+            this.FREQUENCY = dac_regs__FREQUENCY_wbuffer_trigger_9caa3f2d::type_id::create("FREQUENCY");
+            this.FREQUENCY.configure(this);
+
+            this.FREQUENCY.build();
+            this.default_map.add_reg(this.FREQUENCY, 'ha);
             this.ENABLE = dac_regs__ENABLE::type_id::create("ENABLE");
             this.ENABLE.configure(this);
 
             this.ENABLE.build();
-            this.default_map.add_reg(this.ENABLE, 'h2);
-            this.DACP_DC_VALUE = dac_regs__dc_value_reg::type_id::create("DACP_DC_VALUE");
-            this.DACP_DC_VALUE.configure(this);
-
-            this.DACP_DC_VALUE.build();
-            this.default_map.add_reg(this.DACP_DC_VALUE, 'h4);
-            this.DACN_DC_VALUE = dac_regs__dc_value_reg::type_id::create("DACN_DC_VALUE");
-            this.DACN_DC_VALUE.configure(this);
-
-            this.DACN_DC_VALUE.build();
-            this.default_map.add_reg(this.DACN_DC_VALUE, 'h6);
-            this.CLK_DIV = dac_regs__CLK_DIV::type_id::create("CLK_DIV");
-            this.CLK_DIV.configure(this);
-
-            this.CLK_DIV.build();
-            this.default_map.add_reg(this.CLK_DIV, 'h8);
-            this.STATUS = dac_regs__STATUS::type_id::create("STATUS");
-            this.STATUS.configure(this);
-
-            this.STATUS.build();
-            this.default_map.add_reg(this.STATUS, 'ha);
-            this.FREQUENCY = dac_regs__FREQUENCY::type_id::create("FREQUENCY");
-            this.FREQUENCY.configure(this);
-
-            this.FREQUENCY.build();
-            this.default_map.add_reg(this.FREQUENCY, 'hc);
+            this.default_map.add_reg(this.ENABLE, 'hc);
         endfunction : build
     endclass : dac_regs
 
