@@ -10,7 +10,7 @@ module phase_accumulator (
     output        o_valid
 );
 
-    localparam  VALID_COUNT = 16;
+    localparam  VALID_COUNT = 34;
     logic [7:0] idle_counter;
 
     wire dacp_ac_en = hwif_out.ENABLE.dacp_enable.value &&

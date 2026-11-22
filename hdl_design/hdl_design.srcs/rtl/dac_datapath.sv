@@ -42,19 +42,11 @@ module dac_datapath (
     logic reg_write_q;
     logic datapath_rst;
 
-    assign reg_write = hwif_out.AC_CONFIG.amplitude_scale.swmod
-                     | hwif_out.AC_CONFIG.amplitude.swmod
-                     | hwif_out.ENABLE.dacp_enable.swmod
+    assign reg_write = hwif_out.ENABLE.dacp_enable.swmod
                      | hwif_out.ENABLE.dacp_mode.swmod
                      | hwif_out.ENABLE.dacn_enable.swmod
                      | hwif_out.ENABLE.dacn_mode.swmod
-                     | hwif_out.ENABLE.dsm_enable.swmod
-                     | hwif_out.DACP_DC_VALUE.dc_value.swmod
-                     | hwif_out.DACN_DC_VALUE.dc_value.swmod
-                     | hwif_out.CLK_DIV.clk_div_value.swmod
-                     | hwif_out.STATUS.dacp_power.swmod
-                     | hwif_out.STATUS.dacn_power.swmod
-                     | hwif_out.FREQUENCY.frequency.swmod;
+                     | hwif_out.ENABLE.dsm_enable.swmod;
 
     always_ff @(posedge clk) begin
         if (rst)
@@ -97,7 +89,7 @@ module dac_datapath (
         .rst            (datapath_rst),
         .clk            (clk),
         .hwif_out       (hwif_out),
-        .i_sine         (sine),
+        .i_sine         ({!sine[15], sine[14:8]}),
         .i_sine_valid   (sine_valid),
         .i_sine_dsm     (sine_dsm),
         .i_dsm_valid    (dsm_valid),
@@ -105,18 +97,18 @@ module dac_datapath (
         .o_valid        (dac_valid)
     );
 
-    // dac5311_ctrl i_dac5311_ctrl (
-    //     .rst_n         (dp_rst_n),
-    //     .clk           (clk),
-    //     .hwif_out      (hwif_out),
-    //     .i_cosine      (cosine_to_dac),
-    //     .i_valid       (dac_valid),
-    //     .o_sclk        (o_sclk),
-    //     .o_syncb_dacp  (o_syncb_dacp),
-    //     .o_syncb_dacn  (o_syncb_dacn),
-    //     .o_din_dacp    (o_din_dacp),
-    //     .o_din_dacn    (o_din_dacn)
-    // );
+    dac5311_ctrl u_dac5311_ctrl (
+        .rst           (datapath_rst),
+        .clk           (clk),
+        .hwif_out      (hwif_out),
+        .i_sine        (sine_to_dac),
+        .i_sine_valid  (dac_valid),
+        .o_sclk        (o_sclk),
+        .o_syncb_dacp  (o_syncb_dacp),
+        .o_syncb_dacn  (o_syncb_dacn),
+        .o_din_dacp    (o_din_dacp),
+        .o_din_dacn    (o_din_dacn)
+    );
 
     // TODO: drive this from the delta-sigma warmup, not a constant.
     assign hwif_in.STATUS.dsm_locked.next = 1'b0;
