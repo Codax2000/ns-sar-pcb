@@ -7,10 +7,14 @@
 <dl class="node-info">
     <dt>Absolute Address:</dt><dd id="_AbsAddr" class="address"></dd>
     <div id="_AbsAddrDetails"></div>
-    <dt>Base Offset:</dt><dd class="address">0xa</dd>
+    <dt>Base Offset:</dt><dd class="address">0x8</dd>
     <dt>Size:</dt><dd class="address">0x2</dd>
     
 </dl>
+<h2>Description</h2>
+<div id="_Content.desc">
+<p>Double-buffered pulldown controls. dacp_power and dacn_power take effect when ENABLE is written. dsm_locked is hardware-written and is not buffered.</p>
+</div>
 
 <h2>Contents</h2>
 <table border="1">
@@ -115,7 +119,7 @@
     <a class="headerlink" href="#dsm_locked.desc" title="Permalink to this headline"></a>
 </h3>
 <div id="_Content.dsm_locked.desc">
-<p>If 1, means delta-sigma modulator is warmed up after enable.</p>
+<p>If 1, means delta-sigma modulator is warmed up after enable. Hardware-written and not double-buffered.</p>
 </div>
 
 <h3 id="dacn_power.desc">dacn_power

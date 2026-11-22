@@ -13,7 +13,7 @@
 </dl>
 <h2>Description</h2>
 <div id="_Content.desc">
-<p>DAC sine gen register map</p>
+<p>DAC sine gen register map. Software-writable registers other than ENABLE are double-buffered and take effect when ENABLE is written.</p>
 </div>
 
 <h2>Contents</h2>
@@ -33,52 +33,52 @@
             <a class="headerlink" href="#AC_CONFIG" title="Permalink to this row"></a>
         </td>
     </tr>
-    <tr id="ENABLE">
-        <td class="address">0x2</td>
-        <td><a href="?p=chip_top.DAC.ENABLE" data-id="11" onclick="onClickNodeLink(event); return(false)">ENABLE</a></td>
-        <td>-</td>
-        <td>
-            <a class="headerlink" href="#ENABLE" title="Permalink to this row"></a>
-        </td>
-    </tr>
     <tr id="DACP_DC_VALUE">
-        <td class="address">0x4</td>
-        <td><a href="?p=chip_top.DAC.DACP_DC_VALUE" data-id="12" onclick="onClickNodeLink(event); return(false)">DACP_DC_VALUE</a></td>
+        <td class="address">0x2</td>
+        <td><a href="?p=chip_top.DAC.DACP_DC_VALUE" data-id="11" onclick="onClickNodeLink(event); return(false)">DACP_DC_VALUE</a></td>
         <td>-</td>
         <td>
             <a class="headerlink" href="#DACP_DC_VALUE" title="Permalink to this row"></a>
         </td>
     </tr>
     <tr id="DACN_DC_VALUE">
-        <td class="address">0x6</td>
-        <td><a href="?p=chip_top.DAC.DACN_DC_VALUE" data-id="13" onclick="onClickNodeLink(event); return(false)">DACN_DC_VALUE</a></td>
+        <td class="address">0x4</td>
+        <td><a href="?p=chip_top.DAC.DACN_DC_VALUE" data-id="12" onclick="onClickNodeLink(event); return(false)">DACN_DC_VALUE</a></td>
         <td>-</td>
         <td>
             <a class="headerlink" href="#DACN_DC_VALUE" title="Permalink to this row"></a>
         </td>
     </tr>
     <tr id="CLK_DIV">
-        <td class="address">0x8</td>
-        <td><a href="?p=chip_top.DAC.CLK_DIV" data-id="14" onclick="onClickNodeLink(event); return(false)">CLK_DIV</a></td>
+        <td class="address">0x6</td>
+        <td><a href="?p=chip_top.DAC.CLK_DIV" data-id="13" onclick="onClickNodeLink(event); return(false)">CLK_DIV</a></td>
         <td>-</td>
         <td>
             <a class="headerlink" href="#CLK_DIV" title="Permalink to this row"></a>
         </td>
     </tr>
     <tr id="STATUS">
-        <td class="address">0xA</td>
-        <td><a href="?p=chip_top.DAC.STATUS" data-id="15" onclick="onClickNodeLink(event); return(false)">STATUS</a></td>
+        <td class="address">0x8</td>
+        <td><a href="?p=chip_top.DAC.STATUS" data-id="14" onclick="onClickNodeLink(event); return(false)">STATUS</a></td>
         <td>-</td>
         <td>
             <a class="headerlink" href="#STATUS" title="Permalink to this row"></a>
         </td>
     </tr>
     <tr id="FREQUENCY">
-        <td class="address">0xC</td>
-        <td><a href="?p=chip_top.DAC.FREQUENCY" data-id="16" onclick="onClickNodeLink(event); return(false)">FREQUENCY</a></td>
+        <td class="address">0xA</td>
+        <td><a href="?p=chip_top.DAC.FREQUENCY" data-id="15" onclick="onClickNodeLink(event); return(false)">FREQUENCY</a></td>
         <td>-</td>
         <td>
             <a class="headerlink" href="#FREQUENCY" title="Permalink to this row"></a>
+        </td>
+    </tr>
+    <tr id="ENABLE">
+        <td class="address">0xC</td>
+        <td><a href="?p=chip_top.DAC.ENABLE" data-id="16" onclick="onClickNodeLink(event); return(false)">ENABLE</a></td>
+        <td>-</td>
+        <td>
+            <a class="headerlink" href="#ENABLE" title="Permalink to this row"></a>
         </td>
     </tr>
 </table>
