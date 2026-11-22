@@ -11,13 +11,13 @@ from cocotb.triggers import ClockCycles
 from utils.assertions import assert_equals
 from utils.spi_utils import read_reg, write_reg
 
-SYSCLK_PERIOD_NS = 10
+SYSCLK_PERIOD_PS = 8332
 
 
 @cocotb.test()
 async def test_frequency_write_read(dut):
     """Write FREQUENCY and expect the same value on the next read."""
-    cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_NS, unit="ns").start())
+    cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_PS, unit="ps").start())
 
     dut.arst_n.value = 0
     dut.csb.value = 1

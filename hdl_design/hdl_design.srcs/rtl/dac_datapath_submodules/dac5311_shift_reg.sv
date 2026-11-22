@@ -9,7 +9,7 @@
  */
 
 module dac5311_shift_reg #(
-    parameter int unsigned SYNCB_LAG_CYCLES = 9
+    parameter int unsigned SYNCB_LAG_CYCLES = 14
 ) (
     input  logic        rst,
     input  logic        clk,
