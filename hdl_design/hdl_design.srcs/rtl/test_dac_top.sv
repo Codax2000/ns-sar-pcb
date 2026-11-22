@@ -23,7 +23,7 @@ module test_dac_top (
     // Sync reset generation
     logic rst;
 
-    sync_nstage #(.N_BITS(1)) i_rst_sync (
+    sync_nstage #(.N_BITS(1)) u_rst_sync (
         .src_data(~arst_n),
         .dest_data(rst),
         .src_clk(1'b0),
@@ -40,7 +40,7 @@ module test_dac_top (
     logic        dac_if_rd_err;
     logic        dac_if_wr_err;
 
-    spi i_dac_spi (
+    spi u_dac_spi (
         .sysclk(sysclk),
         .rst   (rst),
 
@@ -62,7 +62,7 @@ module test_dac_top (
     dac_regs_mod_pkg::dac_regs__in_t  hwif_in;
     dac_regs_mod_pkg::dac_regs__out_t hwif_out;
 
-    dac_regs_mod i_registers (
+    dac_regs_mod u_registers (
         .clk(sysclk),
         .rst(rst),
 
@@ -91,7 +91,7 @@ module test_dac_top (
 
     // Programmed registers go in on hwif_out. dsm_locked comes back
     // on hwif_in.
-    dac_datapath i_dac_datapath (
+    dac_datapath u_dac_datapath (
         .clk          (sysclk),
         .rst          (rst),
         .hwif_in      (hwif_in),

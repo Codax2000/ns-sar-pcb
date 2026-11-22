@@ -11,13 +11,13 @@ from cocotb.triggers import ClockCycles
 from utils.assertions import assert_equals
 from utils.spi_utils import read_reg, write_reg
 
-SYSCLK_PERIOD_NS = 10
+SYSCLK_PERIOD_PS = 8332
 
 
 @cocotb.test()
 async def test_frequency_write_read(dut):
     """Write FREQUENCY and expect the same value on the next read."""
-    cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_NS, unit="ns").start())
+    cocotb.start_soon(Clock(dut.sysclk, SYSCLK_PERIOD_PS, unit="ps").start())
 
     dut.arst_n.value = 0
     dut.csb.value = 1
@@ -30,12 +30,12 @@ async def test_frequency_write_read(dut):
 
     write_data = [
         0x00F8, # AC CONFIG
-        0x000F, # ENABLE
         0x0000, # DACP_DC_VALUE
         0x0000, # DACN_DC_VALUE
         0x0000, # CLK_DIV
         0x0000, # STATUS
-        0x1010  # FREQUENCY
+        0x0710, # FREQUENCY
+        0x001F, # ENABLE
     ]
     await write_reg(dut, 0x00, write_data)
 
@@ -47,5 +47,5 @@ async def test_frequency_write_read(dut):
         f"AC_CONFIG readback was 0x{got[0]:04X}, wrote 0x{write_data[0]:04X}",
     )
 
-    await write_reg(dut, 0x06, [0x002F])
-    await ClockCycles(dut.sysclk, 1600)
+    await write_reg(dut, 0x06, [0x002F, 0x001F])
+    await ClockCycles(dut.sysclk, 3600)

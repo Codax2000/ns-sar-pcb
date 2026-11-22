@@ -9,7 +9,14 @@ VERILOG_SOURCES += $(RTL)/registers/spi.sv
 VERILOG_SOURCES += $(RTL)/registers/dac/dac_regs_mod_pkg.sv
 VERILOG_SOURCES += $(RTL)/registers/dac/dac_regs_mod.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath.sv
-VERILOG_SOURCES += $(RTL)/dac_datapath/phase_accumulator.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/phase_accumulator.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/cordic_glue_logic.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/cordic.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/cordic_rom.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/bypass_mux.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dsm_error_feedback.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dac5311_shift_reg.sv
+VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dac5311_ctrl.sv
 VERILOG_SOURCES += $(RTL)/test_dac_top.sv
 
 # PeakRDL regblock trips MULTIDRIVEN; unused cpuif ack/stall pins trip PINMISSING.
