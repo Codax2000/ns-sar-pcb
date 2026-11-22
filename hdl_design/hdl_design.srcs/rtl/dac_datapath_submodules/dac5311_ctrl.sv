@@ -72,7 +72,7 @@ module dac5311_ctrl (
             end : shregn_load_dc
             else if (i_sine_valid && dacn_ac_en && (!shregn_busy)) begin : shregn_load_ac
                 shregn_load <= 1'b1;
-                shregn_din  <= {2'b00, i_sine, 6'h00};
+                shregn_din  <= {2'b00, ~i_sine, 6'h00};
             end : shregn_load_ac
             else begin : shregn_load_idle
                 shregn_load <= 1'b0;
