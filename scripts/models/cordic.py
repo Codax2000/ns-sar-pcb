@@ -9,8 +9,6 @@ import unittest
 import numpy as np
 
 from models.fp_array import FixedPointArray
-from pdb import set_trace
-
 
 ITERATIONS = 16
 QUADRANT_SHIFT = 14
@@ -157,7 +155,6 @@ def cordic_rotate(
     remaining_angles, x_vector, y_vector = _pre_rotate(angles, magnitude)
     for index in range(ITERATIONS):
         directions = _calculate_directions(remaining_angles)
-        set_trace()
         shifted_x = x_vector >> index
         shifted_y = y_vector >> index
         x_vector = (x_vector - shifted_y * directions).re_quantize(

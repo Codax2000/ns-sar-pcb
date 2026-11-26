@@ -41,6 +41,7 @@ module dac_datapath (
     logic reg_write;
     logic reg_write_q;
     logic datapath_rst;
+    logic dsm_locked;
 
     assign reg_write = hwif_out.ENABLE.dacp_enable.swmod
                      | hwif_out.ENABLE.dacp_mode.swmod
@@ -82,7 +83,8 @@ module dac_datapath (
         .i_sine       (sine),
         .i_valid      (sine_valid),
         .o_sine_dsm   (sine_dsm),
-        .o_valid      (dsm_valid)
+        .o_valid      (dsm_valid),
+        .o_dsm_locked (dsm_locked)
     );
 
     bypass_mux u_bypass_mux (
@@ -111,6 +113,6 @@ module dac_datapath (
     );
 
     // TODO: drive this from the delta-sigma warmup, not a constant.
-    assign hwif_in.STATUS.dsm_locked.next = 1'b0;
+    assign hwif_in.STATUS.dsm_locked.next = dsm_locked;
 
 endmodule

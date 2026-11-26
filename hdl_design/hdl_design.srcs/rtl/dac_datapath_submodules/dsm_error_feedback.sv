@@ -11,21 +11,30 @@ module dsm_error_feedback (
 
     // cosine outputs
     output  [7:0] o_sine_dsm,
-    output        o_valid
+    output        o_valid,
+
+    output        o_dsm_locked
 );
+
+    parameter int DSM_WARMUP_COUNT = 1000;
+    localparam int DSM_COUNT_W = $clog2(DSM_WARMUP_COUNT) + 1;
 
     logic               dsm_enable;
     logic signed [15:0] sine_sum;
     logic signed [7:0]  dsm_error_r, dsm_error_rr;
     wire  signed [8:0]  dsm_error_x2 = dsm_error_r << 1;
     wire  signed [7:0]  dsm_error = sine_sum[7:0];
-
+    logic [DSM_COUNT_W-1:0] dsm_count;
+    localparam logic [DSM_COUNT_W-1:0] DSM_WARMUP_THRESHOLD =
+        DSM_COUNT_W'(DSM_WARMUP_COUNT);
     assign dsm_enable = hwif_out.ENABLE.dsm_enable.value;
 
     always_ff @(posedge clk) begin : dsm_error_feedback_logic
         if (rst) begin
             dsm_error_r <= 0;
             dsm_error_rr <= 0;
+            dsm_count <= 0;
+            o_dsm_locked <= 0;
         end
         else begin
 
@@ -33,6 +42,12 @@ module dsm_error_feedback (
                 sine_sum <= 16'(dsm_error_x2) + 16'(dsm_error_rr) + i_sine;
                 dsm_error_r  <=  dsm_error;
                 dsm_error_rr <= -dsm_error_r;
+                if (dsm_count < DSM_WARMUP_THRESHOLD) begin
+                    dsm_count <= dsm_count + 1;
+                end
+                else begin
+                    o_dsm_locked <= 1;
+                end
             end
         end
     end : dsm_error_feedback_logic

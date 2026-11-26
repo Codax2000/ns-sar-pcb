@@ -19,7 +19,9 @@ DEFAULT_OSR = 32
 
 
 def _check_n_samples(n_samples: int) -> None:
-    """Raise unless n_samples is a positive int."""
+    """
+    Check that n_samples is a positive int.
+    """
     if isinstance(n_samples, bool) or not isinstance(n_samples, int):
         received = type(n_samples).__name__
         raise TypeError(f"n_samples must be an int, got {received}")
@@ -28,7 +30,9 @@ def _check_n_samples(n_samples: int) -> None:
 
 
 def _check_frequency(frequency: int) -> None:
-    """Raise unless frequency is an int from 0 to 65535."""
+    """
+    Check that frequency is an int from 0 to 65535.
+    """
     if isinstance(frequency, bool) or not isinstance(frequency, int):
         received = type(frequency).__name__
         raise TypeError(f"frequency must be an int, got {received}")
@@ -38,35 +42,41 @@ def _check_frequency(frequency: int) -> None:
         )
 
 
-def _check_amplitude_scale(amplitude_scale: int) -> None:
-    """Raise unless amplitude_scale is an int from 0 to 15."""
-    if isinstance(amplitude_scale, bool) or not isinstance(
-        amplitude_scale, int
+def _check_amplitude_div_linear(amplitude_div_linear: int) -> None:
+    """
+    Check that amplitude_div_linear is an int from 0 to 15.
+    """
+    if isinstance(amplitude_div_linear, bool) or not isinstance(
+        amplitude_div_linear, int
     ):
-        received = type(amplitude_scale).__name__
+        received = type(amplitude_div_linear).__name__
         raise TypeError(
-            f"amplitude_scale must be an int, got {received}"
+            f"amplitude_div_linear must be an int, got {received}"
         )
-    if amplitude_scale < 0 or amplitude_scale > 15:
+    if amplitude_div_linear < 0 or amplitude_div_linear > 15:
         raise ValueError(
-            "amplitude_scale must be between 0 and 15, "
-            f"got {amplitude_scale}"
+            "amplitude_div_linear must be between 0 and 15, "
+            f"got {amplitude_div_linear}"
         )
 
 
-def _check_amplitude(amplitude: int) -> None:
-    """Raise unless amplitude is an int from 0 to 15."""
-    if isinstance(amplitude, bool) or not isinstance(amplitude, int):
-        received = type(amplitude).__name__
-        raise TypeError(f"amplitude must be an int, got {received}")
-    if amplitude < 0 or amplitude > 15:
+def _check_amplitude_div_log(amplitude_div_log: int) -> None:
+    """
+    Check that amplitude_div_log is an int from 0 to 15.
+    """
+    if isinstance(amplitude_div_log, bool) or not isinstance(amplitude_div_log, int):
+        received = type(amplitude_div_log).__name__
+        raise TypeError(f"amplitude_div_log must be an int, got {received}")
+    if amplitude_div_log < 0 or amplitude_div_log > 15:
         raise ValueError(
-            f"amplitude must be between 0 and 15, got {amplitude}"
+            f"amplitude_div_log must be between 0 and 15, got {amplitude_div_log}"
         )
 
 
 def _check_dac_mode(mode: str, channel: str) -> None:
-    """Raise unless mode is 'AC' or 'DC'."""
+    """
+    Check that mode is 'AC' or 'DC'.
+    """
     if not isinstance(mode, str):
         received = type(mode).__name__
         raise TypeError(f"{channel} mode must be a str, got {received}")
@@ -75,7 +85,9 @@ def _check_dac_mode(mode: str, channel: str) -> None:
 
 
 def _check_dc_value(value: int, channel: str) -> None:
-    """Raise unless value is an int from 0 to 255."""
+    """
+    Check that value is an int from 0 to 255.
+    """
     if isinstance(value, bool) or not isinstance(value, int):
         received = type(value).__name__
         raise TypeError(f"{channel} DC value must be an int, got {received}")
@@ -138,14 +150,15 @@ def _select_mode(
     """Return the AC samples or a constant DC array of the same length."""
     if mode == "AC":
         return np.asarray(ac_values, dtype=np.int64)
-    return np.full(ac_values.shape, dc_value, dtype=np.int64)
+    else:
+        return np.full(ac_values.shape, dc_value, dtype=np.int64)
 
 
 def generate_dac_values(
     n_samples: int,
     frequency: int = 0,
-    amplitude_scale: int = 8,
-    amplitude: int = 15,
+    amplitude_div_linear: int = 8,
+    amplitude_div_log: int = 15,
     dsm_enable: bool = False,
     dacp_mode: str = "DC",
     dacn_mode: str = "DC",
@@ -161,14 +174,15 @@ def generate_dac_values(
     Parameters
     ----------
     n_samples : int
-        Number of clocks.
+        Number of DAC output samples.
     frequency : int, optional
         Phase step added each clock, from 0 to 65535. Default is 0.
-    amplitude_scale : int, optional
-        Scale from 0 to 15. The cosine is about scale/15 of full scale.
+    amplitude_div_linear : int, optional
+        Linear divider from 0 to 15. The cosine is about value/15 of full scale.
         Default is 8.
-    amplitude : int, optional
-        The cosine is shifted right by 15 minus this value. Default is 15.
+    amplitude_div_log : int, optional
+        Log divider from 0 to 15. The cosine is shifted right by 15 minus this
+        value. Default is 15.
     dsm_enable : bool, optional
         True runs the delta-sigma modulator. False truncates by 8 bits.
         Default is False.
@@ -201,8 +215,8 @@ def generate_dac_values(
     """
     _check_n_samples(n_samples)
     _check_frequency(frequency)
-    _check_amplitude_scale(amplitude_scale)
-    _check_amplitude(amplitude)
+    _check_amplitude_div_linear(amplitude_div_linear)
+    _check_amplitude_div_log(amplitude_div_log)
     _check_dac_mode(dacp_mode, "dacp")
     _check_dac_mode(dacn_mode, "dacn")
     _check_dc_value(dacp_dc_value, "dacp")
@@ -216,10 +230,10 @@ def generate_dac_values(
         phase.astype(np.int16), 16, 16
     )
     cosine = np.asarray(
-        cordic_rotate(amplitude_scale, angles).get_mantissas(),
+        cordic_rotate(amplitude_div_linear, angles).get_mantissas(),
         dtype=np.int64,
     )
-    cosine = cosine >> (15 - amplitude)
+    cosine = cosine >> (15 - amplitude_div_log)
     if dsm_enable:
         dac_signed, error = _modulate_dsm(cosine)
     else:
@@ -543,16 +557,16 @@ class SineGenDACTests(unittest.TestCase):
         self._assert_rejects(TypeError, "bool", 4, frequency=True)
         self._assert_rejects(TypeError, "float", 4, frequency=1.5)
 
-    def test_defaults_match_scale_8_and_amplitude_15(self) -> None:
-        """Tests the default scale, amplitude, and column order."""
+    def test_defaults_match_div_linear_8_and_div_log_15(self) -> None:
+        """Tests the default linear and log dividers, and column order."""
         plain = generate_dac_values(
             8, frequency=1, dacp_mode="AC", dacn_mode="AC"
         )
         explicit = generate_dac_values(
             8,
             frequency=1,
-            amplitude_scale=8,
-            amplitude=15,
+            amplitude_div_linear=8,
+            amplitude_div_log=15,
             dsm_enable=False,
             dacp_mode="AC",
             dacn_mode="AC",
@@ -574,13 +588,13 @@ class SineGenDACTests(unittest.TestCase):
             ],
         )
 
-    def test_amplitude_shifts_the_cosine(self) -> None:
-        """Tests a right shift by 15 minus the amplitude."""
+    def test_amplitude_div_log_shifts_the_cosine(self) -> None:
+        """Tests a right shift by 15 minus amplitude_div_log."""
         frame = generate_dac_values(
             4,
             frequency=16384,
-            amplitude_scale=8,
-            amplitude=15,
+            amplitude_div_linear=8,
+            amplitude_div_log=15,
             dacp_mode="AC",
         )
         signed_phase = frame["phase"].to_numpy().astype(np.int16)
@@ -594,25 +608,25 @@ class SineGenDACTests(unittest.TestCase):
         shifted = generate_dac_values(
             4,
             frequency=16384,
-            amplitude_scale=8,
-            amplitude=14,
+            amplitude_div_linear=8,
+            amplitude_div_log=14,
             dacp_mode="AC",
         )
         np.testing.assert_array_equal(shifted["cosine"], cos_integers >> 1)
-        self._assert_rejects(ValueError, "got 16", 4, amplitude_scale=16)
-        self._assert_rejects(ValueError, "got -1", 4, amplitude=-1)
+        self._assert_rejects(ValueError, "got 16", 4, amplitude_div_linear=16)
+        self._assert_rejects(ValueError, "got -1", 4, amplitude_div_log=-1)
         self._assert_rejects(
-            TypeError, "uint8", 4, amplitude_scale=np.uint8(8)
+            TypeError, "uint8", 4, amplitude_div_linear=np.uint8(8)
         )
-        self._assert_rejects(TypeError, "float", 4, amplitude=14.0)
+        self._assert_rejects(TypeError, "float", 4, amplitude_div_log=14.0)
 
     def test_full_scale_stays_inside_16_bits(self) -> None:
-        """Tests that scale 15 and amplitude 15 stay inside 16 bits."""
+        """Tests that linear 15 and log 15 stay inside 16 bits."""
         frame = generate_dac_values(
             8193,
             frequency=1,
-            amplitude_scale=15,
-            amplitude=15,
+            amplitude_div_linear=15,
+            amplitude_div_log=15,
             dacp_mode="AC",
         )
         limit = (1 << 15) - 1
@@ -629,8 +643,8 @@ class SineGenDACTests(unittest.TestCase):
         frame = generate_dac_values(
             4,
             frequency=1,
-            amplitude_scale=8,
-            amplitude=15,
+            amplitude_div_linear=8,
+            amplitude_div_log=15,
             dacp_mode="DC",
             dacn_mode="AC",
             dacp_dc_value=10,
@@ -771,7 +785,7 @@ class SineGenDACTests(unittest.TestCase):
 def main() -> None:
     """Plot one DAC waveform with and without the delta-sigma modulator.
 
-    Uses amplitude scale 8, amplitude 15, and tuning word 257.
+    Uses amplitude_div_linear 8, amplitude_div_log 15, and tuning word 257.
     ``2**16`` samples after 1000 warmup clocks put the tone at FFT
     bin 257, inside the default OSR-32 band. The sample rate is 100 MHz.
     """
@@ -784,8 +798,8 @@ def main() -> None:
     bypass = generate_dac_values(
         total,
         frequency=257,
-        amplitude_scale=8,
-        amplitude=15,
+        amplitude_div_linear=8,
+        amplitude_div_log=15,
         dsm_enable=False,
         dacp_mode="AC",
         dacn_mode="AC",
@@ -805,8 +819,8 @@ def main() -> None:
     modulated = generate_dac_values(
         total,
         frequency=257,
-        amplitude_scale=8,
-        amplitude=15,
+        amplitude_div_linear=8,
+        amplitude_div_log=15,
         dsm_enable=True,
         dacp_mode="AC",
         dacn_mode="AC",

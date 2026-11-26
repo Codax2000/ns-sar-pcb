@@ -45,10 +45,10 @@ module cordic (
         .o_valid(quadrant_valid)
     );
 
-    assign magnitude_shift[0] = hwif_out.AC_CONFIG.amplitude_scale.value[0] ? FULLSCALE_SHIFT4 : 16'h0000;
-    assign magnitude_shift[1] = hwif_out.AC_CONFIG.amplitude_scale.value[1] ? FULLSCALE_SHIFT3 : 16'h0000;
-    assign magnitude_shift[2] = hwif_out.AC_CONFIG.amplitude_scale.value[2] ? FULLSCALE_SHIFT2 : 16'h0000;
-    assign magnitude_shift[3] = hwif_out.AC_CONFIG.amplitude_scale.value[3] ? FULLSCALE_SHIFT1 : 16'h0000;
+    assign magnitude_shift[0] = hwif_out.AC_CONFIG.amplitude_div_linear.value[0] ? FULLSCALE_SHIFT4 : 16'h0000;
+    assign magnitude_shift[1] = hwif_out.AC_CONFIG.amplitude_div_linear.value[1] ? FULLSCALE_SHIFT3 : 16'h0000;
+    assign magnitude_shift[2] = hwif_out.AC_CONFIG.amplitude_div_linear.value[2] ? FULLSCALE_SHIFT2 : 16'h0000;
+    assign magnitude_shift[3] = hwif_out.AC_CONFIG.amplitude_div_linear.value[3] ? FULLSCALE_SHIFT1 : 16'h0000;
 
     // amplitude scaling
     always_ff @(posedge clk) begin : magnitude_sum_shifter
@@ -181,7 +181,7 @@ module cordic (
         end
         else begin
             if (iteration_r == 4'hE) begin
-                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude.value);
+                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude_div_log.value);
                 o_valid <= 1;
             end
             else begin
