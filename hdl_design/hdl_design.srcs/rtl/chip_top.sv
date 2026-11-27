@@ -13,21 +13,23 @@ module chip_top (
     output wire miso,
     input  wire mosi,
 
-    // sinegen DAC signals
-    output wire sinegen_syncb,
-    output wire sinegen_sclk,
-    output wire sinegen_dinp,
-    output wire sinegen_dinn,
-
     // SAR ADC signals
-    output wire shift_reg_dout,
-    output wire shift_reg_sclk,
-    output wire shift_reg_den,
-    output wire shift_reg_latch,
-    input  wire sar_adc_in,
-    output wire sh_en,
-    output wire int1_en,
-    output wire int2_en
+    // output wire shift_reg_dout,
+    // output wire shift_reg_sclk,
+    // output wire shift_reg_den,
+    // output wire shift_reg_latch,
+    // input  wire sar_adc_in,
+    // output wire sh_en,
+    // output wire int1_en,
+    // output wire int2_en,
+
+    // sinegen DAC signals
+    output wire sinegen_dacp_syncb,
+    output wire sinegen_dacp_sysclk,
+    output wire sinegen_dinp,
+    output wire sinegen_dacn_syncb,
+    output wire sinegen_dacn_sysclk,
+    output wire sinegen_dinn
 );
 
     logic sysclk_buf;
@@ -43,8 +45,10 @@ module chip_top (
     logic dac_miso_en;
     logic adc_miso_en;
 
-    logic sinegen_syncb_buf;
-    logic sinegen_sclk_buf;
+    logic sinegen_dacp_syncb_buf;
+    logic sinegen_dacn_syncb_buf;
+    logic sinegen_dacp_sysclk_buf;
+    logic sinegen_dacn_sysclk_buf;
     logic sinegen_dinp_buf;
     logic sinegen_dinn_buf;
 
@@ -67,10 +71,12 @@ module chip_top (
         .IO(miso)
     );
     
-    OBUF i_sinegen_syncb_buf (.I(sinegen_syncb_buf), .O(sinegen_syncb));
-    OBUF i_sinegen_sclk_buf  (.I(sinegen_sclk_buf ), .O(sinegen_sclk ));
-    OBUF i_sinegen_dinp_buf  (.I(sinegen_dinp_buf ), .O(sinegen_dinp ));
-    OBUF i_sinegen_dinn_buf  (.I(sinegen_dinn_buf ), .O(sinegen_dinn ));
+    OBUF i_sinegen_dacp_syncb_buf  (.I(sinegen_dacp_syncb_buf),  .O(sinegen_dacp_syncb));
+    OBUF i_sinegen_dacp_sysclk_buf (.I(sinegen_dacp_sysclk_buf), .O(sinegen_dacp_sysclk));
+    OBUF i_sinegen_dinp_buf        (.I(sinegen_dinp_buf),        .O(sinegen_dinp));
+    OBUF i_sinegen_dacn_syncb_buf  (.I(sinegen_dacn_syncb_buf),  .O(sinegen_dacn_syncb));
+    OBUF i_sinegen_dacn_sysclk_buf (.I(sinegen_dacn_sysclk_buf), .O(sinegen_dacn_sysclk));
+    OBUF i_sinegen_dinn_buf        (.I(sinegen_dinn_buf),        .O(sinegen_dinn));
     `else
     assign sysclk_buf = sysclk;
     assign arst_n_buf = arst_n;
@@ -81,10 +87,12 @@ module chip_top (
     assign miso_buf = adc_miso_en ? adc_miso : dac_miso_en ? dac_miso : 1'bz;
     assign miso = miso_buf;
 
-    assign sinegen_syncb = sinegen_syncb_buf;
-    assign sinegen_sclk  = sinegen_sclk_buf;
-    assign sinegen_dinp  = sinegen_dinp_buf;
-    assign sinegen_dinn  = sinegen_dinn_buf;
+    assign sinegen_dacp_syncb  = sinegen_dacp_syncb_buf;
+    assign sinegen_dacp_sysclk = sinegen_dacp_sysclk_buf;
+    assign sinegen_dinp        = sinegen_dinp_buf;
+    assign sinegen_dacn_syncb  = sinegen_dacn_syncb_buf;
+    assign sinegen_dacn_sysclk = sinegen_dacn_sysclk_buf;
+    assign sinegen_dinn        = sinegen_dinn_buf;
     `endif
 
     test_dac_top i_test_dac_top (
@@ -100,23 +108,29 @@ module chip_top (
         .miso_en(dac_miso_en),
 
         // sinegen DAC signals
-        .sinegen_syncb(sinegen_syncb_buf),
-        .sinegen_sclk (sinegen_sclk_buf),
-        .sinegen_dinp (sinegen_dinp_buf),
-        .sinegen_dinn (sinegen_dinn_buf)
+        .sinegen_dacp_syncb (sinegen_dacp_syncb_buf),
+        .sinegen_dacn_syncb (sinegen_dacn_syncb_buf),
+        .sinegen_dacp_sysclk(sinegen_dacp_sysclk_buf),
+        .sinegen_dacn_sysclk(sinegen_dacn_sysclk_buf),
+        .sinegen_dinp       (sinegen_dinp_buf),
+        .sinegen_dinn       (sinegen_dinn_buf)
     );
 
-    adc_top i_adc_top (
-        // system clock and reset
-        .sysclk(sysclk_buf),
-        .arst_n(arst_n_buf),
-        
-        // SPI interface    
-        .csb(adc_csb_buf),
-        .scl(scl_buf),
-        .mosi(mosi_buf),
-        .miso(adc_miso),
-        .miso_en(adc_miso_en)
-    );
+    // adc_top is incomplete against the current spi / PeakRDL ADC outputs.
+    // Keep ADC ports commented above and idle the MISO mux for DAC-only sim.
+    assign adc_miso = 1'b0;
+    assign adc_miso_en = 1'b0;
+    // adc_top i_adc_top (
+    //     // system clock and reset
+    //     .sysclk(sysclk_buf),
+    //     .arst_n(arst_n_buf),
+    //     
+    //     // SPI interface    
+    //     .csb(adc_csb_buf),
+    //     .scl(scl_buf),
+    //     .mosi(mosi_buf),
+    //     .miso(adc_miso),
+    //     .miso_en(adc_miso_en)
+    // );
 
 endmodule

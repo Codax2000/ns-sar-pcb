@@ -1,13 +1,20 @@
 """Cocotb helpers for the host SPI register interface.
 
-Drives ``dut.csb``, ``dut.scl``, ``dut.mosi``, and samples ``dut.miso``
+Drives chip-select, ``dut.scl``, ``dut.mosi``, and samples ``dut.miso``
 in SPI mode 0. Frames match ``spi``: a 16-bit command word (R/W + 15-bit
 address), then one or more 16-bit data words while CS stays low.
+
+Chip-select is ``dut.csb`` when present (``spi``, ``test_dac_top``), else
+``dut.dac_csb`` (``chip_top``).
 """
 
 from cocotb.triggers import Timer
 
 SPI_HALF_PERIOD_NS = 100
+
+
+def _csb(dut):
+    return dut.csb if hasattr(dut, "csb") else dut.dac_csb
 
 
 def _word_bytes(word: int) -> list[int]:
@@ -22,10 +29,11 @@ def _command_bytes(read: bool, address: int) -> list[int]:
 async def _send_spi(dut, mosi_bytes: list[int]) -> list[int]:
     """Clock one SPI mode 0 burst; return MISO bytes."""
     received: list[int] = []
+    csb = _csb(dut)
     dut.scl.value = 0
-    dut.csb.value = 1
+    csb.value = 1
     await Timer(SPI_HALF_PERIOD_NS, unit="ns")
-    dut.csb.value = 0
+    csb.value = 0
 
     for tx_byte in mosi_bytes:
         rx_byte = 0
@@ -39,7 +47,7 @@ async def _send_spi(dut, mosi_bytes: list[int]) -> list[int]:
         received.append(rx_byte)
 
     await Timer(SPI_HALF_PERIOD_NS, unit="ns")
-    dut.csb.value = 1
+    csb.value = 1
     dut.mosi.value = 0
     await Timer(SPI_HALF_PERIOD_NS, unit="ns")
     return received

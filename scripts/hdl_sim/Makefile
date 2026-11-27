@@ -18,6 +18,7 @@ VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dsm_error_feedback.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dac5311_shift_reg.sv
 VERILOG_SOURCES += $(RTL)/dac_datapath_submodules/dac5311_ctrl.sv
 VERILOG_SOURCES += $(RTL)/test_dac_top.sv
+VERILOG_SOURCES += $(RTL)/chip_top.sv
 
 # PeakRDL regblock trips MULTIDRIVEN; unused cpuif ack/stall pins trip PINMISSING.
 COMPILE_ARGS += --trace --trace-structs -Wno-MULTIDRIVEN -Wno-PINMISSING

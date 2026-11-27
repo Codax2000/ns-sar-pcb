@@ -14,8 +14,10 @@ module test_dac_top (
     output logic miso_en,
 
     // sinegen DAC signals
-    output logic sinegen_syncb,
-    output logic sinegen_sclk,
+    output logic sinegen_dacp_syncb,
+    output logic sinegen_dacn_syncb,
+    output logic sinegen_dacp_sysclk,
+    output logic sinegen_dacn_sysclk,
     output logic sinegen_dinp,
     output logic sinegen_dinn
 );
@@ -82,25 +84,24 @@ module test_dac_top (
     assign dac_if_rd_err  = 0;
     assign dac_if_wr_err  = 0;
 
-    logic syncb_dacp;
-    logic syncb_dacn;
-
-    // The board has one active-low SYNC. The datapath has one per DAC.
-    // AND keeps the pin inactive only while both frames are inactive.
-    assign sinegen_syncb = syncb_dacp & syncb_dacn;
-
     // Programmed registers go in on hwif_out. dsm_locked comes back
     // on hwif_in.
+    logic sinegen_sclk;
+
     dac_datapath u_dac_datapath (
         .clk          (sysclk),
         .rst          (rst),
         .hwif_in      (hwif_in),
         .hwif_out     (hwif_out),
         .o_sclk       (sinegen_sclk),
-        .o_syncb_dacp (syncb_dacp),
-        .o_syncb_dacn (syncb_dacn),
+        .o_syncb_dacp (sinegen_dacp_syncb),
+        .o_syncb_dacn (sinegen_dacn_syncb),
         .o_din_dacp   (sinegen_dinp),
         .o_din_dacn   (sinegen_dinn)
     );
+
+    // Duplicate the shared datapath SCLK so each DAC5311 can be routed apart.
+    assign sinegen_dacp_sysclk = sinegen_sclk;
+    assign sinegen_dacn_sysclk = sinegen_sclk;
 
 endmodule

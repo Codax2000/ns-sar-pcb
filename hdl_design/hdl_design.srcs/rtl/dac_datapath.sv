@@ -11,7 +11,7 @@
 // rst_n is what clears that strobe flop. The 8-bit codes never leave
 // this hierarchy.
 // One SCLK, a separate active-low SYNC and DIN for each DAC5311.
-// test_dac_top maps these onto the board pins (one shared SYNC).
+// test_dac_top maps these onto the board pins (separate SYNCb per DAC).
 
 module dac_datapath (
     input  logic clk,
