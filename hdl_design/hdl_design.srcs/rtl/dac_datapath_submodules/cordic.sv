@@ -14,6 +14,8 @@ module cordic (
     output logic               o_valid
 );
 
+    localparam logic [3:0] ITERATION_MAX = 4'hF;
+
     localparam logic [15:0] FULLSCALE_SHIFT1 = 16'h52E7 >> 1;
     localparam logic [15:0] FULLSCALE_SHIFT2 = 16'h52E7 >> 2;
     localparam logic [15:0] FULLSCALE_SHIFT3 = 16'h52E7 >> 3;
@@ -27,7 +29,7 @@ module cordic (
     logic signed      [15:0] x_prerotate_n, y_prerotate_n;
     logic signed      [15:0] x_prerotate, y_prerotate, z_remaining;
     logic                    prerotate_valid;
-    logic             [3:0]  iteration, iteration_r;
+    logic             [3:0]  iteration, iteration_r, iteration_rr;
     logic                    cordic_mem_read_en;
     logic signed      [15:0] atan_rom_data;
     logic                    iteration_valid;
@@ -45,10 +47,10 @@ module cordic (
         .o_valid(quadrant_valid)
     );
 
-    assign magnitude_shift[0] = hwif_out.AC_CONFIG.amplitude_scale.value[0] ? FULLSCALE_SHIFT4 : 16'h0000;
-    assign magnitude_shift[1] = hwif_out.AC_CONFIG.amplitude_scale.value[1] ? FULLSCALE_SHIFT3 : 16'h0000;
-    assign magnitude_shift[2] = hwif_out.AC_CONFIG.amplitude_scale.value[2] ? FULLSCALE_SHIFT2 : 16'h0000;
-    assign magnitude_shift[3] = hwif_out.AC_CONFIG.amplitude_scale.value[3] ? FULLSCALE_SHIFT1 : 16'h0000;
+    assign magnitude_shift[0] = hwif_out.AC_CONFIG.amplitude_div_linear.value[0] ? FULLSCALE_SHIFT4 : 16'h0000;
+    assign magnitude_shift[1] = hwif_out.AC_CONFIG.amplitude_div_linear.value[1] ? FULLSCALE_SHIFT3 : 16'h0000;
+    assign magnitude_shift[2] = hwif_out.AC_CONFIG.amplitude_div_linear.value[2] ? FULLSCALE_SHIFT2 : 16'h0000;
+    assign magnitude_shift[3] = hwif_out.AC_CONFIG.amplitude_div_linear.value[3] ? FULLSCALE_SHIFT1 : 16'h0000;
 
     // amplitude scaling
     always_ff @(posedge clk) begin : magnitude_sum_shifter
@@ -120,17 +122,19 @@ module cordic (
         if (rst) begin
             iteration <= 4'h0;
             iteration_r <= 4'h0;
+            iteration_rr <= 4'h0;
             cordic_mem_read_en <= 0;
             iteration_valid <= 0;
         end
         else begin
             iteration_valid <= cordic_mem_read_en;
             iteration_r <= iteration;
+            iteration_rr <= iteration_r;
             if (quadrant_valid) begin
                 cordic_mem_read_en <= 1;
                 iteration <= 4'h0;
             end
-            else if (iteration == 4'hE) begin
+            else if (iteration == ITERATION_MAX) begin
                 cordic_mem_read_en <= 0;
                 iteration <= 4'h0;
             end
@@ -180,8 +184,8 @@ module cordic (
             o_valid <= 0;
         end
         else begin
-            if (iteration_r == 4'hE) begin
-                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude.value);
+            if (iteration_rr == ITERATION_MAX) begin
+                o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude_div_log.value);
                 o_valid <= 1;
             end
             else begin

@@ -168,18 +168,18 @@ package chip_regs_dv_pkg;
     // reg - dac_regs::AC_CONFIG_wbuffer_trigger_9caa3f2d
     class dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d extends uvm_reg;
         `uvm_object_utils(dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d)
-        rand uvm_reg_field amplitude_scale;
-        rand uvm_reg_field amplitude;
+        rand uvm_reg_field amplitude_div_linear;
+        rand uvm_reg_field amplitude_div_log;
 
         function new(string name = "dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d");
             super.new(name, 16, UVM_NO_COVERAGE);
         endfunction : new
 
         virtual function void build();
-            this.amplitude_scale = uvm_reg_field::type_id::create("amplitude_scale");
-            this.amplitude_scale.configure(this, 4, 0, "RW", 0, 'h8, 1, 1, 0);
-            this.amplitude = uvm_reg_field::type_id::create("amplitude");
-            this.amplitude.configure(this, 4, 4, "RW", 0, 'hf, 1, 1, 0);
+            this.amplitude_div_linear = uvm_reg_field::type_id::create("amplitude_div_linear");
+            this.amplitude_div_linear.configure(this, 4, 0, "RW", 0, 'h8, 1, 1, 0);
+            this.amplitude_div_log = uvm_reg_field::type_id::create("amplitude_div_log");
+            this.amplitude_div_log.configure(this, 4, 4, "RW", 0, 'hf, 1, 1, 0);
         endfunction : build
     endclass : dac_regs__AC_CONFIG_wbuffer_trigger_9caa3f2d
 
