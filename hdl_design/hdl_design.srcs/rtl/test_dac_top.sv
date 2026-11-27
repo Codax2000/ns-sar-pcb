@@ -81,9 +81,6 @@ module test_dac_top (
         .hwif_out(hwif_out)
     );
 
-    assign dac_if_rd_err  = 0;
-    assign dac_if_wr_err  = 0;
-
     // Programmed registers go in on hwif_out. dsm_locked comes back
     // on hwif_in.
     logic sinegen_sclk;
