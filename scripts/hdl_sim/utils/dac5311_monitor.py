@@ -4,10 +4,10 @@ Protocol (MSB first, 16-bit frames):
 
 - Falling SYNCb resets the in-flight shift register and bit count.
 - Falling SCLK while SYNCb is low shifts DIN in.
-- Rising SYNCb with fewer than 16 clocks fails the test.
-- Rising SYNCb with 16 clocks appends one value: power bits [15:14],
-  then unsigned code [13:6]. Power ``01`` stores ``-1``, ``10`` stores
-  ``-2``, ``00`` stores the code, and ``11`` fails the test.
+- Rising SYNCb with fewer than 16 clocks discards the frame (e.g. reset
+  abort). Rising SYNCb with 16 clocks appends one value: power bits
+  [15:14], then unsigned code [13:6]. Power ``01`` stores ``-1``, ``10``
+  stores ``-2``, ``00`` stores the code, and ``11`` fails the test.
 """
 
 from __future__ import annotations
@@ -51,22 +51,19 @@ class Dac5311Monitor:
                     shreg = 0
                     bit_count = 0
                 else:
-                    assert bit_count >= 16, (
-                        "DAC5311 incomplete frame: "
-                        f"{bit_count} clocks before SYNCb rose"
-                    )
-                    power = (shreg >> 14) & 0b11
-                    code = (shreg >> 6) & 0xFF
-                    if power == 0b01:
-                        self._values.append(-1)
-                    elif power == 0b10:
-                        self._values.append(-2)
-                    elif power == 0b00:
-                        self._values.append(code)
-                    else:
-                        assert False, (
-                            f"DAC5311 invalid power mode 0b{power:02b}"
-                        )
+                    if bit_count >= 16:
+                        power = (shreg >> 14) & 0b11
+                        code = (shreg >> 6) & 0xFF
+                        if power == 0b01:
+                            self._values.append(-1)
+                        elif power == 0b10:
+                            self._values.append(-2)
+                        elif power == 0b00:
+                            self._values.append(code)
+                        else:
+                            assert False, (
+                                f"DAC5311 invalid power mode 0b{power:02b}"
+                            )
                     shreg = 0
                     bit_count = 0
             elif int(self._syncb.value) == 0:

@@ -108,9 +108,15 @@ async def capture_dac_output(
     wait_mon: Dac5311Monitor,
     n_samples: int = N_SAMPLES,
 ) -> tuple[list[int], list[int]]:
+    """Clear monitors, then wait until ``wait_mon`` has ``n_samples`` values.
+
+    Waits on completed frames (not raw SYNCb edges), so aborted/reset
+    frames that the monitor discards do not satisfy the count.
+    """
     mon_p.clear_read_values()
     mon_n.clear_read_values()
-    await wait_mon.wait_rising_syncb(n_samples)
+    while len(wait_mon.get_read_values()) < n_samples:
+        await wait_mon.wait_rising_syncb(1)
     return mon_p.get_read_values(), mon_n.get_read_values()
 
 
@@ -158,6 +164,7 @@ async def test_frequency_sweep(dut):
             frequency=frequency,
             amplitude_div_linear=amplitude_div_linear,
             amplitude_div_log=amplitude_div_log,
+            dsm_enable=True,
             dacp_ac=True,
             dacn_ac=True,
         )
@@ -167,18 +174,20 @@ async def test_frequency_sweep(dut):
             frequency=frequency,
             amplitude_div_linear=amplitude_div_linear,
             amplitude_div_log=amplitude_div_log,
-            dsm_enable=False,
+            dsm_enable=True,
             dacp_mode="AC",
             dacn_mode="AC",
         )
+        ref_p = [int(x) for x in ref["dacp_value"]]
+        ref_n = [int(x) for x in ref["dacn_value"]]
         assert_equals(
             got_p,
-            list(ref["dacp_value"]),
+            ref_p,
             f"DACP mismatch at frequency 0x{frequency:04X}",
         )
         assert_equals(
             got_n,
-            list(ref["dacn_value"]),
+            ref_n,
             f"DACN mismatch at frequency 0x{frequency:04X}",
         )
 
@@ -245,7 +254,8 @@ async def test_ac_dc_mode(dut):
         dacn_ac=False,
         dacn_enable=True,
     )
-    got_p, got_n = await capture_dac_output(mon_p, mon_n, mon_p)
+    # DACN DC/power-down emits one frame after ENABLE; DACP AC keeps streaming.
+    got_p, got_n = await capture_dac_output(mon_p, mon_n, mon_p, N_SAMPLES)
     ref = generate_dac_values(
         len(got_p),
         frequency=frequency,
@@ -256,9 +266,13 @@ async def test_ac_dc_mode(dut):
         dacn_mode="DC",
         dacn_dc_value=dacn_dc_value,
     )
-    assert_equals(got_p, list(ref["dacp_value"]), "DACP AC mismatch")
+    assert_equals(
+        [int(x) for x in got_p],
+        [int(x) for x in ref["dacp_value"]],
+        "DACP AC mismatch",
+    )
     assert_equals(
         got_n,
-        list(ref["dacn_value"]),
-        f"DACN DC mismatch, expected constant 0x{dacn_dc_value:02X}",
+        [dacn_dc_value],
+        f"DACN DC should be a single frame 0x{dacn_dc_value:02X}, got {got_n}",
     )

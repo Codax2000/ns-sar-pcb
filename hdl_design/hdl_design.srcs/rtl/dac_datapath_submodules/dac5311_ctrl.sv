@@ -33,7 +33,8 @@ module dac5311_ctrl (
 
     always_ff @(posedge clk) begin : latch_dac_mode
         if (rst) begin
-            latch_mode <= 1'b1;
+            // One-shot after reset/ENABLE: load DC or power-down once.
+            latch_mode <= 1'b0;
             shregp_load <= 1'b0;
             shregp_din  <= 16'h0000;
             shregn_load <= 1'b0;
@@ -72,7 +73,7 @@ module dac5311_ctrl (
             end : shregn_load_dc
             else if (i_sine_valid && dacn_ac_en && (!shregn_busy)) begin : shregn_load_ac
                 shregn_load <= 1'b1;
-                shregn_din  <= {2'b00, ~i_sine, 6'h00};
+                shregn_din  <= {2'b00, (~i_sine + 8'h01), 6'h00};
             end : shregn_load_ac
             else begin : shregn_load_idle
                 shregn_load <= 1'b0;

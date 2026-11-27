@@ -5,67 +5,74 @@ module dsm_error_feedback (
     // Software-programmed dac_regs fields (regblock hwif_out).
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
 
-    // cosine inputs
-    input  [15:0] i_sine,
-    input         i_valid,
+    // cosine inputs (signed Q1.15 from CORDIC)
+    input  logic signed [15:0] i_sine,
+    input                      i_valid,
 
-    // cosine outputs
-    output  [7:0] o_sine_dsm,
-    output        o_valid,
+    // cosine outputs (unsigned offset-binary for the DAC)
+    output logic [7:0] o_sine_dsm,
+    output logic       o_valid,
 
-    output        o_dsm_locked
+    output logic       o_dsm_locked
 );
 
     parameter int DSM_WARMUP_COUNT = 1000;
     localparam int DSM_COUNT_W = $clog2(DSM_WARMUP_COUNT) + 1;
 
-    logic               dsm_enable;
-    logic signed [15:0] sine_sum;
-    logic signed [7:0]  dsm_error_r, dsm_error_rr;
-    wire  signed [8:0]  dsm_error_x2 = dsm_error_r << 1;
-    wire  signed [7:0]  dsm_error = sine_sum[7:0];
+    // Match models.sinegen_dac._modulate_dsm:
+    //   acc      = sample + older + 2*previous
+    //   q        = sat(acc >>> 8, -128..127)
+    //   error    = (q << 8) - acc
+    //   previous = -error   (next)
+    //   older    = error_prev = -previous (next)
+    logic signed [16:0] previous_r;
+    logic signed [16:0] older_r;
+
+    wire signed [17:0] acc =
+        18'(i_sine) + 18'(older_r) + (18'(previous_r) <<< 1);
+
+    wire signed [17:0] q_ext = acc >>> 8;
+    logic signed [7:0] q;
+    always_comb begin
+        if (q_ext > 18'sd127)
+            q = 8'sd127;
+        else if (q_ext < -18'sd128)
+            q = -8'sd128;
+        else
+            q = q_ext[7:0];
+    end
+
+    wire signed [17:0] error = (18'(q) <<< 8) - acc;
+
     logic [DSM_COUNT_W-1:0] dsm_count;
     localparam logic [DSM_COUNT_W-1:0] DSM_WARMUP_THRESHOLD =
         DSM_COUNT_W'(DSM_WARMUP_COUNT);
-    assign dsm_enable = hwif_out.ENABLE.dsm_enable.value;
+
+    wire dsm_enable = hwif_out.ENABLE.dsm_enable.value;
 
     always_ff @(posedge clk) begin : dsm_error_feedback_logic
         if (rst) begin
-            dsm_error_r <= 0;
-            dsm_error_rr <= 0;
-            dsm_count <= 0;
-            o_dsm_locked <= 0;
+            previous_r  <= '0;
+            older_r     <= '0;
+            dsm_count   <= '0;
+            o_dsm_locked <= 1'b0;
+            o_sine_dsm  <= 8'h00;
+            o_valid     <= 1'b0;
+        end
+        else if (i_valid && dsm_enable) begin
+            // Same-cycle quantize of acc that includes i_sine.
+            o_sine_dsm <= {!q[7], q[6:0]};
+            o_valid    <= 1'b1;
+            previous_r <= 17'(-error);
+            older_r    <= 17'(-previous_r);
+            if (dsm_count < DSM_WARMUP_THRESHOLD)
+                dsm_count <= dsm_count + 1'b1;
+            else
+                o_dsm_locked <= 1'b1;
         end
         else begin
-
-            if (i_valid && dsm_enable) begin
-                sine_sum <= 16'(dsm_error_x2) + 16'(dsm_error_rr) + i_sine;
-                dsm_error_r  <=  dsm_error;
-                dsm_error_rr <= -dsm_error_r;
-                if (dsm_count < DSM_WARMUP_THRESHOLD) begin
-                    dsm_count <= dsm_count + 1;
-                end
-                else begin
-                    o_dsm_locked <= 1;
-                end
-            end
+            o_valid <= 1'b0;
         end
     end : dsm_error_feedback_logic
-
-    always_ff @(posedge clk) begin : dsm_error_feedback_output_logic
-        if (rst) begin
-            o_sine_dsm <= 0;
-            o_valid <= 0;
-        end
-        else begin
-            if (i_valid && dsm_enable) begin
-                o_sine_dsm <= {!sine_sum[15], sine_sum[14:8]};
-                o_valid <= 1;
-            end
-            else begin
-                o_valid <= 0;
-            end
-        end
-    end : dsm_error_feedback_output_logic
 
 endmodule

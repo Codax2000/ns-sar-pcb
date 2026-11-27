@@ -27,7 +27,7 @@ module cordic (
     logic signed      [15:0] x_prerotate_n, y_prerotate_n;
     logic signed      [15:0] x_prerotate, y_prerotate, z_remaining;
     logic                    prerotate_valid;
-    logic             [3:0]  iteration, iteration_r;
+    logic             [3:0]  iteration, iteration_r, iteration_rr;
     logic                    cordic_mem_read_en;
     logic signed      [15:0] atan_rom_data;
     logic                    iteration_valid;
@@ -120,12 +120,14 @@ module cordic (
         if (rst) begin
             iteration <= 4'h0;
             iteration_r <= 4'h0;
+            iteration_rr <= 4'h0;
             cordic_mem_read_en <= 0;
             iteration_valid <= 0;
         end
         else begin
             iteration_valid <= cordic_mem_read_en;
             iteration_r <= iteration;
+            iteration_rr <= iteration_r;
             if (quadrant_valid) begin
                 cordic_mem_read_en <= 1;
                 iteration <= 4'h0;
@@ -180,7 +182,7 @@ module cordic (
             o_valid <= 0;
         end
         else begin
-            if (iteration_r == 4'hE) begin
+            if (iteration_rr == 4'hE) begin
                 o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude_div_log.value);
                 o_valid <= 1;
             end
