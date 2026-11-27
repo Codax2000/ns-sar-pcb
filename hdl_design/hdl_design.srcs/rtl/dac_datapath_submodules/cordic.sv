@@ -14,6 +14,8 @@ module cordic (
     output logic               o_valid
 );
 
+    localparam logic [3:0] ITERATION_MAX = 4'hF;
+
     localparam logic [15:0] FULLSCALE_SHIFT1 = 16'h52E7 >> 1;
     localparam logic [15:0] FULLSCALE_SHIFT2 = 16'h52E7 >> 2;
     localparam logic [15:0] FULLSCALE_SHIFT3 = 16'h52E7 >> 3;
@@ -132,7 +134,7 @@ module cordic (
                 cordic_mem_read_en <= 1;
                 iteration <= 4'h0;
             end
-            else if (iteration == 4'hE) begin
+            else if (iteration == ITERATION_MAX) begin
                 cordic_mem_read_en <= 0;
                 iteration <= 4'h0;
             end
@@ -182,7 +184,7 @@ module cordic (
             o_valid <= 0;
         end
         else begin
-            if (iteration_rr == 4'hE) begin
+            if (iteration_rr == ITERATION_MAX) begin
                 o_sine <= y_cordic >>> (4'hF - hwif_out.AC_CONFIG.amplitude_div_log.value);
                 o_valid <= 1;
             end
