@@ -3,8 +3,8 @@
 // instantiates both.
 module test_dac_top (
     // system clock and reset
-    input sysclk,
-    input arst_n,
+    input logic sysclk,
+    input logic arst_n,
     
     // SPI interfaces    
     input  logic csb,
