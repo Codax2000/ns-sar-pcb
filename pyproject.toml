@@ -36,3 +36,8 @@ packages = ["scripts/models"]
 
 [tool.hatch.build.targets.wheel.sources]
 "scripts" = ""
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

@@ -7,7 +7,7 @@ module dsm_error_feedback (
 
     // cosine inputs (signed Q1.15 from CORDIC)
     input  logic signed [15:0] i_sine,
-    input                      i_valid,
+    input  logic               i_valid,
 
     // cosine outputs (unsigned offset-binary for the DAC)
     output logic [7:0] o_sine_dsm,

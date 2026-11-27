@@ -1638,6 +1638,11 @@ dependencies = [
     { name = "sphinx-rtd-theme" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "cocotb", specifier = ">=2.1.0" },
@@ -1655,6 +1660,9 @@ requires-dist = [
     { name = "sphinx-peakrdl", specifier = ">=0.3.0" },
     { name = "sphinx-rtd-theme", specifier = ">=3.1.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "numba"

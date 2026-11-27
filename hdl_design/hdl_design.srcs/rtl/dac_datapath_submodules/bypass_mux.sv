@@ -9,10 +9,10 @@ module bypass_mux #(
 
     // Bypass path (CORDIC) and modulator path. Per-DAC AC enable is
     // handled downstream in dac5311_ctrl.
-    input  [WIDTH-1:0] i_sine,
-    input              i_sine_valid,
-    input  [WIDTH-1:0] i_sine_dsm,
-    input              i_dsm_valid,
+    input  logic [WIDTH-1:0] i_sine,
+    input  logic             i_sine_valid,
+    input  logic [WIDTH-1:0] i_sine_dsm,
+    input  logic             i_dsm_valid,
 
     output logic [WIDTH-1:0] o_sine,
     output logic             o_valid

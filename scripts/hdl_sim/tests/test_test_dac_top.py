@@ -54,13 +54,13 @@ async def _start_clock_and_reset(dut) -> None:
 
 def _attach_monitors(dut) -> tuple[Dac5311Monitor, Dac5311Monitor]:
     mon_p = Dac5311Monitor(
-        dut.u_dac_datapath.o_syncb_dacp,
-        dut.sinegen_sclk,
+        dut.sinegen_dacp_syncb,
+        dut.sinegen_dacp_sysclk,
         dut.sinegen_dinp,
     )
     mon_n = Dac5311Monitor(
-        dut.u_dac_datapath.o_syncb_dacn,
-        dut.sinegen_sclk,
+        dut.sinegen_dacn_syncb,
+        dut.sinegen_dacn_sysclk,
         dut.sinegen_dinn,
     )
     return mon_p, mon_n
@@ -235,7 +235,7 @@ async def test_amplitude_sweep(dut):
 
 @cocotb.test()
 async def test_ac_dc_mode(dut):
-    """DACP AC and DACN DC; compare captured codes to the fixed-point model."""
+    """DACP AC (100 samples) and DACN DC (1 sample) vs the fixed-point model."""
     await _start_clock_and_reset(dut)
     mon_p, mon_n = _attach_monitors(dut)
 
@@ -254,10 +254,11 @@ async def test_ac_dc_mode(dut):
         dacn_ac=False,
         dacn_enable=True,
     )
-    # DACN DC/power-down emits one frame after ENABLE; DACP AC keeps streaming.
+    # DACN DC emits one frame after ENABLE; DACP AC keeps streaming.
     got_p, got_n = await capture_dac_output(mon_p, mon_n, mon_p, N_SAMPLES)
+    assert_equals(len(got_p), N_SAMPLES, f"expected {N_SAMPLES} DACP AC frames")
     ref = generate_dac_values(
-        len(got_p),
+        N_SAMPLES,
         frequency=frequency,
         amplitude_div_linear=amplitude_div_linear,
         amplitude_div_log=amplitude_div_log,

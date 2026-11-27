@@ -6,8 +6,8 @@ module dac5311_ctrl (
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
 
     // Sample selected by dsm_bypass_mux.
-    input  [7:0] i_sine,
-    input        i_sine_valid,
+    input  logic [7:0] i_sine,
+    input  logic       i_sine_valid,
 
     // One SCLK. Each DAC5311 has its own active-low SYNC and DIN.
     // Both SYNC outputs stay high (inactive) until the serializer exists.

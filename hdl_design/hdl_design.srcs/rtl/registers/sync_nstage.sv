@@ -9,6 +9,24 @@ module sync_nstage #(
     input logic dest_clk_rst
 );
 
+`ifdef VIVADO
+    genvar i;
+    generate
+        for (i = 0; i < N_BITS; i++) begin : g_xpm_cdc
+            xpm_cdc_single #(
+                .DEST_SYNC_FF(N_SYNC_STAGES),
+                .INIT_SYNC_FF(0),
+                .SIM_ASSERT_CHK(0),
+                .SRC_INPUT_REG(0)
+            ) u_xpm_cdc_single (
+                .src_clk (src_clk),
+                .src_in  (src_data[i]),
+                .dest_clk(dest_clk),
+                .dest_out(dest_data[i])
+            );
+        end
+    endgenerate
+`else
     logic [N_BITS-1:0] sync_to_dest_clk [(N_SYNC_STAGES-1):0];
     logic [N_BITS-1:0] sync_to_src_clk;
     genvar i;
@@ -29,5 +47,6 @@ module sync_nstage #(
 
     always_comb
         sync_to_src_clk = src_data;
+`endif
 
 endmodule

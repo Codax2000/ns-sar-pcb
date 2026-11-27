@@ -45,3 +45,6 @@ gitlog.txt
 .aider*
 hdl_design/hdl_design.srcs/dv/chip_reg_top/
 .Xil/
+hdl_design/vivado_pid3840844.str
+hdl_design/vivado.jou
+hdl_design/vivado.log

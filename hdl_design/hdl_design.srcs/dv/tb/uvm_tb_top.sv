@@ -58,10 +58,7 @@ module uvm_tb_top ();
 
         // system clock
         .sysclk(i_clk_if.clk_driven),
-        .arst_n(i_reset_if.bit_driven),
-
-        // other signals, unused for now
-        .sar_adc_in(0)
+        .arst_n(i_reset_if.bit_driven)
     );
 
     initial begin

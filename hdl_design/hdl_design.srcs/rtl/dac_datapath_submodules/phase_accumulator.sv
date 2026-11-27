@@ -6,8 +6,8 @@ module phase_accumulator (
     input  dac_regs_mod_pkg::dac_regs__out_t hwif_out,
 
     // phase outputs
-    output [15:0] o_phase,
-    output        o_valid
+    output logic [15:0] o_phase,
+    output logic  o_valid
 );
 
     localparam  VALID_COUNT = 48+32+8;
